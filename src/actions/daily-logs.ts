@@ -100,7 +100,7 @@ export async function deleteDailyLogAction(logId: string): Promise<ActionResult<
                 await deleteDailyLog(logId, userId);
 
                 revalidatePath("/dashboard");
-                revalidatePath("/daily");
+                revalidatePath("/dashboard/daily");
                 revalidatePath("/dashboard/weekly");
                 
                 return success(

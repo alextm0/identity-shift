@@ -31,6 +31,9 @@ export function useWeeklyReview() {
                 if (result.success) {
                     toast.success(result.message || "Weekly review saved successfully");
                     router.refresh();
+                } else {
+                    setError(result.error || "Failed to save weekly review");
+                    toast.error(result.error || "Failed to save weekly review");
                 }
             } catch (error) {
                 const errorMessage = getErrorMessage(error);
@@ -45,9 +48,15 @@ export function useWeeklyReview() {
 
         startTransition(async () => {
             try {
-                await updateWeeklyReviewAction(reviewId, formData);
-                toast.success("Weekly review updated successfully");
-                router.refresh();
+                const result = await updateWeeklyReviewAction(reviewId, formData);
+                if (result.success) {
+                    toast.success(result.message || "Weekly review updated successfully");
+                    router.refresh();
+                } else {
+                    const errorMessage = result.error || "Failed to update weekly review";
+                    setError(errorMessage);
+                    toast.error(errorMessage);
+                }
             } catch (error) {
                 const errorMessage = getErrorMessage(error);
                 setError(errorMessage);
