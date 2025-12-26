@@ -1,0 +1,468 @@
+@import "tailwindcss";
+@import "@neondatabase/neon-js/ui/tailwind";
+
+@theme inline {
+  /* Design System Colors - HSL components for better utility support */
+  --color-primary: #10B981; /* Action Emerald */
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-primary-hover: #059669;
+  
+  --color-action-emerald: #10B981;
+  --color-motion-amber: #F59E0B;
+  --color-bullshit-crimson: #EF4444;
+  --color-focus-violet: #8B5CF6;
+  --color-telemetry-slate: #94A3B8;
+  
+  --color-background: #050505; /* Deep obsidian */
+  --color-surface: rgba(255, 255, 255, 0.03);
+  --color-secondary: #94A3B8;
+  
+  --color-foreground: #FFFFFF;
+  --color-muted: rgba(255, 255, 255, 0.05);
+  --color-muted-foreground: #94A3B8;
+  
+  --color-card: rgba(255, 255, 255, 0.03);
+  --color-card-foreground: #FFFFFF;
+  
+  --color-border: rgba(255, 255, 255, 0.05);
+  --color-border-light: rgba(255, 255, 255, 0.1);
+  
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+  
+  /* Radius */
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  
+  /* Transitions & Animations */
+  --transition-liquid: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-blur: fade-blur 0.4s var(--transition-liquid);
+  
+  @keyframes fade-blur {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+  
+  @keyframes accordion-down {
+    from {
+      height: 0
+    }
+    to {
+      height: var(--radix-accordion-content-height)
+    }
+  }
+  
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height)
+    }
+    to {
+      height: 0
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+  
+  @keyframes glow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  @keyframes cursor-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.1);
+    }
+  }
+}
+
+:root {
+  /* Neon Auth & UI Variables */
+  --background: 0 0% 2%;
+  --foreground: 0 0% 100%;
+  --primary: 161 72% 39%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 215 20% 65% / 0.1;
+  --muted-foreground: 215 20% 65%;
+  --card: 0 0% 100% / 0.03;
+  --card-foreground: 0 0% 100%;
+  --border: 0 0% 100% / 0.05;
+  --input: 0 0% 100% / 0.03;
+  --ring: 259 91% 66%;
+  --radius: 24px;
+}
+
+body {
+  background: #050505;
+  color: #FFFFFF;
+  font-family: var(--font-sans), Inter, system-ui, sans-serif;
+  @apply antialiased selection:bg-primary/20;
+  min-height: 100vh;
+}
+
+/* Atmospheric Background Blooms */
+.bg-blooms {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background: #050505;
+  overflow: hidden;
+}
+
+.bloom-violet {
+  position: absolute;
+  top: -10%;
+  right: -10%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+  filter: blur(100px);
+}
+
+.bloom-emerald {
+  position: absolute;
+  bottom: -10%;
+  left: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+  filter: blur(80px);
+}
+
+/* Glassmorphism Refined: The Forensic Mirror */
+.glass-pane {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s var(--transition-liquid);
+}
+
+.glass-pane-hover {
+  @apply hover:scale-[1.01] hover:border-white/20 hover:bg-white/[0.05];
+}
+
+/* Legacy support/Refactor targets */
+/* NOTE: glass-panel duplicates glass-pane styles above. Consider consolidating
+ * these classes in a future cleanup to reduce CSS maintenance burden. Both
+ * classes are currently identical and serve the same purpose. */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s var(--transition-liquid);
+}
+
+.glass-audit-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s var(--transition-liquid);
+}
+
+.glass-icon-box {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Input Focus Transitions */
+.input-audit {
+  @apply bg-white/[0.03] border-white/10 transition-all duration-300 rounded-xl;
+}
+
+.input-audit:focus {
+  @apply border-[var(--color-focus-violet)]/50 ring-4 ring-[var(--color-focus-violet)]/10 outline-none bg-white/[0.05];
+}
+
+/* Forensic Telemetry Style */
+.forensic-telemetry {
+  @apply font-mono uppercase tracking-widest text-[10px] text-[var(--color-telemetry-slate)];
+}
+
+/* Mint Glow Effect */
+.emerald-glow {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  transition: box-shadow 0.3s var(--transition-liquid);
+}
+
+.emerald-glow:hover {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+}
+
+/* Focus Violet Glow */
+.violet-glow {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+  transition: box-shadow 0.3s var(--transition-liquid);
+}
+
+.violet-glow:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+}
+
+/* Shimmer Effect for Desired Identity */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Range Slider Styling */
+input[type="range"].slider-violet {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="range"].slider-violet::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(139, 92, 246);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s var(--transition-liquid);
+}
+
+input[type="range"].slider-violet::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+}
+
+input[type="range"].slider-violet::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(139, 92, 246);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s var(--transition-liquid);
+}
+
+input[type="range"].slider-violet::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+}
+
+/* Unified Pane System */
+.unified-pane {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s var(--transition-liquid);
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+}
+
+.vertical-separator {
+  @apply w-[1px] bg-white/5 self-stretch;
+}
+
+.horizontal-separator {
+  @apply h-[1px] w-full bg-white/5;
+}
+
+.ethereal-arc {
+  @apply stroke-white/[0.05] fill-none stroke-[1px];
+}
+
+.ethereal-arc-active {
+  @apply stroke-action-emerald fill-none stroke-[1px];
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+}
+
+.ethereal-arc-inactive {
+  @apply stroke-white/[0.03] fill-none stroke-[1px];
+  stroke-dasharray: 2 4;
+}
+
+/* 8px Grid Helpers */
+.p-grid { padding: 32px; }
+.gap-grid { gap: 16px; }
+.m-grid { margin: 48px; }
+
+.text-action-emerald { color: #10B981; }
+.text-motion-amber { color: #F59E0B; }
+.text-bullshit-crimson { color: #EF4444; }
+.text-focus-violet { color: #8B5CF6; }
+.text-telemetry-slate { color: #94A3B8; }
+
+.bg-action-emerald { background-color: #10B981; }
+.bg-motion-amber { background-color: #F59E0B; }
+.bg-bullshit-crimson { background-color: #EF4444; }
+.bg-focus-violet { background-color: #8B5CF6; }
+
+/* Suggestive Cursor Animation for Buttons */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+a[href] {
+  cursor: pointer;
+  transition: all 0.2s var(--transition-liquid);
+}
+
+button:not(:disabled):hover,
+[role="button"]:not(:disabled):hover,
+a[href]:hover {
+  cursor: pointer;
+}
+
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+/* Neon Auth Account View Styling */
+.account-view-wrapper {
+  @apply space-y-6;
+}
+
+/* Style all cards/containers */
+.account-view-wrapper [class*="card"],
+.account-view-wrapper [class*="Card"],
+.account-view-wrapper [class*="container"] {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s var(--transition-liquid);
+  @apply p-6 md:p-8;
+}
+
+/* Headings */
+.account-view-wrapper h1,
+.account-view-wrapper h2,
+.account-view-wrapper h3,
+.account-view-wrapper [class*="card"] h2,
+.account-view-wrapper [class*="Card"] h2,
+.account-view-wrapper [class*="card"] h3,
+.account-view-wrapper [class*="Card"] h3 {
+  @apply text-white font-bold uppercase tracking-tight;
+}
+
+/* Text and labels */
+.account-view-wrapper p,
+.account-view-wrapper label,
+.account-view-wrapper span:not([class*="icon"]),
+.account-view-wrapper [class*="card"] p,
+.account-view-wrapper [class*="Card"] p,
+.account-view-wrapper [class*="card"] label,
+.account-view-wrapper [class*="Card"] label {
+  @apply text-white/60;
+}
+
+/* Inputs */
+.account-view-wrapper input,
+.account-view-wrapper textarea,
+.account-view-wrapper select,
+.account-view-wrapper [class*="Input"] {
+  @apply bg-white/5 border-white/10 text-white;
+  @apply placeholder:text-white/20;
+  @apply focus:border-focus-violet/50 focus:ring-2 focus:ring-focus-violet/20;
+  @apply rounded-xl px-4 py-2;
+}
+
+/* Primary buttons */
+.account-view-wrapper button[type="submit"],
+.account-view-wrapper [class*="Button"][type="submit"],
+.account-view-wrapper [class*="button-primary"] {
+  @apply bg-focus-violet/90 hover:bg-focus-violet text-white;
+  @apply font-mono text-xs uppercase tracking-widest;
+  @apply rounded-xl px-6 py-2;
+  @apply transition-all duration-300;
+}
+
+/* Secondary buttons */
+.account-view-wrapper button:not([type="submit"]),
+.account-view-wrapper [class*="Button"]:not([type="submit"]) {
+  @apply bg-white/5 border border-white/10 hover:bg-white/10 text-white;
+  @apply font-mono text-xs uppercase tracking-widest;
+  @apply rounded-xl px-4 py-2;
+  @apply transition-all duration-300;
+}
+
+/* Links */
+.account-view-wrapper a {
+  @apply text-focus-violet hover:text-focus-violet/80;
+  @apply transition-colors duration-300;
+}
+
+/* Dividers */
+.account-view-wrapper hr,
+.account-view-wrapper [class*="separator"] {
+  @apply border-white/5;
+}
+
+/* Error messages */
+.account-view-wrapper [class*="error"],
+.account-view-wrapper [class*="Error"] {
+  @apply text-bullshit-crimson;
+}
+
+/* Success messages */
+.account-view-wrapper [class*="success"],
+.account-view-wrapper [class*="Success"] {
+  @apply text-action-emerald;
+}
+
