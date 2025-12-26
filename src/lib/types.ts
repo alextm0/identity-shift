@@ -7,7 +7,8 @@ import {
     sprint,
     dailyLog,
     weeklyReview,
-    monthlyReview
+    monthlyReview,
+    yearlyReview
 } from '@/lib/db/schema';
 import type { Goal, WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork } from '@/lib/validators';
 
@@ -29,6 +30,9 @@ export type NewWeeklyReview = InferInsertModel<typeof weeklyReview>;
 
 export type MonthlyReview = InferSelectModel<typeof monthlyReview>;
 export type NewMonthlyReview = InferInsertModel<typeof monthlyReview>;
+
+export type YearlyReview = InferSelectModel<typeof yearlyReview>;
+export type NewYearlyReview = InferInsertModel<typeof yearlyReview>;
 
 // --- Typed Extensions for JSON Columns ---
 
@@ -72,4 +76,14 @@ export interface MonthlyReviewWithTypedFields extends Omit<MonthlyReview, 'perce
         progressRatio: number;
         evidenceRatio: number;
     };
+}
+
+/**
+ * YearlyReview with properly typed JSON fields
+ */
+export interface YearlyReviewWithTypedFields extends Omit<YearlyReview, 'wheelRatings' | 'wheelWins' | 'wheelGaps' | 'bigThreeWins'> {
+    wheelRatings: Record<string, number>;
+    wheelWins: Record<string, string>;
+    wheelGaps: Record<string, string>;
+    bigThreeWins: [string, string, string];
 }

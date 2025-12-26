@@ -123,3 +123,21 @@ export const MonthlyReviewFormSchema = z.object({
     oneChange: z.string().optional(),
 });
 export type MonthlyReviewFormData = z.infer<typeof MonthlyReviewFormSchema>;
+
+// Yearly Review - re-export from dedicated file
+export {
+    YearlyReviewFormSchema,
+    CompleteYearlyReviewSchema,
+    WheelRatingsSchema,
+    WheelAuditSchema,
+    BigThreeWinsSchema,
+    LIFE_DIMENSIONS,
+    DIMENSION_LABELS,
+    YearlyReviewStatus,
+    type YearlyReviewFormData,
+    type CompleteYearlyReviewData,
+    type WheelRatings,
+    type WheelAudit,
+    type BigThreeWins,
+    type LifeDimension,
+} from "./validators/yearly-review";

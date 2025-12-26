@@ -126,6 +126,37 @@ export const monthlyReview = pgTable('monthlyReview', {
     createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 
+// YEARLY_REVIEW
+export const yearlyReview = pgTable('yearlyReview', {
+    id: text('id').primaryKey(),
+    userId: text('userId').notNull().references(() => user.id),
+    year: integer('year').notNull(), // 2025, 2026, etc.
+    status: text('status').notNull().default('draft'), // 'draft' | 'completed'
+    currentStep: integer('currentStep').notNull().default(1), // 1-6
+    
+    // Step 2: Wheel ratings
+    wheelRatings: json('wheelRatings'), // {health: 4, training: 3, ...}
+    
+    // Step 3: What's working (wins per dimension)
+    wheelWins: json('wheelWins'), // {health: "text...", training: "text...", ...}
+    
+    // Step 4: What's missing (gaps per dimension)
+    wheelGaps: json('wheelGaps'), // {health: "text...", training: "text...", ...}
+    
+    // Step 5: Big Three
+    bigThreeWins: json('bigThreeWins'), // ["win1", "win2", "win3"]
+    damnGoodDecision: text('damnGoodDecision'),
+    
+    // Step 6: Generated summary
+    generatedNarrative: text('generatedNarrative'),
+    
+    completedAt: timestamp('completedAt'),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+}, (table) => ({
+    uniqueUserYear: uniqueIndex('yearlyReview_userId_year_idx').on(table.userId, table.year),
+}));
+
 // AUDIT_LOG
 export const auditLog = pgTable('auditLog', {
     id: text('id').primaryKey(),
