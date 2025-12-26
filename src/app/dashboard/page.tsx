@@ -12,7 +12,8 @@ import {
   History,
   TrendingUp,
   Clock,
-  Calendar
+  Calendar,
+  FileText
 } from 'lucide-react';
 import { format, subDays, isSameDay, getISOWeek, differenceInDays } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
     redirect("/dashboard/sprint");
   }
 
-  const { activeSprint, todayLog, recentLogs, todayStatus, daysLeft } = dashboardData;
+  const { activeSprint, todayLog, recentLogs, todayStatus, daysLeft, completedYearlyReview } = dashboardData;
   const sprintWithPriorities = toSprintWithPriorities(activeSprint);
   const priorities = sprintWithPriorities.priorities;
   
@@ -253,11 +254,39 @@ export default async function DashboardPage() {
               </Link>
             </div>
 
-            {/* 3. Bottom Action: Adjust Plan */}
+            {/* 3. Review Action */}
+            {!completedYearlyReview ? (
+              <Link href="/review" className="block">
+                <Button
+                  variant="violet"
+                  className="w-full h-14 rounded-2xl font-mono text-[10px] uppercase tracking-widest"
+                >
+                  <span className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Start 2025 Review
+                  </span>
+                </Button>
+              </Link>
+            ) : (
+              <Link href={`/review/${completedYearlyReview.year}`} className="block">
+                <Button
+                  variant="outline"
+                  className="w-full h-14 rounded-2xl border-white/5 bg-black/40 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02] hover:border-white/10 font-mono text-[10px] uppercase tracking-widest"
+                >
+                  <span className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    View {completedYearlyReview.year} Review
+                  </span>
+                </Button>
+              </Link>
+            )}
+
+            {/* 4. Bottom Action: Adjust Plan */}
             <Link href="/dashboard/identity" className="block">
               <Button
                 variant="outline"
                 className="w-full h-14 rounded-2xl border-white/5 bg-black/40 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02] hover:border-white/10 font-mono text-[10px] uppercase tracking-widest"
+                disabled={!completedYearlyReview}
               >
                 <span className="flex items-center gap-2">
                   <Target className="h-4 w-4" />

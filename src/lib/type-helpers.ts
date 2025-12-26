@@ -4,9 +4,9 @@
  * These functions help convert database JSON fields to properly typed objects.
  */
 
-import type { Sprint, DailyLog, Planning, WeeklyReview, MonthlyReview } from '@/lib/types';
+import type { Sprint, DailyLog, Planning, WeeklyReview, MonthlyReview, YearlyReview } from '@/lib/types';
 import type { SprintPriority, DailyPriorityLog, ProofOfWork, Goal, WheelOfLife } from '@/lib/validators';
-import type { SprintWithPriorities, DailyLogWithTypedFields, PlanningWithTypedFields, WeeklyReviewWithTypedFields, MonthlyReviewWithTypedFields } from '@/lib/types';
+import type { SprintWithPriorities, DailyLogWithTypedFields, PlanningWithTypedFields, WeeklyReviewWithTypedFields, MonthlyReviewWithTypedFields, YearlyReviewWithTypedFields } from '@/lib/types';
 
 /**
  * Safely parses sprint priorities from JSON field.
@@ -259,6 +259,106 @@ export function toMonthlyReviewWithTypedFields(review: MonthlyReview): MonthlyRe
         ...review,
         perceivedProgress: parsePerceivedProgress(review),
         actualProgress: parseActualProgress(review),
+    };
+}
+
+/**
+ * Safely parses yearly review wheel ratings from JSON field.
+ */
+export function parseWheelRatings(review: YearlyReview): Record<string, number> {
+    if (!review.wheelRatings) return {};
+    
+    if (typeof review.wheelRatings === 'object' && !Array.isArray(review.wheelRatings)) {
+        return review.wheelRatings as Record<string, number>;
+    }
+    
+    if (typeof review.wheelRatings === 'string') {
+        try {
+            return JSON.parse(review.wheelRatings) as Record<string, number>;
+        } catch {
+            return {};
+        }
+    }
+    
+    return {};
+}
+
+/**
+ * Safely parses yearly review wheel wins from JSON field.
+ */
+export function parseWheelWins(review: YearlyReview): Record<string, string> {
+    if (!review.wheelWins) return {};
+    
+    if (typeof review.wheelWins === 'object' && !Array.isArray(review.wheelWins)) {
+        return review.wheelWins as Record<string, string>;
+    }
+    
+    if (typeof review.wheelWins === 'string') {
+        try {
+            return JSON.parse(review.wheelWins) as Record<string, string>;
+        } catch {
+            return {};
+        }
+    }
+    
+    return {};
+}
+
+/**
+ * Safely parses yearly review wheel gaps from JSON field.
+ */
+export function parseWheelGaps(review: YearlyReview): Record<string, string> {
+    if (!review.wheelGaps) return {};
+    
+    if (typeof review.wheelGaps === 'object' && !Array.isArray(review.wheelGaps)) {
+        return review.wheelGaps as Record<string, string>;
+    }
+    
+    if (typeof review.wheelGaps === 'string') {
+        try {
+            return JSON.parse(review.wheelGaps) as Record<string, string>;
+        } catch {
+            return {};
+        }
+    }
+    
+    return {};
+}
+
+/**
+ * Safely parses yearly review big three wins from JSON field.
+ */
+export function parseBigThreeWins(review: YearlyReview): [string, string, string] {
+    if (!review.bigThreeWins) return ["", "", ""];
+    
+    if (Array.isArray(review.bigThreeWins) && review.bigThreeWins.length === 3) {
+        return review.bigThreeWins as [string, string, string];
+    }
+    
+    if (typeof review.bigThreeWins === 'string') {
+        try {
+            const parsed = JSON.parse(review.bigThreeWins);
+            if (Array.isArray(parsed) && parsed.length === 3) {
+                return parsed as [string, string, string];
+            }
+        } catch {
+            return ["", "", ""];
+        }
+    }
+    
+    return ["", "", ""];
+}
+
+/**
+ * Converts a YearlyReview to YearlyReviewWithTypedFields with typed JSON fields.
+ */
+export function toYearlyReviewWithTypedFields(review: YearlyReview): YearlyReviewWithTypedFields {
+    return {
+        ...review,
+        wheelRatings: parseWheelRatings(review),
+        wheelWins: parseWheelWins(review),
+        wheelGaps: parseWheelGaps(review),
+        bigThreeWins: parseBigThreeWins(review),
     };
 }
 

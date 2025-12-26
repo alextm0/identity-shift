@@ -3,6 +3,7 @@ import { getActiveSprint, getSprints } from "@/data-access/sprints";
 import { getDailyLogByDate, getDailyLogs, getTodayLogBySprintId } from "@/data-access/daily-logs";
 import { getPlanningByUserId } from "@/data-access/planning";
 import { getWeeklyReviews, getMonthlyReviews } from "@/data-access/reviews";
+import { getCompletedYearlyReview } from "@/data-access/yearly-reviews";
 import { differenceInDays } from "date-fns";
 
 /**
@@ -29,6 +30,13 @@ export async function getDashboardData() {
     // Create a single promise for active sprint to avoid duplicate DB calls
     const activeSprintPromise = getActiveSprint(userId);
 
+    // Review year: Review the previous year (e.g., in Jan 2026, review 2025)
+    // For now, default to 2025 as specified in the requirements
+    const currentDate = new Date();
+    const CURRENT_YEAR = currentDate.getMonth() === 0 && currentDate.getDate() <= 5
+        ? currentDate.getFullYear() - 1
+        : 2025;
+
     // Fetch all dashboard data in parallel for better performance
     const [
         planning,
@@ -38,6 +46,7 @@ export async function getDashboardData() {
         recentLogs,
         weeklyReviews,
         monthlyReviews,
+        completedYearlyReview,
     ] = await Promise.all([
         getPlanningByUserId(userId),
         activeSprintPromise,
@@ -51,6 +60,7 @@ export async function getDashboardData() {
         getDailyLogs(userId, 7), // Last 7 days
         getWeeklyReviews(userId).then(reviews => reviews.slice(0, 1)), // Latest weekly review
         getMonthlyReviews(userId).then(reviews => reviews.slice(0, 1)), // Latest monthly review
+        getCompletedYearlyReview(userId, CURRENT_YEAR).catch(() => undefined), // Check for completed review (don't fail if table doesn't exist yet)
     ]);
 
     // Calculate days left for active sprint
@@ -73,6 +83,7 @@ export async function getDashboardData() {
         recentLogs,
         latestWeeklyReview: weeklyReviews[0] || null,
         latestMonthlyReview: monthlyReviews[0] || null,
+        completedYearlyReview,
         daysLeft,
         todayStatus,
         userId,

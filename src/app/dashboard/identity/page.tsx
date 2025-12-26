@@ -1,8 +1,15 @@
+import { redirect } from "next/navigation";
 import { getDashboardData } from '@/queries/dashboard';
 import { PlanningForm } from '@/components/planning/planning-form';
 
 export default async function IdentityPage() {
   const dashboardData = await getDashboardData();
+
+  // Gate: Require completed yearly review before accessing planning
+  const CURRENT_YEAR = new Date().getFullYear() - 1; // 2025 for now
+  if (!dashboardData.completedYearlyReview) {
+    redirect("/review");
+  }
 
   return (
     <>

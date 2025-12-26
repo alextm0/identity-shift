@@ -47,6 +47,8 @@ export const config = {
         "/sprints/:path*",
         "/planning",
         "/planning/:path*",
+        "/review",
+        "/review/:path*",
         // Add more protected areas here as needed
     ],
 };
