@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OneChangeOption, SprintPriorityType, DesiredIdentityStatus } from "@/lib/enums";
 
 // --- Validations for JSON columns ---
 
@@ -17,7 +18,7 @@ export const WheelOfLifeSchema = z.record(z.string(), z.number().min(1).max(10))
 export type WheelOfLife = z.infer<typeof WheelOfLifeSchema>;
 
 // Sprint: Priorities
-export const SprintPriorityTypeSchema = z.enum(["habit", "work"]);
+export const SprintPriorityTypeSchema = z.nativeEnum(SprintPriorityType);
 export type SprintPriorityType = z.infer<typeof SprintPriorityTypeSchema>;
 
 export const SprintPrioritySchema = z.object({
@@ -66,7 +67,17 @@ export const SprintFormSchema = z.object({
     priorities: z.array(SprintPrioritySchema)
         .min(1, "At least one priority is required")
         .max(3, "Focus on no more than 3 priorities per sprint"),
-});
+}).refine(
+    (data) => {
+        // Ensure endDate is after startDate
+        if (!data.startDate || !data.endDate) return true; // Let individual field validation handle missing dates
+        return data.endDate > data.startDate;
+    },
+    {
+        message: "End date must be after start date",
+        path: ["endDate"], // Target the endDate field
+    }
+);
 export type SprintFormData = z.infer<typeof SprintFormSchema>;
 
 // Daily Log Form
@@ -84,3 +95,31 @@ export const DailyLogFormSchema = z.object({
     note: z.string().optional(),
 });
 export type DailyLogFormData = z.infer<typeof DailyLogFormSchema>;
+
+// Weekly Review Form
+export const WeeklyReviewFormSchema = z.object({
+    sprintId: z.string().uuid(),
+    weekEndDate: z.date(),
+    progressRatios: z.record(z.string(), z.number().min(0).max(1)), // {priorityKey: ratio}
+    evidenceRatio: z.number().min(0).max(100),
+    antiBullshitScore: z.number().min(0).max(100),
+    alerts: z.array(z.string()),
+    oneChange: z.nativeEnum(OneChangeOption),
+    changeReason: z.string().optional(),
+});
+export type WeeklyReviewFormData = z.infer<typeof WeeklyReviewFormSchema>;
+
+// Monthly Review Form
+export const MonthlyReviewFormSchema = z.object({
+    sprintId: z.string().uuid(),
+    month: z.string().regex(/^\d{4}-\d{2}$/), // YYYY-MM format
+    whoWereYou: z.string().optional(),
+    desiredIdentity: z.nativeEnum(DesiredIdentityStatus).optional(),
+    perceivedProgress: z.record(z.string(), z.number().min(1).max(10)), // {priorityKey: 1-10}
+    actualProgress: z.object({
+        progressRatio: z.number().min(0).max(1),
+        evidenceRatio: z.number().min(0).max(100),
+    }),
+    oneChange: z.string().optional(),
+});
+export type MonthlyReviewFormData = z.infer<typeof MonthlyReviewFormSchema>;

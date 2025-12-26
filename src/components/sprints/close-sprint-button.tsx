@@ -26,6 +26,7 @@ export function CloseSprintButton({ sprintId }: CloseSprintButtonProps) {
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to close sprint");
+    } finally {
       setIsPending(false);
     }
   }
@@ -58,6 +59,7 @@ export function CloseSprintButton({ sprintId }: CloseSprintButtonProps) {
         cancelText="Cancel"
         onConfirm={handleClose}
         variant="destructive"
+        isLoading={isPending}
       />
     </>
   );

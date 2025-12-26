@@ -3,6 +3,13 @@ import { Fingerprint, Shield } from 'lucide-react';
 
 export const dynamicParams = false;
 
+export async function generateStaticParams() {
+    return [
+        { path: 'sign-in' },
+        { path: 'sign-up' }
+    ];
+}
+
 export default async function AuthPage({
     params
 }: {

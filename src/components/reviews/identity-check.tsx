@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { DesiredIdentityStatus } from "@/lib/enums";
 import { User, CheckCircle2, HelpCircle, XCircle } from "lucide-react";
 
 interface IdentityCheckProps {
@@ -9,9 +10,9 @@ interface IdentityCheckProps {
 }
 
 const OPTIONS = [
-  { id: 'yes', label: 'Aligned', icon: CheckCircle2, color: 'text-action-emerald' },
-  { id: 'partially', label: 'Partially', icon: HelpCircle, color: 'text-motion-amber' },
-  { id: 'no', label: 'Misaligned', icon: XCircle, color: 'text-bullshit-crimson' },
+  { id: DesiredIdentityStatus.YES, label: 'Aligned', icon: CheckCircle2, color: 'text-action-emerald' },
+  { id: DesiredIdentityStatus.PARTIALLY, label: 'Partially', icon: HelpCircle, color: 'text-motion-amber' },
+  { id: DesiredIdentityStatus.NO, label: 'Misaligned', icon: XCircle, color: 'text-bullshit-crimson' },
 ];
 
 export function IdentityCheck({ value, onChange }: IdentityCheckProps) {

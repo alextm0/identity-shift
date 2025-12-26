@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Edit2, Calendar, Zap, Trophy, Flame } from "lucide-react";
 import { DailyLog, Sprint } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { getTotalUnits } from "@/lib/type-helpers";
 import { DailyLogEditModal } from "./daily-log-edit-modal";
 
 interface WeeklyEntriesTableProps {
@@ -32,11 +33,6 @@ export function WeeklyEntriesTable({ weeklyLogs, activeSprint }: WeeklyEntriesTa
     date.setHours(0, 0, 0, 0);
     return date;
   }).reverse();
-
-  const getTotalUnits = (log: DailyLog) => {
-    const priorities = log.priorities as any;
-    return Object.values(priorities).reduce((sum: number, p: any) => sum + (p.units || 0), 0);
-  };
 
   return (
     <>

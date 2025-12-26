@@ -27,23 +27,52 @@ async function ensureUserExists(authUser: { id: string; name?: string | null; em
         }
 
         // User doesn't exist, create them
+        // Validate email before attempting creation
+        if (!authUser.email || authUser.email.trim() === '') {
+            throw new Error(`Cannot create user ${authUser.id}: email is required but was missing or empty`);
+        }
+
         // Wrap in try-catch to handle race conditions where another request might create the user simultaneously
         try {
             await db.insert(user)
                 .values({
                     id: authUser.id,
                     name: authUser.name || authUser.email || 'User',
-                    email: authUser.email || '',
+                    email: authUser.email,
                     emailVerified: authUser.emailVerified ?? false,
                     image: authUser.image || null,
                 });
         } catch (insertError: any) {
-            // If insert fails due to unique constraint (race condition), that's okay
-            // The user was created by another concurrent request
-            if (insertError?.code === '23505' || insertError?.code === '23503') {
-                // Unique constraint violation or foreign key violation - user likely exists now
+            // Check if this is a legitimate race condition (user created by concurrent request)
+            // vs. a constraint violation from invalid data (empty string, etc.)
+            if (insertError?.code === '23505') {
+                // Unique constraint violation - could be race condition or invalid data
+                // Verify the user actually exists now (legitimate race condition)
+                const verifyUser = await db.select()
+                    .from(user)
+                    .where(eq(user.id, authUser.id))
+                    .limit(1);
+                
+                if (verifyUser.length > 0) {
+                    // User exists now - this was a legitimate race condition
+                    return;
+                }
+                
+                // User doesn't exist - this is likely an invalid data constraint violation
+                // Log and propagate the error so it can be retried or handled appropriately
+                console.error(`Failed to create user ${authUser.id} due to unique constraint violation:`, {
+                    error: insertError,
+                    email: authUser.email,
+                    message: 'This may indicate duplicate email or empty string insertion attempt'
+                });
+                throw insertError;
+            }
+            
+            if (insertError?.code === '23503') {
+                // Foreign key violation - user likely exists now (race condition)
                 return;
             }
+            
             // Re-throw other errors
             throw insertError;
         }

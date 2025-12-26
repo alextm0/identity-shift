@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SprintFormSchema, type SprintFormData } from "@/lib/validators";
+import { SprintPriorityType } from "@/lib/enums";
 import { startSprintAction, updateSprintAction, deleteSprintAction } from "@/actions/sprints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +54,7 @@ export function SprintForm({ activeSprint, sprintToEdit, onSuccess }: SprintForm
       startDate: new Date(),
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days later
       priorities: [
-        { key: "p1", label: "", type: "work", weeklyTargetUnits: 5, unitDefinition: "Pomodoros" }
+        { key: "p1", label: "", type: SprintPriorityType.WORK, weeklyTargetUnits: 5, unitDefinition: "Pomodoros" }
       ],
     },
   });
@@ -187,7 +188,7 @@ export function SprintForm({ activeSprint, sprintToEdit, onSuccess }: SprintForm
                 size="sm"
                 onClick={() => {
                   if (fields.length < 3) {
-                    append({ key: `p${fields.length + 1}`, label: "", type: "work", weeklyTargetUnits: 5, unitDefinition: "" });
+                    append({ key: `p${fields.length + 1}`, label: "", type: SprintPriorityType.WORK, weeklyTargetUnits: 5, unitDefinition: "" });
                   } else {
                     triggerShake();
                     toast.error("Constraint Violation: Focus is limited to 3 priorities.");

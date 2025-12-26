@@ -5,6 +5,8 @@
  * a more robust solution like Upstash Redis or similar.
  */
 
+import { RateLimitError } from "@/lib/errors";
+
 interface RateLimitEntry {
     count: number;
     resetAt: number;
@@ -92,7 +94,7 @@ export function enforceRateLimit(
     
     if (!result.allowed) {
         const resetIn = Math.ceil((result.resetAt - Date.now()) / 1000);
-        throw new Error(
+        throw new RateLimitError(
             `Rate limit exceeded. Please try again in ${resetIn} seconds.`
         );
     }

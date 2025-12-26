@@ -13,155 +13,187 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { getRequiredSession } from "@/lib/auth/server";
 import { createWeeklyReview, createMonthlyReview, getWeeklyReviewById, getMonthlyReviewById, updateWeeklyReview, updateMonthlyReview } from "@/data-access/reviews";
 import { getSprintById } from "@/data-access/sprints";
 import { sanitizeText } from "@/lib/sanitize";
-import { enforceRateLimit } from "@/lib/rate-limit";
 import { randomUUID } from "crypto";
+import { WeeklyReviewFormSchema, MonthlyReviewFormSchema } from "@/lib/validators";
+import { NotFoundError } from "@/lib/errors";
+import { ActionResult, success } from "@/lib/actions/result";
+import { withAuth, withValidation, withErrorHandling } from "@/lib/actions/middleware";
 
-// Weekly Review Form Schema
-const WeeklyReviewFormSchema = z.object({
-    sprintId: z.string().uuid(),
-    weekEndDate: z.date(),
-    progressRatios: z.record(z.string(), z.number().min(0).max(1)), // {priorityKey: ratio}
-    evidenceRatio: z.number().min(0).max(100),
-    antiBullshitScore: z.number().min(0).max(100),
-    alerts: z.array(z.string()),
-    oneChange: z.enum(['CUT_SCOPE', 'ADD_RECOVERY', 'FIX_MORNING', 'REMOVE_DISTRACTION', 'KEEP_SAME']),
-    changeReason: z.string().optional(),
-});
+export async function createWeeklyReviewAction(formData: unknown): Promise<ActionResult<{ id: string }>> {
+    const wrappedAction = withErrorHandling(
+        withValidation(
+            WeeklyReviewFormSchema,
+            withAuth(
+                async (userId, validated) => {
+                    // Verify sprint ownership - check if sprint belongs to user
+                    const sprint = await getSprintById(validated.sprintId, userId);
+                    if (!sprint) {
+                        throw new NotFoundError("Sprint not found or you don't have access to it");
+                    }
 
-// Monthly Review Form Schema
-const MonthlyReviewFormSchema = z.object({
-    sprintId: z.string().uuid(),
-    month: z.string().regex(/^\d{4}-\d{2}$/), // YYYY-MM format
-    whoWereYou: z.string().optional(),
-    desiredIdentity: z.enum(['yes', 'partially', 'no']).optional(),
-    perceivedProgress: z.record(z.string(), z.number().min(1).max(10)), // {priorityKey: 1-10}
-    actualProgress: z.object({
-        progressRatio: z.number().min(0).max(1),
-        evidenceRatio: z.number().min(0).max(100),
-    }),
-    oneChange: z.string().optional(),
-});
+                    // Sanitize text inputs
+                    const sanitizedAlerts = validated.alerts.map(alert => sanitizeText(alert, 500));
 
-export async function createWeeklyReviewAction(formData: unknown) {
-    try {
-        const session = await getRequiredSession();
-        
-        // Rate limit: 5 reviews per hour per user
-        enforceRateLimit(`create-weekly-review:${session.user.id}`, 5, 3600000);
-        
-        const validated = WeeklyReviewFormSchema.parse(formData);
+                    const reviewId = randomUUID();
+                    await createWeeklyReview({
+                        id: reviewId,
+                        userId,
+                        sprintId: validated.sprintId,
+                        weekEndDate: validated.weekEndDate,
+                        progressRatios: validated.progressRatios,
+                        evidenceRatio: validated.evidenceRatio,
+                        antiBullshitScore: validated.antiBullshitScore,
+                        alerts: sanitizedAlerts,
+                        oneChange: validated.oneChange,
+                        changeReason: validated.changeReason ? sanitizeText(validated.changeReason, 2000) : null,
+                        createdAt: new Date(),
+                    });
 
-        // Ensure oneChange is provided
-        if (!validated.oneChange) {
-            throw new Error("One change selection is required");
-        }
-
-        // Verify sprint ownership - check if sprint belongs to user
-        const sprint = await getSprintById(validated.sprintId, session.user.id);
-        if (!sprint) {
-            throw new Error("Sprint not found or you don't have access to it");
-        }
-
-        // Sanitize text inputs
-        const sanitizedAlerts = validated.alerts.map(alert => sanitizeText(alert, 500));
-
-        await createWeeklyReview({
-            id: randomUUID(),
-            userId: session.user.id,
-            sprintId: validated.sprintId,
-            weekEndDate: validated.weekEndDate,
-            progressRatios: validated.progressRatios,
-            evidenceRatio: validated.evidenceRatio,
-            antiBullshitScore: validated.antiBullshitScore,
-            alerts: sanitizedAlerts,
-            oneChange: validated.oneChange,
-            changeReason: validated.changeReason ? sanitizeText(validated.changeReason, 2000) : null,
-            createdAt: new Date(),
-        });
-
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/weekly");
-        
-        return { success: true, message: "Weekly review saved successfully" };
-    } catch (error) {
-        console.error("Error in createWeeklyReviewAction:", error);
-        if (error instanceof Error) {
-            throw error;
-        }
-        throw new Error("Failed to save weekly review. Please try again.");
-    }
+                    revalidatePath("/dashboard");
+                    revalidatePath("/dashboard/weekly");
+                    
+                    return success(
+                        { id: reviewId },
+                        { 
+                            message: "Weekly review saved successfully",
+                            redirect: "weekly"
+                        }
+                    );
+                },
+                {
+                    rateLimit: { key: 'create-weekly-review', limit: 5, windowMs: 3600000 }
+                }
+            )
+        ),
+        "Failed to save weekly review. Please try again."
+    );
+    
+    return await wrappedAction(formData);
 }
 
-export async function updateWeeklyReviewAction(reviewId: string, formData: unknown) {
-    const session = await getRequiredSession();
+export async function updateWeeklyReviewAction(reviewId: string, formData: unknown): Promise<ActionResult<{ id: string }>> {
+    const wrappedAction = withErrorHandling(
+        withValidation(
+            WeeklyReviewFormSchema.partial(),
+            withAuth(
+                async (userId, validated) => {
+                    // Verify ownership
+                    const review = await getWeeklyReviewById(reviewId, userId);
+                    if (!review) {
+                        throw new NotFoundError("Weekly review not found");
+                    }
+
+                    await updateWeeklyReview(reviewId, userId, validated);
+
+                    revalidatePath("/dashboard");
+                    revalidatePath("/reviews");
+                    revalidatePath("/reviews/weekly");
+                    
+                    return success(
+                        { id: reviewId },
+                        { 
+                            message: "Weekly review updated successfully",
+                            redirect: "weekly"
+                        }
+                    );
+                },
+                {
+                    rateLimit: { key: 'update-weekly-review', limit: 5, windowMs: 3600000 }
+                }
+            )
+        ),
+        "Failed to update weekly review. Please try again."
+    );
     
-    // Verify ownership
-    const review = await getWeeklyReviewById(reviewId, session.user.id);
-    if (!review) {
-        throw new Error("Weekly review not found");
-    }
-
-    const validated = WeeklyReviewFormSchema.partial().parse(formData);
-
-    await updateWeeklyReview(reviewId, session.user.id, validated);
-
-    revalidatePath("/dashboard");
-    revalidatePath("/reviews");
-    revalidatePath("/reviews/weekly");
+    return await wrappedAction(formData);
 }
 
-export async function createMonthlyReviewAction(formData: unknown) {
-    const session = await getRequiredSession();
+export async function createMonthlyReviewAction(formData: unknown): Promise<ActionResult<{ id: string }>> {
+    const wrappedAction = withErrorHandling(
+        withValidation(
+            MonthlyReviewFormSchema,
+            withAuth(
+                async (userId, validated) => {
+                    // Verify sprint ownership - check if sprint belongs to user
+                    const sprint = await getSprintById(validated.sprintId, userId);
+                    if (!sprint) {
+                        throw new NotFoundError("Sprint not found or you don't have access to it");
+                    }
+
+                    const reviewId = randomUUID();
+                    await createMonthlyReview({
+                        id: reviewId,
+                        userId,
+                        sprintId: validated.sprintId,
+                        month: validated.month,
+                        whoWereYou: validated.whoWereYou ? sanitizeText(validated.whoWereYou, 5000) : null,
+                        desiredIdentity: validated.desiredIdentity ?? null,
+                        perceivedProgress: validated.perceivedProgress,
+                        actualProgress: validated.actualProgress,
+                        oneChange: validated.oneChange ? sanitizeText(validated.oneChange, 2000) : null,
+                        createdAt: new Date(),
+                    });
+
+                    revalidatePath("/dashboard");
+                    revalidatePath("/reviews");
+                    revalidatePath("/reviews/monthly");
+                    
+                    return success(
+                        { id: reviewId },
+                        { 
+                            message: "Monthly review saved successfully",
+                            redirect: "monthly"
+                        }
+                    );
+                },
+                {
+                    rateLimit: { key: 'create-monthly-review', limit: 2, windowMs: 3600000 }
+                }
+            )
+        ),
+        "Failed to save monthly review. Please try again."
+    );
     
-    // Rate limit: 2 reviews per hour per user
-    enforceRateLimit(`create-monthly-review:${session.user.id}`, 2, 3600000);
-    
-    const validated = MonthlyReviewFormSchema.parse(formData);
-
-    // Verify sprint ownership - check if sprint belongs to user
-    const sprint = await getSprintById(validated.sprintId, session.user.id);
-    if (!sprint) {
-        throw new Error("Sprint not found or you don't have access to it");
-    }
-
-    await createMonthlyReview({
-        id: randomUUID(),
-        userId: session.user.id,
-        sprintId: validated.sprintId,
-        month: validated.month,
-        whoWereYou: validated.whoWereYou ? sanitizeText(validated.whoWereYou, 5000) : null,
-        desiredIdentity: validated.desiredIdentity ?? null,
-        perceivedProgress: validated.perceivedProgress,
-        actualProgress: validated.actualProgress,
-        oneChange: validated.oneChange ? sanitizeText(validated.oneChange, 2000) : null,
-        createdAt: new Date(),
-    });
-
-    revalidatePath("/dashboard");
-    revalidatePath("/reviews");
-    revalidatePath("/reviews/monthly");
+    return await wrappedAction(formData);
 }
 
-export async function updateMonthlyReviewAction(reviewId: string, formData: unknown) {
-    const session = await getRequiredSession();
+export async function updateMonthlyReviewAction(reviewId: string, formData: unknown): Promise<ActionResult<{ id: string }>> {
+    const wrappedAction = withErrorHandling(
+        withValidation(
+            MonthlyReviewFormSchema.partial(),
+            withAuth(
+                async (userId, validated) => {
+                    // Verify ownership
+                    const review = await getMonthlyReviewById(reviewId, userId);
+                    if (!review) {
+                        throw new NotFoundError("Monthly review not found");
+                    }
+
+                    await updateMonthlyReview(reviewId, userId, validated);
+
+                    revalidatePath("/dashboard");
+                    revalidatePath("/reviews");
+                    revalidatePath("/reviews/monthly");
+                    
+                    return success(
+                        { id: reviewId },
+                        { 
+                            message: "Monthly review updated successfully",
+                            redirect: "monthly"
+                        }
+                    );
+                },
+                {
+                    rateLimit: { key: 'update-monthly-review', limit: 5, windowMs: 3600000 }
+                }
+            )
+        ),
+        "Failed to update monthly review. Please try again."
+    );
     
-    // Verify ownership
-    const review = await getMonthlyReviewById(reviewId, session.user.id);
-    if (!review) {
-        throw new Error("Monthly review not found");
-    }
-
-    const validated = MonthlyReviewFormSchema.partial().parse(formData);
-
-    await updateMonthlyReview(reviewId, session.user.id, validated);
-
-    revalidatePath("/dashboard");
-    revalidatePath("/reviews");
-    revalidatePath("/reviews/monthly");
+    return await wrappedAction(formData);
 }
 

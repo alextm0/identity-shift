@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Save, Loader2, Sparkles, Target, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DailyLog, Sprint } from "@/lib/types";
+import { DesiredIdentityStatus } from "@/lib/enums";
 
 interface MonthlyReviewPanelProps {
   activeSprint: Sprint;
@@ -24,7 +25,7 @@ interface MonthlyReviewPanelProps {
 export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latestReview }: MonthlyReviewPanelProps) {
   const [isPending, setIsPending] = useState(false);
   const [whoWereYou, setWhoWereYou] = useState("");
-  const [desiredIdentity, setDesiredIdentity] = useState("partially");
+  const [desiredIdentity, setDesiredIdentity] = useState(DesiredIdentityStatus.PARTIALLY);
   const [oneChange, setOneChange] = useState("");
 
   const priorities = (activeSprint.priorities as any[]) || [];
@@ -53,7 +54,9 @@ export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latest
   async function handleSaveReview() {
     setIsPending(true);
     try {
-      const avgActual = actualData.reduce((acc, d) => acc + d.actual, 0) / actualData.length;
+      const avgActual = actualData.length > 0
+        ? actualData.reduce((acc, d) => acc + d.actual, 0) / actualData.length
+        : 0;
 
       await createMonthlyReviewAction({
         sprintId: activeSprint.id,

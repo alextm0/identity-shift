@@ -13,144 +13,169 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { getRequiredSession } from "@/lib/auth/server";
 import { upsertDailyLog, getDailyLogById, deleteDailyLog, getTodayLogBySprintId } from "@/data-access/daily-logs";
 import { getActiveSprint } from "@/data-access/sprints";
 import { DailyLogFormSchema } from "@/lib/validators";
 import { sanitizeText, sanitizeUrl } from "@/lib/sanitize";
-import { enforceRateLimit } from "@/lib/rate-limit";
+import { NotFoundError, BusinessRuleError } from "@/lib/errors";
+import { ActionResult, success } from "@/lib/actions/result";
+import { withAuth, withValidation, withErrorHandling } from "@/lib/actions/middleware";
+import { normalizeDate } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
 
-export async function saveDailyLogAction(formData: unknown) {
-    try {
-        // Verify session - throws if not authenticated
-        const session = await getRequiredSession();
-        
-        // Rate limit: 20 requests per minute per user
-        enforceRateLimit(`daily-log:${session.user.id}`, 20, 60000);
-        
-        const validated = DailyLogFormSchema.parse(formData);
+export async function saveDailyLogAction(formData: unknown): Promise<ActionResult<{ id: string }>> {
+    const wrappedAction = withErrorHandling(
+        withValidation(
+            DailyLogFormSchema,
+            withAuth(
+                async (userId, validated) => {
+                    const activeSprint = await getActiveSprint(userId);
+                    if (!activeSprint) {
+                        throw new BusinessRuleError("No active sprint found. Start a sprint first.");
+                    }
 
-        const activeSprint = await getActiveSprint(session.user.id);
-        if (!activeSprint) {
-            throw new Error("No active sprint found. Start a sprint first.");
-        }
+                    // Check if log exists for today to update instead of create
+                    const today = normalizeDate(new Date(validated.date));
+                    const existingLog = await getTodayLogBySprintId(activeSprint.id, today);
 
-        // Check if log exists for today to update instead of create
-        const today = new Date(validated.date);
-        today.setHours(0, 0, 0, 0);
-        const existingLog = await getTodayLogBySprintId(activeSprint.id, today);
+                    // Sanitize text inputs
+                    const sanitizedProofOfWork = validated.proofOfWork.map(pow => ({
+                        ...pow,
+                        value: sanitizeText(pow.value, 5000),
+                        url: pow.url ? sanitizeUrl(pow.url) : undefined,
+                    }));
 
-        // Sanitize text inputs
-        const sanitizedProofOfWork = validated.proofOfWork.map(pow => ({
-            ...pow,
-            value: sanitizeText(pow.value, 5000),
-            url: pow.url ? sanitizeUrl(pow.url) : undefined,
-        }));
+                    const logId = existingLog?.id || randomUUID();
+                    await upsertDailyLog({
+                        id: logId,
+                        userId,
+                        sprintId: activeSprint.id,
+                        date: today,
+                        energy: validated.energy,
+                        sleepHours: validated.sleepHours ?? null,
+                        mainFocusCompleted: validated.mainFocusCompleted,
+                        morningGapMin: validated.morningGapMin ?? null,
+                        distractionMin: validated.distractionMin ?? null,
+                        priorities: validated.priorities,
+                        proofOfWork: sanitizedProofOfWork,
+                        win: validated.win ? sanitizeText(validated.win, 500) : null,
+                        drain: validated.drain ? sanitizeText(validated.drain, 500) : null,
+                        note: validated.note ? sanitizeText(validated.note, 2000) : null,
+                        createdAt: existingLog?.createdAt || new Date(),
+                        updatedAt: new Date(),
+                    });
 
-        await upsertDailyLog({
-            id: existingLog?.id || randomUUID(),
-            userId: session.user.id,
-            sprintId: activeSprint.id,
-            date: today,
-            energy: validated.energy,
-            sleepHours: validated.sleepHours ?? null,
-            mainFocusCompleted: validated.mainFocusCompleted,
-            morningGapMin: validated.morningGapMin ?? null,
-            distractionMin: validated.distractionMin ?? null,
-            priorities: validated.priorities,
-            proofOfWork: sanitizedProofOfWork,
-            win: validated.win ? sanitizeText(validated.win, 500) : null,
-            drain: validated.drain ? sanitizeText(validated.drain, 500) : null,
-            note: validated.note ? sanitizeText(validated.note, 2000) : null,
-            createdAt: existingLog?.createdAt || new Date(),
-            updatedAt: new Date(),
-        });
-
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/daily");
-        
-        return { success: true, message: "Daily log committed successfully" };
-    } catch (error) {
-        console.error("Error in saveDailyLogAction:", error);
-        if (error instanceof Error) {
-            throw error;
-        }
-        throw new Error("Failed to commit daily log. Please try again.");
-    }
+                    revalidatePath("/dashboard");
+                    revalidatePath("/dashboard/daily");
+                    
+                    return success(
+                        { id: logId },
+                        { 
+                            message: "Daily log committed successfully",
+                            redirect: "dashboard"
+                        }
+                    );
+                },
+                {
+                    rateLimit: { key: 'daily-log', limit: 20, windowMs: 60000 }
+                }
+            )
+        ),
+        "Failed to commit daily log. Please try again."
+    );
+    
+    return await wrappedAction(formData);
 }
 
-export async function deleteDailyLogAction(logId: string) {
-    const session = await getRequiredSession();
-    
-    // Rate limit: 10 deletions per minute per user
-    enforceRateLimit(`delete-log:${session.user.id}`, 10, 60000);
-    
-    // Verify ownership
-    const log = await getDailyLogById(logId, session.user.id);
-    if (!log) {
-        throw new Error("Daily log not found");
-    }
+export async function deleteDailyLogAction(logId: string): Promise<ActionResult<{ deleted: boolean }>> {
+    const wrappedAction = withErrorHandling(
+        withAuth(
+            async (userId) => {
+                // Verify ownership
+                const log = await getDailyLogById(logId, userId);
+                if (!log) {
+                    throw new NotFoundError("Daily log not found");
+                }
 
-    await deleteDailyLog(logId, session.user.id);
+                await deleteDailyLog(logId, userId);
 
-    revalidatePath("/dashboard");
-    revalidatePath("/daily");
-    revalidatePath("/dashboard/weekly");
+                revalidatePath("/dashboard");
+                revalidatePath("/daily");
+                revalidatePath("/dashboard/weekly");
+                
+                return success(
+                    { deleted: true },
+                    { message: "Daily log deleted successfully" }
+                );
+            },
+            {
+                rateLimit: { key: 'delete-log', limit: 10, windowMs: 60000 }
+            }
+        ),
+        "Failed to delete daily log. Please try again."
+    );
+    
+    return await wrappedAction();
 }
 
-export async function updateDailyLogByIdAction(logId: string, formData: unknown) {
-    try {
-        const session = await getRequiredSession();
-        
-        // Rate limit: 20 updates per minute per user
-        enforceRateLimit(`update-log:${session.user.id}`, 20, 60000);
-        
-        const validated = DailyLogFormSchema.parse(formData);
+export async function updateDailyLogByIdAction(logId: string, formData: unknown): Promise<ActionResult<{ id: string }>> {
+    const wrappedAction = withErrorHandling(
+        withValidation(
+            DailyLogFormSchema,
+            withAuth(
+                async (userId, validated) => {
+                    // Verify ownership
+                    const existingLog = await getDailyLogById(logId, userId);
+                    if (!existingLog) {
+                        throw new NotFoundError("Daily log not found");
+                    }
 
-        // Verify ownership
-        const existingLog = await getDailyLogById(logId, session.user.id);
-        if (!existingLog) {
-            throw new Error("Daily log not found");
-        }
+                    // Sanitize text inputs
+                    const sanitizedProofOfWork = validated.proofOfWork.map(pow => ({
+                        ...pow,
+                        value: sanitizeText(pow.value, 5000),
+                        url: pow.url ? sanitizeUrl(pow.url) : undefined,
+                    }));
 
-        // Sanitize text inputs
-        const sanitizedProofOfWork = validated.proofOfWork.map(pow => ({
-            ...pow,
-            value: sanitizeText(pow.value, 5000),
-            url: pow.url ? sanitizeUrl(pow.url) : undefined,
-        }));
+                    await upsertDailyLog({
+                        id: logId,
+                        userId,
+                        sprintId: existingLog.sprintId,
+                        date: normalizeDate(new Date(validated.date)),
+                        energy: validated.energy,
+                        sleepHours: validated.sleepHours ?? null,
+                        mainFocusCompleted: validated.mainFocusCompleted,
+                        morningGapMin: validated.morningGapMin ?? null,
+                        distractionMin: validated.distractionMin ?? null,
+                        priorities: validated.priorities,
+                        proofOfWork: sanitizedProofOfWork,
+                        win: validated.win ? sanitizeText(validated.win, 500) : null,
+                        drain: validated.drain ? sanitizeText(validated.drain, 500) : null,
+                        note: validated.note ? sanitizeText(validated.note, 2000) : null,
+                        createdAt: existingLog.createdAt,
+                        updatedAt: new Date(),
+                    });
 
-        await upsertDailyLog({
-            id: logId,
-            userId: session.user.id,
-            sprintId: existingLog.sprintId,
-            date: new Date(validated.date),
-            energy: validated.energy,
-            sleepHours: validated.sleepHours ?? null,
-            mainFocusCompleted: validated.mainFocusCompleted,
-            morningGapMin: validated.morningGapMin ?? null,
-            distractionMin: validated.distractionMin ?? null,
-            priorities: validated.priorities,
-            proofOfWork: sanitizedProofOfWork,
-            win: validated.win ? sanitizeText(validated.win, 500) : null,
-            drain: validated.drain ? sanitizeText(validated.drain, 500) : null,
-            note: validated.note ? sanitizeText(validated.note, 2000) : null,
-            createdAt: existingLog.createdAt,
-            updatedAt: new Date(),
-        });
-
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/daily");
-        revalidatePath("/dashboard/weekly");
-        
-        return { success: true, message: "Daily log updated successfully" };
-    } catch (error) {
-        console.error("Error in updateDailyLogByIdAction:", error);
-        if (error instanceof Error) {
-            throw error;
-        }
-        throw new Error("Failed to update daily log. Please try again.");
-    }
+                    revalidatePath("/dashboard");
+                    revalidatePath("/dashboard/daily");
+                    revalidatePath("/dashboard/weekly");
+                    
+                    return success(
+                        { id: logId },
+                        { 
+                            message: "Daily log updated successfully",
+                            redirect: "dashboard"
+                        }
+                    );
+                },
+                {
+                    rateLimit: { key: 'update-log', limit: 20, windowMs: 60000 }
+                }
+            )
+        ),
+        "Failed to update daily log. Please try again."
+    );
+    
+    return await wrappedAction(formData);
 }
 

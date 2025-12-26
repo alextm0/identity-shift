@@ -1,4 +1,5 @@
-import { DailyLog, Sprint } from "@/lib/types";
+import { DailyLog } from "@/lib/types";
+import { OneChangeOption } from "@/lib/enums";
 
 export function generateAlerts(logs: DailyLog[], summary: any) {
   const alerts: string[] = [];
@@ -18,7 +19,7 @@ export function generateAlerts(logs: DailyLog[], summary: any) {
 
   const missedTargets = Object.values(summary.prioritySummary).filter((p: any) => p.ratio < 0.5).length;
   if (missedTargets >= 2) {
-    alerts.push("SCOPE_OVERLOAD: Multiple priority targets missed by >50%. Recommended: CUT_SCOPE.");
+    alerts.push(`SCOPE_OVERLOAD: Multiple priority targets missed by >50%. Recommended: ${OneChangeOption.CUT_SCOPE}.`);
   }
 
   return alerts;

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface EnergySliderProps {
@@ -41,7 +40,7 @@ export function EnergySlider({ value, onChange }: EnergySliderProps) {
           value === 3 ? "bg-action-emerald/10 border-action-emerald/20 text-action-emerald" :
           "bg-focus-violet/10 border-focus-violet/20 text-focus-violet"
         )}>
-          {getLabel(value)} // 0{value}
+          {getLabel(value)}
         </span>
       </div>
 

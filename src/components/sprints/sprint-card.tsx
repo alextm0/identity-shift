@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Sprint } from "@/lib/types";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { Calendar, Target, CheckCircle2, Clock, Edit2, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -50,6 +50,12 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
       />
     );
   }
+
+  // Calculate days left, ensuring it's never negative for expired sprints
+  const endDate = new Date(sprint.endDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysLeft = Math.max(0, differenceInDays(endDate, today));
 
   return (
     <GlassPanel 
@@ -106,7 +112,7 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
            <div className="flex items-center gap-1.5">
               <Clock className="h-3 w-3" />
               <span className="text-[10px] font-mono uppercase tracking-tighter">
-                {Math.ceil((new Date(sprint.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))}d left
+                {daysLeft}d left
               </span>
            </div>
         </div>
@@ -144,6 +150,7 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
                 cancelText="Cancel"
                 onConfirm={handleDelete}
                 variant="destructive"
+                isLoading={isDeleting}
               />
             </>
           )}

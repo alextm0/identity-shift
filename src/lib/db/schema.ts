@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean, json } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, boolean, json, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // USER table (managed by Better Auth - defined here for foreign keys)
 export const user = pgTable('user', {
@@ -93,7 +93,9 @@ export const dailyLog = pgTable('dailyLog', {
     note: text('note'), // optional: general note
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-});
+}, (table) => ({
+    uniqueUserSprintDate: uniqueIndex('dailyLog_userId_sprintId_date_idx').on(table.userId, table.sprintId, table.date),
+}));
 
 // WEEKLY_REVIEW
 export const weeklyReview = pgTable('weeklyReview', {
@@ -121,5 +123,17 @@ export const monthlyReview = pgTable('monthlyReview', {
     perceivedProgress: json('perceivedProgress').notNull(), // JSON: {priorityKey: 1-10}
     actualProgress: json('actualProgress').notNull(), // JSON: {progressRatio, evidenceRatio}
     oneChange: text('oneChange'), // optional: next sprint change
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
+// AUDIT_LOG
+export const auditLog = pgTable('auditLog', {
+    id: text('id').primaryKey(),
+    userId: text('userId').notNull().references(() => user.id),
+    action: text('action').notNull(), // 'CREATE' | 'UPDATE' | 'DELETE'
+    entityType: text('entityType').notNull(), // 'dailyLog' | 'sprint' | 'planning' | 'weeklyReview' | 'monthlyReview'
+    entityId: text('entityId').notNull(), // ID of the affected entity
+    changes: json('changes'), // JSON: {field: {old, new}} - optional, for UPDATE actions
+    metadata: json('metadata'), // JSON: additional context (IP, user agent, etc.)
     createdAt: timestamp('createdAt').notNull().defaultNow(),
 });

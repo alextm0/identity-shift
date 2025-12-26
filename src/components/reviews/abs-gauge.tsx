@@ -64,7 +64,6 @@ export function ABSGauge({ value, label = "Anti-Bullshit Score", subLabel }: ABS
             strokeDashoffset={offset}
             strokeLinecap="round"
             className={cn("transition-all duration-1000 ease-out", getGlow())}
-            style={{ filter: value >= 80 ? 'drop-shadow(0 0 20px rgba(16,185,129,0.4))' : undefined }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

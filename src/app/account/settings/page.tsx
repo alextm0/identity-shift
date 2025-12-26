@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
 import { ExportDataButton } from "@/components/account/export-data-button";
+import { LogoutButton } from "@/components/account/logout-button";
 import { Download, User, Shield, Database } from "lucide-react";
 
 export default async function AccountSettingsPage() {
@@ -74,13 +75,21 @@ export default async function AccountSettingsPage() {
                             <Shield className="h-5 w-5 text-bullshit-crimson" />
                             <h2 className="text-xl font-bold text-white uppercase tracking-tight">Security</h2>
                         </div>
-                        <div className="space-y-4">
-                            <p className="text-white/60 text-sm">
-                                Your data is encrypted and stored securely. All actions require authentication.
-                            </p>
-                            <p className="text-white/40 text-xs font-mono">
-                                Last login: {new Date().toLocaleDateString()}
-                            </p>
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <p className="text-white/60 text-sm">
+                                    Your data is encrypted and stored securely. All actions require authentication.
+                                </p>
+                                <p className="text-white/40 text-xs font-mono">
+                                    Last login: {new Date().toLocaleDateString()}
+                                </p>
+                            </div>
+                            <div className="pt-4 border-t border-white/5">
+                                <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-4">
+                                    Session Management
+                                </p>
+                                <LogoutButton />
+                            </div>
                         </div>
                     </GlassPanel>
                 </div>

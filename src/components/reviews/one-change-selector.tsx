@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { OneChangeOption } from "@/lib/enums";
 import { 
   Scissors, 
   Battery, 
@@ -15,11 +16,11 @@ interface OneChangeSelectorProps {
 }
 
 const OPTIONS = [
-  { id: 'CUT_SCOPE', label: 'Cut Scope', icon: Scissors, desc: 'Reduce the number of priorities or targets.' },
-  { id: 'ADD_RECOVERY', label: 'Add Recovery', icon: Battery, desc: 'Prioritize sleep and rest to restore energy.' },
-  { id: 'FIX_MORNING', label: 'Fix Morning', icon: Sunrise, desc: 'Eliminate distraction in the first 2 hours.' },
-  { id: 'REMOVE_DISTRACTION', label: 'Purge Leaks', icon: ZapOff, desc: 'Identify and remove energy-draining apps/habits.' },
-  { id: 'KEEP_SAME', label: 'Hold Line', icon: RefreshCcw, desc: 'Maintenance phase. No changes required.' },
+  { id: OneChangeOption.CUT_SCOPE, label: 'Cut Scope', icon: Scissors, desc: 'Reduce the number of priorities or targets.' },
+  { id: OneChangeOption.ADD_RECOVERY, label: 'Add Recovery', icon: Battery, desc: 'Prioritize sleep and rest to restore energy.' },
+  { id: OneChangeOption.FIX_MORNING, label: 'Fix Morning', icon: Sunrise, desc: 'Eliminate distraction in the first 2 hours.' },
+  { id: OneChangeOption.REMOVE_DISTRACTION, label: 'Purge Leaks', icon: ZapOff, desc: 'Identify and remove energy-draining apps/habits.' },
+  { id: OneChangeOption.KEEP_SAME, label: 'Hold Line', icon: RefreshCcw, desc: 'Maintenance phase. No changes required.' },
 ];
 
 export function OneChangeSelector({ value, onChange }: OneChangeSelectorProps) {

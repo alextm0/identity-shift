@@ -35,11 +35,11 @@ export function DailyLogForm({ activeSprint, initialData }: DailyLogFormProps) {
     resolver: zodResolver(DailyLogFormSchema),
     defaultValues: {
       date: initialData?.date ? new Date(initialData.date) : new Date(),
-      energy: initialData?.energy || 3,
-      sleepHours: initialData?.sleepHours || 7,
-      mainFocusCompleted: initialData?.mainFocusCompleted || false,
-      morningGapMin: initialData?.morningGapMin || 0,
-      distractionMin: initialData?.distractionMin || 0,
+      energy: initialData?.energy ?? 3,
+      sleepHours: initialData?.sleepHours ?? 7,
+      mainFocusCompleted: initialData?.mainFocusCompleted ?? false,
+      morningGapMin: initialData?.morningGapMin ?? 0,
+      distractionMin: initialData?.distractionMin ?? 0,
       priorities: initialData?.priorities || priorities.reduce((acc, p) => ({
         ...acc,
         [p.key]: { done: false, units: 0 }

@@ -1,6 +1,5 @@
 'use client';
 
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, ShieldCheck, Activity, Target, Zap, Sparkles } from 'lucide-react';

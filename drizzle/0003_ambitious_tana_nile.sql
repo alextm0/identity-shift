@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "dailyLog_userId_sprintId_date_idx" ON "dailyLog" USING btree ("userId","sprintId","date");

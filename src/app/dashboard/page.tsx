@@ -14,7 +14,7 @@ import {
   Clock,
   Calendar
 } from 'lucide-react';
-import { format, subDays, isSameDay, getISOWeek } from 'date-fns';
+import { format, subDays, isSameDay, getISOWeek, differenceInDays } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { toSprintWithPriorities, toDailyLogWithTypedFields } from "@/lib/type-helpers";
 
@@ -28,9 +28,18 @@ export default async function DashboardPage() {
   const { activeSprint, todayLog, recentLogs, todayStatus, daysLeft } = dashboardData;
   const sprintWithPriorities = toSprintWithPriorities(activeSprint);
   const priorities = sprintWithPriorities.priorities;
-  const sprintDuration = 30;
-  const currentDay = 30 - (daysLeft || 0);
-  const sprintProgress = Math.min(100, (currentDay / sprintDuration) * 100);
+  
+  // Compute sprint duration from start and end dates
+  let sprintDuration = 30; // Default fallback
+  if (activeSprint?.startDate && activeSprint?.endDate) {
+    const startDate = new Date(activeSprint.startDate);
+    const endDate = new Date(activeSprint.endDate);
+    const computedDuration = differenceInDays(endDate, startDate);
+    sprintDuration = computedDuration > 0 ? computedDuration : 30; // Fallback to 30 if invalid
+  }
+  
+  const currentDay = sprintDuration - (daysLeft || 0);
+  const sprintProgress = sprintDuration > 0 ? Math.min(100, (currentDay / sprintDuration) * 100) : 0;
   const currentDate = new Date();
   const weekNumber = getISOWeek(currentDate);
 
@@ -89,7 +98,7 @@ export default async function DashboardPage() {
               <div className="space-y-2 mt-4 relative z-10">
                 <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider">
                   <span className="text-white/60">Day {currentDay}</span>
-                  <span className="text-white/20">Target 30</span>
+                  <span className="text-white/20">Target {sprintDuration}</span>
                 </div>
                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                   <div
@@ -199,24 +208,27 @@ export default async function DashboardPage() {
         <div className="space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <Layout className="h-4 w-4 text-white/40" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Actions</h3>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Quick Actions</h3>
           </div>
 
           <div className="space-y-4">
             {/* 1. Main Action: Log Today */}
-            <Link href="/dashboard/daily" className="block">
+            <Link href="/dashboard/daily" className="block group">
               <Button
                 className={cn(
-                  "w-full h-20 rounded-2xl font-mono uppercase tracking-widest text-xs transition-all duration-300",
+                  "w-full h-20 rounded-2xl font-mono uppercase tracking-widest text-xs transition-all duration-300 relative overflow-hidden",
                   todayStatus === 'completed'
                     ? "bg-white/5 text-white/40 border border-white/5 hover:bg-white/10"
                     : "bg-black/40 border border-action-emerald/20 text-action-emerald hover:bg-action-emerald/10 hover:border-action-emerald/40 shadow-[0_0_20px_rgba(16,185,129,0.05)] hover:shadow-[0_0_30px_rgba(16,185,129,0.1)]"
                 )}
               >
-                <span className="flex items-center gap-3">
+                <span className="flex items-center gap-3 relative z-10">
                   {todayStatus === 'completed' ? <CheckCircle2 className="h-5 w-5" /> : <Flame className="h-5 w-5" />}
                   {todayStatus === 'completed' ? 'Log Updated' : 'Execute Daily'}
                 </span>
+                {todayStatus !== 'completed' && (
+                  <span className="absolute inset-0 bg-action-emerald/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
               </Button>
             </Link>
 

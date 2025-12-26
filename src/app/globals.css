@@ -175,6 +175,9 @@ body {
 }
 
 /* Legacy support/Refactor targets */
+/* NOTE: glass-panel duplicates glass-pane styles above. Consider consolidating
+ * these classes in a future cleanup to reduce CSS maintenance burden. Both
+ * classes are currently identical and serve the same purpose. */
 .glass-panel {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(24px);

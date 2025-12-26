@@ -26,6 +26,9 @@ export async function getDashboardData() {
     const session = await getRequiredSession();
     const userId = session.user.id;
 
+    // Create a single promise for active sprint to avoid duplicate DB calls
+    const activeSprintPromise = getActiveSprint(userId);
+
     // Fetch all dashboard data in parallel for better performance
     const [
         planning,
@@ -37,15 +40,14 @@ export async function getDashboardData() {
         monthlyReviews,
     ] = await Promise.all([
         getPlanningByUserId(userId),
-        getActiveSprint(userId),
+        activeSprintPromise,
         getSprints(userId).then(sprints => sprints.slice(0, 3)), // Last 3 sprints
-        (async () => {
-            const activeSprint = await getActiveSprint(userId);
-            if (!activeSprint) return undefined;
+        activeSprintPromise.then(async (sprint) => {
+            if (!sprint) return undefined;
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            return await getTodayLogBySprintId(activeSprint.id, today);
-        })(),
+            return await getTodayLogBySprintId(sprint.id, today);
+        }),
         getDailyLogs(userId, 7), // Last 7 days
         getWeeklyReviews(userId).then(reviews => reviews.slice(0, 1)), // Latest weekly review
         getMonthlyReviews(userId).then(reviews => reviews.slice(0, 1)), // Latest monthly review

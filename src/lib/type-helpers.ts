@@ -262,3 +262,17 @@ export function toMonthlyReviewWithTypedFields(review: MonthlyReview): MonthlyRe
     };
 }
 
+/**
+ * Calculates the total units from a daily log's priorities.
+ * Returns 0 for missing/invalid logs or priorities.
+ */
+export function getTotalUnits(log: DailyLog | null | undefined): number {
+    if (!log) return 0;
+    
+    const priorities = parseDailyLogPriorities(log);
+    if (!priorities || typeof priorities !== 'object') return 0;
+    
+    const prioritiesRecord = priorities as Record<string, { units?: number }>;
+    return Object.values(prioritiesRecord).reduce((sum: number, p) => sum + (p?.units ?? 0), 0);
+}
+

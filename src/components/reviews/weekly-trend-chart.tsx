@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { DailyLog } from "@/lib/types";
+import { getTotalUnits } from "@/lib/type-helpers";
 
 interface WeeklyTrendChartProps {
   weeklyLogs: DailyLog[];
@@ -37,18 +38,12 @@ export function WeeklyTrendChart({ weeklyLogs }: WeeklyTrendChartProps) {
   const chartData = days.map(date => {
     const dateKey = format(date, "yyyy-MM-dd");
     const log = logsByDate.get(dateKey);
-    
-    const getTotalUnits = (log: DailyLog) => {
-      const priorities = log?.priorities as any;
-      if (!priorities) return 0;
-      return Object.values(priorities).reduce((sum: number, p: any) => sum + (p.units || 0), 0);
-    };
 
     return {
       date: format(date, "EEE"),
       fullDate: format(date, "MMM d"),
       energy: log?.energy || 0,
-      totalUnits: log ? getTotalUnits(log) : 0,
+      totalUnits: getTotalUnits(log),
     };
   });
 
