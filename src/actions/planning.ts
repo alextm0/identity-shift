@@ -13,65 +13,127 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { upsertPlanning } from "@/data-access/planning";
-import { PlanningFormSchema } from "@/lib/validators";
-import { sanitizeText } from "@/lib/sanitize";
+import { getOrCreatePlanning, updatePlanning, getPlanningById } from "@/data-access/planning";
+import { PlanningFormSchema, CompletePlanningSchema, type PlanningFormData, type CompletePlanningData, PlanningStatus } from "@/lib/validators";
 import { ActionResult, success } from "@/lib/actions/result";
-import { withAuth, withValidation, withErrorHandling } from "@/lib/actions/middleware";
-import { randomUUID } from "crypto";
+import { createActionWithParam, createActionWithoutValidation } from "@/lib/actions/middleware";
+import { NotFoundError } from "@/lib/errors";
 
-export async function savePlanningAction(formData: unknown): Promise<ActionResult<{ saved: boolean }>> {
-    const wrappedAction = withErrorHandling(
-        withValidation(
-            PlanningFormSchema,
-            withAuth(
-                async (userId, validated) => {
-                    // Sanitize text inputs
-                    const sanitizedGoals = validated.goals2026.map(goal => ({
-                        ...goal,
-                        area: sanitizeText(goal.area, 200),
-                        outcome: sanitizeText(goal.outcome, 500),
-                        why: sanitizeText(goal.why, 1000),
-                        deadline: goal.deadline ? sanitizeText(goal.deadline, 50) : undefined,
-                    }));
+/**
+ * Get or create planning for current user
+ */
+export const getOrCreatePlanningAction = createActionWithoutValidation(
+    async (userId) => {
+        const planning = await getOrCreatePlanning(userId);
 
-                    const data = {
-                        userId,
-                        currentSelf: sanitizeText(validated.currentSelf, 5000),
-                        desiredSelf: sanitizeText(validated.desiredSelf, 5000),
-                        goals2026: sanitizedGoals,
-                        wheelOfLife: validated.wheelOfLife,
-                        id: randomUUID(), // Only used for new. DAL handles upsert by userId.
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
-                    };
+        return success(
+            {
+                planningId: planning.id,
+                currentModule: planning.currentModule || 1,
+                currentStep: planning.currentStep || 1,
+                status: planning.status || 'draft',
+            },
+            { message: "Planning loaded successfully" }
+        );
+    },
+    {
+        rateLimit: { key: 'get-planning', limit: 10, windowMs: 60000 },
+        errorMessage: "Failed to load planning. Please try again."
+    }
+);
 
-                    await upsertPlanning(data);
+/**
+ * Save planning progress (auto-save)
+ */
+export const savePlanningProgressAction = createActionWithParam(
+    PlanningFormSchema.partial(),
+    async (userId, planningId: string, validated: Partial<PlanningFormData>) => {
+        // Verify ownership
+        const existing = await getPlanningById(planningId, userId);
+        if (!existing) {
+            throw new NotFoundError("Planning not found");
+        }
 
-                    revalidatePath("/planning");
-                    revalidatePath("/dashboard");
-                    revalidatePath("/dashboard/identity");
-                    
-                    return success(
-                        { saved: true },
-                        { 
-                            message: "Planning data saved successfully",
-                            redirect: "dashboard"
-                        }
-                    );
-                },
-                {
-                    rateLimit: { key: 'save-planning', limit: 10, windowMs: 60000 }
-                }
-            )
-        ),
-        "Failed to save planning data. Please try again."
+        // Data is already sanitized by Zod schema transforms
+        const updateData = {
+            ...validated,
+            updatedAt: new Date(),
+        };
+
+        await updatePlanning(planningId, userId, updateData);
+
+        revalidatePath("/dashboard/planning");
+
+        return success(
+            { planningId },
+            { message: "Progress saved" }
+        );
+    },
+    {
+        rateLimit: { key: 'save-planning', limit: 20, windowMs: 60000 },
+        errorMessage: "Failed to save progress. Please try again."
+    }
+);
+
+/**
+ * Complete planning (mark as completed)
+ */
+export const completePlanningAction = createActionWithParam(
+    CompletePlanningSchema,
+    async (userId, planningId: string, validated: CompletePlanningData) => {
+        // Verify ownership
+        const existing = await getPlanningById(planningId, userId);
+        if (!existing) {
+            throw new NotFoundError("Planning not found");
+        }
+
+        // Data is already sanitized by Zod schema transforms
+        const updateData = {
+            ...validated,
+            status: PlanningStatus.COMPLETED,
+            completedAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        await updatePlanning(planningId, userId, updateData);
+
+        revalidatePath("/dashboard/planning");
+        revalidatePath("/dashboard");
+
+        return success(
+            { planningId },
+            {
+                message: "Planning completed successfully",
+                redirect: "/dashboard/planning/view"
+            }
+        );
+    },
+    {
+        rateLimit: { key: 'complete-planning', limit: 5, windowMs: 3600000 },
+        errorMessage: "Failed to complete planning. Please try again."
+    }
+);
+
+/**
+ * @deprecated Use savePlanningProgressAction instead.
+ * This legacy action is kept for backward compatibility with the identity page form.
+ * It redirects users to the new planning wizard flow.
+ */
+export async function savePlanningAction(): Promise<ActionResult<{ saved: boolean }>> {
+    // This is a legacy action - redirect to new wizard flow
+    return success(
+        { saved: false },
+        {
+            message: "Please use the planning wizard for a better experience",
+            redirect: "/dashboard/planning"
+        }
     );
-    
-    return await wrappedAction(formData);
 }
 
-// Alias for consistency with UI terminology
+/**
+ * @deprecated Use completePlanningAction instead.
+ * Alias for savePlanningAction, kept for backward compatibility.
+ */
 export async function solidifyPlanAction(formData: unknown): Promise<ActionResult<{ saved: boolean }>> {
     return savePlanningAction(formData);
 }

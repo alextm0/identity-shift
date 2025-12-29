@@ -5,14 +5,14 @@ import { format } from "date-fns";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
 import { Edit2, Calendar, Zap, Trophy, Flame } from "lucide-react";
-import { DailyLog, Sprint } from "@/lib/types";
+import { DailyLog, SprintWithPriorities } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getTotalUnits } from "@/lib/type-helpers";
 import { DailyLogEditModal } from "./daily-log-edit-modal";
 
 interface WeeklyEntriesTableProps {
   weeklyLogs: DailyLog[];
-  activeSprint: Sprint;
+  activeSprint?: SprintWithPriorities;
 }
 
 export function WeeklyEntriesTable({ weeklyLogs, activeSprint }: WeeklyEntriesTableProps) {

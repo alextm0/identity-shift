@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard/sprint', request.url));
     }
     if (request.nextUrl.pathname === "/planning" || request.nextUrl.pathname.startsWith("/planning/")) {
-        return NextResponse.redirect(new URL('/dashboard/identity', request.url));
+        return NextResponse.redirect(new URL('/dashboard/planning', request.url));
     }
     
     // Check for session cookie existence only (no API calls)
@@ -47,6 +47,8 @@ export const config = {
         "/sprints/:path*",
         "/planning",
         "/planning/:path*",
+        "/review",
+        "/review/:path*",
         // Add more protected areas here as needed
     ],
 };

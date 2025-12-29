@@ -52,13 +52,29 @@ export async function getDailyLogById(id: string, userId: string): Promise<Daily
     );
 }
 
+export async function getTodayLogForUser(userId: string, date: Date): Promise<DailyLog | undefined> {
+    return await withDatabaseErrorHandling(
+        async () => {
+            const normalizedDate = normalizeDate(date);
+            return (await db.select()
+                .from(dailyLog)
+                .where(and(
+                    eq(dailyLog.userId, userId),
+                    eq(dailyLog.date, normalizedDate)
+                ))
+                .limit(1))[0];
+        },
+        "Failed to fetch daily log by user ID and date"
+    );
+}
+
 export async function upsertDailyLog(data: NewDailyLog) {
     return await withDatabaseErrorHandling(
         async () => {
             // Normalize date to midnight for consistent comparison
             const targetDate = normalizeDate(data.date);
             
-            const existing = await getTodayLogBySprintId(data.sprintId, targetDate);
+            const existing = await getTodayLogForUser(data.userId, targetDate);
 
             if (existing) {
                 return await db.update(dailyLog)
@@ -91,23 +107,7 @@ export async function deleteDailyLog(id: string, userId: string) {
     );
 }
 
-export async function getTodayLogBySprintId(sprintId: string, date: Date): Promise<DailyLog | undefined> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            const normalizedDate = normalizeDate(date);
-            return (await db.select()
-                .from(dailyLog)
-                .where(and(
-                    eq(dailyLog.sprintId, sprintId),
-                    eq(dailyLog.date, normalizedDate)
-                ))
-                .limit(1))[0];
-        },
-        "Failed to fetch daily log by sprint ID and date"
-    );
-}
-
-export async function getLast7DaysLogs(sprintId: string): Promise<DailyLog[]> {
+export async function getLast7DaysLogs(userId: string): Promise<DailyLog[]> {
     return await withDatabaseErrorHandling(
         async () => {
             const { end: today } = getDayRange(new Date());
@@ -118,7 +118,7 @@ export async function getLast7DaysLogs(sprintId: string): Promise<DailyLog[]> {
             return await db.select()
                 .from(dailyLog)
                 .where(and(
-                    eq(dailyLog.sprintId, sprintId),
+                    eq(dailyLog.userId, userId),
                     gte(dailyLog.date, startDate),
                     lte(dailyLog.date, today)
                 ))

@@ -2,30 +2,41 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { WEAK_DIMENSION_THRESHOLD, STRONG_DIMENSION_THRESHOLD, WHEEL_MAX_VALUE } from "@/lib/constants/thresholds";
 
 interface WheelOfLifeProps {
   values: Record<string, number>;
   targetValues?: Record<string, number>;
   highlightedArea?: string | null;
+  showWeakStrong?: boolean; // If true, highlights weak (<5) and strong (>=8) spokes
 }
 
-export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLifeProps) {
+export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStrong = false }: WheelOfLifeProps) {
   const dimensions = Object.keys(values);
   const size = 400;
   const center = size / 2;
   const radius = size * 0.4;
   const angleStep = (Math.PI * 2) / dimensions.length;
 
+  // Determine if a dimension is weak or strong
+  const getDimensionStatus = (dimension: string): 'weak' | 'strong' | 'normal' => {
+    if (!showWeakStrong) return 'normal';
+    const score = values[dimension] || 0;
+    if (score < WEAK_DIMENSION_THRESHOLD) return 'weak';
+    if (score >= STRONG_DIMENSION_THRESHOLD) return 'strong';
+    return 'normal';
+  };
+
   const currentPoints = useMemo(() => {
     return dimensions.map((key, i) => {
       const val = values[key];
       const angle = i * angleStep - Math.PI / 2;
-      const r = (val / 10) * radius;
+      const r = (val / WHEEL_MAX_VALUE) * radius;
       return {
         x: center + r * Math.cos(angle),
         y: center + r * Math.sin(angle),
-        labelX: center + (radius + 30) * Math.cos(angle),
-        labelY: center + (radius + 30) * Math.sin(angle),
+        labelX: center + (radius + 50) * Math.cos(angle),
+        labelY: center + (radius + 50) * Math.sin(angle),
         angle,
         dimension: key,
       };
@@ -37,7 +48,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
     return dimensions.map((key, i) => {
       const val = targetValues[key] || values[key];
       const angle = i * angleStep - Math.PI / 2;
-      const r = (val / 10) * radius;
+      const r = (val / WHEEL_MAX_VALUE) * radius;
       return {
         x: center + r * Math.cos(angle),
         y: center + r * Math.sin(angle),
@@ -51,18 +62,19 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
   const targetPolygonPoints = targetPoints ? targetPoints.map(p => `${p.x},${p.y}`).join(" ") : null;
 
   return (
-    <div className="relative w-full max-w-[400px] aspect-square mx-auto">
+    <div className="relative w-full max-w-[500px] aspect-square mx-auto overflow-visible">
       <svg
-        viewBox={`0 0 ${size} ${size}`}
+        viewBox={`-50 -50 ${size + 100} ${size + 100}`}
         className="w-full h-full drop-shadow-[0_0_20px_rgba(139,92,246,0.2)]"
+        style={{ overflow: 'visible' }}
       >
         {/* Background Circles */}
-        {[2, 4, 6, 8, 10].map((level) => (
+        {[2, 4, 6, 8, WHEEL_MAX_VALUE].map((level) => (
           <circle
             key={level}
             cx={center}
             cy={center}
-            r={(level / 10) * radius}
+            r={(level / WHEEL_MAX_VALUE) * radius}
             className="fill-none stroke-white/5 stroke-1"
           />
         ))}
@@ -71,6 +83,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
         {dimensions.map((dimension, i) => {
           const angle = i * angleStep - Math.PI / 2;
           const isHighlighted = highlightedArea === dimension;
+          const status = getDimensionStatus(dimension);
           return (
             <line
               key={i}
@@ -82,6 +95,10 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
                 "stroke-1 transition-all duration-300",
                 isHighlighted 
                   ? "stroke-focus-violet/40" 
+                  : status === 'weak'
+                  ? "stroke-bullshit-crimson/30"
+                  : status === 'strong'
+                  ? "stroke-action-emerald/30"
                   : "stroke-white/5"
               )}
             />
@@ -108,6 +125,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
         {/* Current Data Points */}
         {currentPoints.map((p, i) => {
           const isHighlighted = highlightedArea === p.dimension;
+          const status = getDimensionStatus(p.dimension);
           return (
             <circle
               key={`current-${i}`}
@@ -115,8 +133,14 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
               cy={p.y}
               r="4"
               className={cn(
-                "fill-white/40 shadow-lg transition-all duration-500 ease-in-out",
-                isHighlighted && "fill-focus-violet"
+                "shadow-lg transition-all duration-500 ease-in-out",
+                isHighlighted 
+                  ? "fill-focus-violet"
+                  : status === 'weak'
+                  ? "fill-bullshit-crimson/60"
+                  : status === 'strong'
+                  ? "fill-action-emerald/60"
+                  : "fill-white/40"
               )}
             />
           );
@@ -147,6 +171,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
           const label = dimensions[i];
           const textAnchor = Math.cos(p.angle) > 0.1 ? "start" : Math.cos(p.angle) < -0.1 ? "end" : "middle";
           const isHighlighted = highlightedArea === p.dimension;
+          const status = getDimensionStatus(p.dimension);
           return (
             <text
               key={i}
@@ -157,7 +182,11 @@ export function WheelOfLife({ values, targetValues, highlightedArea }: WheelOfLi
               className={cn(
                 "font-mono text-[10px] uppercase tracking-widest transition-all duration-300",
                 isHighlighted 
-                  ? "fill-focus-violet font-semibold" 
+                  ? "fill-focus-violet font-semibold"
+                  : status === 'weak'
+                  ? "fill-bullshit-crimson/80 font-semibold"
+                  : status === 'strong'
+                  ? "fill-action-emerald/80 font-semibold"
                   : "fill-white/40"
               )}
             >

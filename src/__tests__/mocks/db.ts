@@ -5,7 +5,7 @@
  */
 
 import { vi } from 'vitest';
-import type { DailyLog, Sprint, Planning, WeeklyReview, MonthlyReview } from '@/lib/types';
+import type { DailyLog, Sprint, SprintWithPriorities, Planning, WeeklyReview, MonthlyReview, YearlyReview } from '@/lib/types';
 
 // Mock the database module
 export const mockDb = {
@@ -47,7 +47,7 @@ export function createMockDailyLog(overrides?: Partial<DailyLog>): DailyLog {
   };
 }
 
-export function createMockSprint(overrides?: Partial<Sprint>): Sprint {
+export function createMockSprint(overrides?: Partial<SprintWithPriorities>): SprintWithPriorities {
   return {
     id: 'sprint-1',
     userId: 'user-1',
@@ -73,14 +73,19 @@ export function createMockPlanning(overrides?: Partial<Planning>): Planning {
   return {
     id: 'planning-1',
     userId: 'user-1',
-    currentSelf: 'Current self description',
-    desiredSelf: 'Desired self description',
-    goals2026: [],
+    year: new Date().getFullYear() + 1,
+    futureIdentity: 'I am becoming the person who achieves their goals',
+    goals: [],
+    annualGoals: [],
     wheelOfLife: {
       healthEnergy: 5,
       physical: 5,
       mental: 5,
     },
+    status: 'draft',
+    currentModule: 1,
+    currentStep: 1,
+    currentGoalIndex: 0,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     ...overrides,
@@ -123,6 +128,25 @@ export function createMockMonthlyReview(overrides?: Partial<MonthlyReview>): Mon
     },
     oneChange: null,
     createdAt: new Date('2024-01-31'),
+    ...overrides,
+  };
+}
+
+export function createMockYearlyReview(overrides?: Partial<YearlyReview>): YearlyReview {
+  return {
+    id: 'yearly-review-1',
+    userId: 'user-1',
+    year: 2025,
+    status: 'draft',
+    currentStep: 1,
+    wheelRatings: null,
+    wheelWins: null,
+    wheelGaps: null,
+    wins: null,
+    otherDetails: null,
+    completedAt: null,
+    createdAt: new Date('2024-12-01'),
+    updatedAt: new Date('2024-12-01'),
     ...overrides,
   };
 }

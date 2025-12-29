@@ -1,20 +1,15 @@
-import { redirect } from "next/navigation";
 import { getWeeklyData } from "@/queries/weekly";
 import { WeeklyReviewPanel } from "@/components/reviews/weekly-review-panel";
 
 export default async function WeeklyReviewPage() {
   const { activeSprint, weeklyLogs, latestReview, allReviews } = await getWeeklyData();
 
-  if (!activeSprint) {
-    redirect("/dashboard/sprint");
-  }
-
   return (
     <div className="max-w-6xl mx-auto py-12 px-4 md:px-0 space-y-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white uppercase">
-            Weekly <span className="text-white/20 font-light">//</span> <span className="text-focus-violet">Review</span>
+            Weekly <span className="text-white/20 font-light">{" // "}</span> <span className="text-focus-violet">Review</span>
           </h1>
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/40 mt-4">
             Aggregate data. Diagnostic analysis. Intentional adjustment.
@@ -23,7 +18,7 @@ export default async function WeeklyReviewPage() {
       </div>
 
       <WeeklyReviewPanel
-        activeSprint={activeSprint}
+        activeSprint={activeSprint || undefined}
         weeklyLogs={weeklyLogs}
         latestReview={latestReview}
         allReviews={allReviews || []}

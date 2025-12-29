@@ -27,6 +27,7 @@ import {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Home", href: "/dashboard" },
+  { icon: Sparkles, label: "Planning", href: "/dashboard/planning" },
   { icon: Target, label: "Sprint", href: "/dashboard/sprint" },
   { icon: Calendar, label: "Daily", href: "/dashboard/daily" },
   { icon: CalendarDays, label: "Weekly", href: "/dashboard/weekly" },

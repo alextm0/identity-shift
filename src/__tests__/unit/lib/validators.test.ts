@@ -217,13 +217,13 @@ describe('SprintFormSchema', () => {
 describe('PlanningFormSchema', () => {
   it('should validate a valid planning form', () => {
     const planning = {
-      currentSelf: 'I am currently working on improving my health',
-      desiredSelf: 'I want to be healthier and more active',
-      goals2026: [
+      futureIdentity: 'I am the kind of person who achieves their goals',
+      goals: [
         {
-          area: 'Health',
-          outcome: 'Lose 10 pounds',
-          why: 'To feel better',
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          text: 'Lose 10 pounds',
+          category: 'health',
+          createdAt: new Date(),
         },
       ],
       wheelOfLife: {
@@ -235,24 +235,23 @@ describe('PlanningFormSchema', () => {
     expect(() => PlanningFormSchema.parse(planning)).not.toThrow();
   });
 
-  it('should require currentSelf to be at least 10 characters', () => {
+  it('should accept empty planning form (all fields optional)', () => {
+    // The new planning schema makes most fields optional for partial saves
     const planning = {
-      currentSelf: 'Short',
-      desiredSelf: 'I want to be healthier',
-      goals2026: [],
       wheelOfLife: {},
     };
-    expect(() => PlanningFormSchema.parse(planning)).toThrow();
+    expect(() => PlanningFormSchema.parse(planning)).not.toThrow();
   });
 
-  it('should require desiredSelf to be at least 10 characters', () => {
+  it('should accept planning with new wizard fields', () => {
     const planning = {
-      currentSelf: 'I am currently working on improving',
-      desiredSelf: 'Short',
-      goals2026: [],
+      brainDump: 'My thoughts and ideas for the year',
+      futureIdentity: 'I am the kind of person who achieves their goals',
+      currentStep: 2,
+      currentModule: 1,
       wheelOfLife: {},
     };
-    expect(() => PlanningFormSchema.parse(planning)).toThrow();
+    expect(() => PlanningFormSchema.parse(planning)).not.toThrow();
   });
 });
 
