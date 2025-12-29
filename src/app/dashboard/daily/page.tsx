@@ -4,8 +4,10 @@ import { DailyLogForm } from "@/components/daily/daily-log-form";
 import { getDashboardData } from "@/queries/dashboard";
 
 export default async function DailyPage() {
-  const { todayLog, date } = await getDailyData();
-  const { activeSprint } = await getDashboardData();
+  const [{ todayLog, date }, { activeSprint }] = await Promise.all([
+    getDailyData(),
+    getDashboardData(),
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto py-6 md:py-12 px-4 md:px-0 space-y-6 md:space-y-12">

@@ -13,7 +13,7 @@ export function DashboardHeader({ sprintName }: DashboardHeaderProps) {
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/5">
       <div>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-white uppercase mb-4">
-          Command Center <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">2026</span>
+          Command Center <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">{currentDate.getFullYear()}</span>
         </h1>
         <div className="flex flex-wrap items-center gap-6 text-xs font-mono uppercase tracking-widest text-white/40">
           <span className="flex items-center gap-2">

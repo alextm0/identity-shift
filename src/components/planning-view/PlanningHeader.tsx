@@ -5,16 +5,17 @@ import { ArrowLeft, Edit, Clock, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface PlanningHeaderProps {
+  year: number | string;
   futureIdentity?: string | null;
 }
 
-export function PlanningHeader({ futureIdentity }: PlanningHeaderProps) {
+export function PlanningHeader({ year, futureIdentity }: PlanningHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/5 pb-8">
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-white/30">
           <Clock className="h-3 w-3" />
-          <span className="text-[10px] font-mono uppercase tracking-[0.3em] font-bold">2026 STRATEGIC PATH</span>
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] font-bold">{year} STRATEGIC PATH</span>
         </div>
         <div className="space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold font-sans text-white uppercase tracking-tighter leading-none">

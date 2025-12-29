@@ -19,6 +19,7 @@ import type {
     SimplifiedGoal,
     AnnualGoal,
     AntiGoal,
+    WheelOfLifeCategory,
 } from "@/lib/validators/planning";
 import { PlanningStatus } from "@/lib/validators/planning";
 import type { PlanningWithTypedFields } from "@/lib/types";
@@ -87,7 +88,7 @@ interface PlanningStore {
     addGoal: (text: string) => void;
     removeGoal: (id: string) => void;
     updateGoal: (id: string, updates: Partial<SimplifiedGoal>) => void;
-    updateGoalCategory: (id: string, category: string) => void;
+    updateGoalCategory: (id: string, category: WheelOfLifeCategory | undefined) => void;
 
     // Actions - Step 5: Annual Goals
     setAnnualGoalIds: (ids: string[]) => void;

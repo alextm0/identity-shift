@@ -75,7 +75,6 @@ export function PlanningView({ planning }: PlanningViewProps) {
     const signedAt = planning.signedAt;
     const futureYouLetter = planning.futureYouLetter;
     const brainDump = planning.brainDump;
-    const themeWord = planning.themeWord;
     const driftResponse = planning.driftResponse;
 
     // Prepare wheel data
@@ -111,13 +110,6 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                 Identity <span className="text-white/20 font-light">&</span> Vision
                             </h1>
                             <div className="flex flex-wrap items-center gap-4">
-                                {themeWord && (
-                                    <div className="px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                                        <p className="text-xs font-mono text-amber-500 uppercase tracking-widest font-bold">
-                                            Theme: {themeWord}
-                                        </p>
-                                    </div>
-                                )}
                                 {futureIdentity && (
                                     <div className="flex items-center gap-4 py-2 px-4 rounded-xl bg-white/[0.03] border border-white/5 w-fit group hover:border-emerald-500/20 transition-all duration-500">
                                         <Sparkles className="h-4 w-4 text-emerald-500/40 group-hover:text-emerald-500/60 transition-colors" />

@@ -15,11 +15,14 @@ interface SignaturePadProps {
 export function SignaturePad({
   onSignatureChange,
   onClear,
+  isSigned,
   penColor = "white",
   className,
 }: SignaturePadProps) {
-  const sigCanvas = useRef<{ clear: () => void; toDataURL: () => string } | null>(null);
+  const sigCanvas = useRef<any>(null);
   const [internalIsSigned, setInternalIsSigned] = useState(false);
+
+  const finalIsSigned = isSigned !== undefined ? isSigned : internalIsSigned;
 
   const clearSignature = () => {
     sigCanvas.current?.clear();
@@ -29,7 +32,7 @@ export function SignaturePad({
   };
 
   const handleSignatureEnd = () => {
-    if (!sigCanvas.current?.isEmpty()) {
+    if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
       setInternalIsSigned(true);
       const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
       onSignatureChange(dataUrl);
@@ -47,16 +50,18 @@ export function SignaturePad({
           }}
           onEnd={handleSignatureEnd}
         />
-        <div className="absolute top-4 right-4 transition-opacity group-hover:opacity-100 opacity-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearSignature}
-            className="h-8 px-3 rounded-lg bg-black/60 hover:bg-black text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white border border-white/5"
-          >
-            Clear
-          </Button>
-        </div>
+        {finalIsSigned && (
+          <div className="absolute top-4 right-4 transition-opacity group-hover:opacity-100 opacity-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearSignature}
+              className="h-8 px-3 rounded-lg bg-black/60 hover:bg-black text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white border border-white/5"
+            >
+              Clear
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

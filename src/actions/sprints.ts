@@ -58,14 +58,11 @@ export const startSprintAction = createAction(
             updatedAt: new Date(),
         });
 
-        revalidatePath("/dashboard", "layout");
-        revalidatePath("/dashboard/sprint", "layout");
-        revalidatePath("/sprints", "layout");
-        revalidateTag("active-sprint");
-        
+        revalidateSprintPaths();
+
         return success(
             { id: sprintId },
-            { 
+            {
                 message: "Sprint started successfully",
                 redirect: "sprint"
             }
@@ -106,14 +103,11 @@ export const updateSprintAction = createActionWithParam(
 
         await updateSprint(sprintId, userId, updateData);
 
-        revalidatePath("/dashboard", "layout");
-        revalidatePath("/dashboard/sprint", "layout");
-        revalidatePath("/sprints", "layout");
-        revalidateTag("active-sprint");
-        
+        revalidateSprintPaths();
+
         return success(
             { id: sprintId },
-            { 
+            {
                 message: "Sprint updated successfully",
                 redirect: "sprint"
             }
@@ -140,14 +134,11 @@ export const deleteSprintAction = createActionWithoutValidation(
 
         await deleteSprint(sprintId, userId);
 
-        revalidatePath("/dashboard", "layout");
-        revalidatePath("/sprints", "layout");
-        revalidatePath("/dashboard/sprint", "layout");
-        revalidateTag("active-sprint");
-        
+        revalidateSprintPaths();
+
         return success(
             { deleted: true },
-            { 
+            {
                 message: "Sprint deleted successfully",
                 redirect: "dashboard"
             }
@@ -173,14 +164,11 @@ export const closeSprintAction = createActionWithoutValidation(
 
         await closeSprintById(sprintId, userId);
 
-        revalidatePath("/dashboard", "layout");
-        revalidatePath("/dashboard/sprint", "layout");
-        revalidatePath("/sprints", "layout");
-        revalidateTag("active-sprint");
-        
+        revalidateSprintPaths();
+
         return success(
             { id: sprintId },
-            { 
+            {
                 message: "Sprint closed successfully",
                 redirect: "dashboard"
             }
