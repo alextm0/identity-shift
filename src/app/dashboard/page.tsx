@@ -26,10 +26,11 @@ export default async function DashboardPage() {
     redirect("/dashboard/sprint");
   }
 
-  const { activeSprint, todayLog, recentLogs, todayStatus, daysLeft, completedYearlyReview } = dashboardData;
+  const { activeSprint, todayLog, recentLogs, todayStatus, daysLeft, completedYearlyReview, planning } = dashboardData;
+  const hasCompletedPlanning = planning?.status === 'completed';
   const sprintWithPriorities = toSprintWithPriorities(activeSprint);
   const priorities = sprintWithPriorities.priorities;
-  
+
   // Compute sprint duration from start and end dates
   let sprintDuration = 30; // Default fallback
   if (activeSprint?.startDate && activeSprint?.endDate) {
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
     const computedDuration = differenceInDays(endDate, startDate);
     sprintDuration = computedDuration > 0 ? computedDuration : 30; // Fallback to 30 if invalid
   }
-  
+
   const currentDay = sprintDuration - (daysLeft || 0);
   const sprintProgress = sprintDuration > 0 ? Math.min(100, (currentDay / sprintDuration) * 100) : 0;
   const currentDate = new Date();
@@ -281,12 +282,29 @@ export default async function DashboardPage() {
               </Link>
             )}
 
-            {/* 4. Bottom Action: Adjust Plan */}
+            {/* 4. Planning Action - Always visible */}
+            <Link href={hasCompletedPlanning ? "/dashboard/planning/view" : "/dashboard/planning"} className="block">
+              <Button
+                variant={hasCompletedPlanning ? "outline" : "violet"}
+                className={cn(
+                  "w-full h-14 rounded-2xl font-mono text-[10px] uppercase tracking-widest",
+                  hasCompletedPlanning
+                    ? "border-white/5 bg-black/40 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02] hover:border-white/10"
+                    : ""
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  {hasCompletedPlanning ? "View Planning" : "Plan 2026"}
+                </span>
+              </Button>
+            </Link>
+
+            {/* 5. Bottom Action: Adjust Plan */}
             <Link href="/dashboard/identity" className="block">
               <Button
                 variant="outline"
                 className="w-full h-14 rounded-2xl border-white/5 bg-black/40 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02] hover:border-white/10 font-mono text-[10px] uppercase tracking-widest"
-                disabled={!completedYearlyReview}
               >
                 <span className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
@@ -298,6 +316,6 @@ export default async function DashboardPage() {
         </div>
 
       </div>
-    </div>
+    </div >
   );
 }

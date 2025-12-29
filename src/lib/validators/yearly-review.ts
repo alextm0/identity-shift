@@ -74,7 +74,7 @@ export const WheelAuditSchema = z.record(
 export type WheelAudit = z.infer<typeof WheelAuditSchema>;
 
 /**
- * Big Three Wins schema - array of 3 strings
+ * Big Three Wins schema - array of 3 strings (deprecated, kept for migration)
  * Made lenient for partial saves - allows empty strings
  */
 export const BigThreeWinsSchema = z.tuple([
@@ -86,18 +86,29 @@ export const BigThreeWinsSchema = z.tuple([
 export type BigThreeWins = z.infer<typeof BigThreeWinsSchema>;
 
 /**
+ * Wins schema - flexible array of strings (no hard cap)
+ */
+export const WinsSchema = z.array(z.string().max(1000)).max(100); // Soft limit at 100 for safety
+
+export type Wins = z.infer<typeof WinsSchema>;
+
+/**
  * Yearly Review Form Schema (for saving progress)
  * All fields are optional to allow partial saves
  */
 export const YearlyReviewFormSchema = z.object({
     year: z.number().int().min(2020).max(2100).optional(),
-    currentStep: z.number().int().min(1).max(6).optional(),
+    currentStep: z.number().int().min(1).max(3).optional(), // Updated to 3 steps
     wheelRatings: WheelRatingsSchema.optional(),
     wheelWins: WheelAuditSchema.optional(),
     wheelGaps: WheelAuditSchema.optional(),
-    bigThreeWins: z.array(z.string().max(1000)).length(3).optional(), // Allow partial array
-    damnGoodDecision: z.string().max(3000).optional(), // ~300 words max
+    // Deprecated fields (kept for migration)
+    bigThreeWins: z.array(z.string().max(1000)).length(3).optional(),
+    damnGoodDecision: z.string().max(3000).optional(),
     generatedNarrative: z.string().max(5000).optional(),
+    // New fields
+    wins: WinsSchema.optional(),
+    otherDetails: z.string().max(5000).optional(), // ~500 words max
 });
 
 export type YearlyReviewFormData = z.infer<typeof YearlyReviewFormSchema>;
@@ -107,11 +118,8 @@ export type YearlyReviewFormData = z.infer<typeof YearlyReviewFormSchema>;
  */
 export const CompleteYearlyReviewSchema = YearlyReviewFormSchema.extend({
     wheelRatings: WheelRatingsSchema,
-    wheelWins: WheelAuditSchema,
-    wheelGaps: WheelAuditSchema,
-    bigThreeWins: BigThreeWinsSchema,
-    damnGoodDecision: z.string().min(1).max(3000),
-    generatedNarrative: z.string().min(1).max(5000),
+    wins: WinsSchema, // Required for completion (can be empty array)
+    // otherDetails is optional
 });
 
 export type CompleteYearlyReviewData = z.infer<typeof CompleteYearlyReviewSchema>;

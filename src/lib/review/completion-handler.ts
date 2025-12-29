@@ -1,5 +1,6 @@
 import { saveYearlyReviewProgressAction, completeYearlyReviewAction } from "@/actions/yearly-reviews";
 import type { YearlyReviewFormData } from "@/lib/validators/yearly-review";
+import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 
 interface HandleReviewCompletionOptions {
   reviewId: string;
@@ -35,23 +36,13 @@ export async function handleReviewCompletion({
 
   onSavingChange(true);
 
-  try {
-    // Ensure all required fields are present with defaults if missing
-    const completeData = {
-      ...formData,
-      year,
-      wheelRatings: formData.wheelRatings || {},
-      wheelWins: formData.wheelWins || {},
-      wheelGaps: formData.wheelGaps || {},
-      bigThreeWins: formData.bigThreeWins || ["", "", ""],
-      damnGoodDecision: formData.damnGoodDecision || "",
-      generatedNarrative: formData.generatedNarrative || "",
-    };
 
+  try {
     if (isEditMode) {
       // In edit mode, save and re-complete, then redirect to view
       const saveResult = await saveYearlyReviewProgressAction(reviewId, {
-        ...completeData,
+        ...formData,
+        year,
         currentStep,
       });
 
@@ -62,7 +53,12 @@ export async function handleReviewCompletion({
       }
 
       // Re-complete the review
-      const completeResult = await completeYearlyReviewAction(reviewId, completeData);
+      const completeResult = await completeYearlyReviewAction(reviewId, {
+        ...formData,
+        year,
+        wheelRatings: formData.wheelRatings!,
+        wins: formData.wins || [],
+      });
 
       if (completeResult.success) {
         onSuccess(`/review/${year}`);
@@ -72,7 +68,12 @@ export async function handleReviewCompletion({
       }
     } else {
       // Normal completion flow
-      const result = await completeYearlyReviewAction(reviewId, completeData);
+      const result = await completeYearlyReviewAction(reviewId, {
+        ...formData,
+        year,
+        wheelRatings: formData.wheelRatings!,
+        wins: formData.wins || [],
+      });
 
       if (result.success) {
         const redirectPath = result.redirect || "/dashboard";

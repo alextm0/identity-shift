@@ -79,6 +79,7 @@ export function AuthForm({ type }: AuthFormProps) {
         setError(null);
 
         try {
+            // @ts-ignore
             await authClient.signIn.magicLink({
                 email,
                 callbackURL: '/dashboard',
@@ -86,7 +87,7 @@ export function AuthForm({ type }: AuthFormProps) {
                 onSuccess: () => {
                     setIsEmailSent(true);
                 },
-                onError: (ctx) => {
+                onError: (ctx: any) => {
                     setError(ctx.error.message || "Telemetry transmission failed.");
                 }
             });
@@ -99,7 +100,7 @@ export function AuthForm({ type }: AuthFormProps) {
 
     if (isEmailSent) {
         return (
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-6 py-10"
@@ -113,9 +114,9 @@ export function AuthForm({ type }: AuthFormProps) {
                         Verify your inbox to proceed with the 2026 Progress Audit.
                     </p>
                 </div>
-                <Button 
-                    variant="glass" 
-                    className="mt-6 px-8 rounded-xl border-white/5 font-mono text-[10px] tracking-widest" 
+                <Button
+                    variant="glass"
+                    className="mt-6 px-8 rounded-xl border-white/5 font-mono text-[10px] tracking-widest"
                     onClick={() => setIsEmailSent(false)}
                 >
                     Return to Verification
@@ -175,8 +176,8 @@ export function AuthForm({ type }: AuthFormProps) {
                     <div className="flex items-center justify-between ml-1">
                         <Label htmlFor="password" className="text-telemetry-slate text-[10px] uppercase tracking-widest">Access Key</Label>
                         {isSignIn && (
-                            <Link 
-                                href="/auth/forgot-password" 
+                            <Link
+                                href="/auth/forgot-password"
                                 className="text-[10px] uppercase tracking-wider text-action-emerald hover:opacity-80 transition-opacity"
                             >
                                 Recovery?
@@ -196,10 +197,10 @@ export function AuthForm({ type }: AuthFormProps) {
                     </div>
                 </div>
 
-                <Button 
-                    type="submit" 
+                <Button
+                    type="submit"
                     variant="glass"
-                    className="w-full h-14 rounded-xl mt-4 font-mono text-xs uppercase tracking-[0.2em] bg-action-emerald/10 border-action-emerald/20 text-action-emerald hover:bg-action-emerald/20 emerald-glow" 
+                    className="w-full h-14 rounded-xl mt-4 font-mono text-xs uppercase tracking-[0.2em] bg-action-emerald/10 border-action-emerald/20 text-action-emerald hover:bg-action-emerald/20 emerald-glow"
                     disabled={isLoading}
                 >
                     {isLoading ? (
@@ -216,8 +217,8 @@ export function AuthForm({ type }: AuthFormProps) {
                 <div className="flex-grow border-t border-white/5" />
             </div>
 
-            <Button 
-                variant="outline" 
+            <Button
+                variant="outline"
                 className="w-full h-14 rounded-xl border-white/5 text-telemetry-slate hover:text-white transition-colors text-[10px] uppercase tracking-widest"
                 onClick={handleMagicLink}
                 disabled={isLoading}
@@ -227,8 +228,8 @@ export function AuthForm({ type }: AuthFormProps) {
             </Button>
 
             <div className="text-center">
-                <Link 
-                    href={isSignIn ? '/auth/sign-up' : '/auth/sign-in'} 
+                <Link
+                    href={isSignIn ? '/auth/sign-up' : '/auth/sign-in'}
                     className="text-[10px] uppercase tracking-[0.2em] text-telemetry-slate hover:text-white transition-colors"
                 >
                     {isSignIn ? "New Identity Registration" : "Existing Identity Verification"}

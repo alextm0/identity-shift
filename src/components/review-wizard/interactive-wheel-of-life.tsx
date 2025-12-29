@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { DIMENSION_LABELS } from "@/lib/validators/yearly-review";
 
 interface InteractiveWheelOfLifeProps {
   values: Record<string, number>;
@@ -283,7 +284,7 @@ export function InteractiveWheelOfLife({
                   : "fill-white/40"
               )}
             >
-              {spoke.dimension}
+              {DIMENSION_LABELS[spoke.dimension as keyof typeof DIMENSION_LABELS] || spoke.dimension}
             </text>
           );
         })}

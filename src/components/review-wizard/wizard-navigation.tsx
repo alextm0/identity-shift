@@ -81,8 +81,8 @@ export function WizardNavigation({
                 open={showExitDialog}
                 onOpenChange={setShowExitDialog}
                 title="Exit Review?"
-                description="All unsaved changes will be discarded. You will return to the last saved version."
-                confirmLabel="Exit & Discard Changes"
+                description="Your progress will be saved as a draft. You can continue later from where you left off."
+                confirmLabel="Exit"
                 cancelLabel="Continue Review"
                 onConfirm={onExit}
                 variant="destructive"

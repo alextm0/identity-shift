@@ -2,49 +2,45 @@
 
 import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { InteractiveWheelOfLife } from "./interactive-wheel-of-life";
-import { DIMENSION_LABELS, LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
+import { LIFE_DIMENSIONS, DIMENSION_LABELS } from "@/lib/validators/yearly-review";
 import { DEFAULT_RATING } from "@/lib/constants/review";
+import { useMemo } from "react";
 
-interface StepWheelRatingProps {
-    currentDimensionIndex?: number;
-}
-
-export function StepWheelRating({ currentDimensionIndex = 0 }: StepWheelRatingProps) {
+export function StepWheelRating() {
     const { wheelRatings, setWheelRating } = useReviewStore();
+    
+    // Convert wheelRatings to format expected by InteractiveWheelOfLife
+    // Use dimension keys as labels, but ensure all dimensions are present
+    const wheelValues = useMemo(() => {
+        const values: Record<string, number> = {};
+        LIFE_DIMENSIONS.forEach(dim => {
+            values[dim] = wheelRatings[dim] || DEFAULT_RATING;
+        });
+        return values;
+    }, [wheelRatings]);
 
-    // Convert wheelRatings to format expected by InteractiveWheelOfLife (using labels as keys)
-    const wheelValues: Record<string, number> = {};
-    LIFE_DIMENSIONS.forEach((dimension) => {
-        const label = DIMENSION_LABELS[dimension];
-        wheelValues[label] = wheelRatings[dimension] || DEFAULT_RATING;
-    });
-
-    const handleChange = (dimensionLabel: string, value: number) => {
-        // Find the dimension key from the label
-        const dimension = Object.entries(DIMENSION_LABELS).find(
-            ([_, label]) => label === dimensionLabel
-        )?.[0] as typeof LIFE_DIMENSIONS[number] | undefined;
-        
-        if (dimension) {
-            setWheelRating(dimension, value);
-        }
+    const handleChange = (dimension: string, value: number) => {
+        setWheelRating(dimension, value);
     };
 
     return (
         <div className="space-y-8">
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-white uppercase tracking-tight">
-                    Rate Your Life Dimensions
+                    Wheel of Life
                 </h2>
-                <p className="text-white/80">
-                    Click or drag on any spoke to set your rating (1-10)
+                <p className="text-white/80 max-w-2xl mx-auto">
+                    Click or drag on any spoke to adjust your rating. Be honest—this creates your baseline.
+                </p>
+                <p className="text-xs font-mono text-white/40 uppercase tracking-widest">
+                    1=Struggling | 5=Baseline | 10=Thriving
                 </p>
             </div>
-            
+
             <InteractiveWheelOfLife
                 values={wheelValues}
                 onChange={handleChange}
-                showWeakStrong={true}
+                showWeakStrong={false}
             />
         </div>
     );

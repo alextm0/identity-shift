@@ -54,10 +54,58 @@ export const verification = pgTable('verification', {
 export const planning = pgTable('planning', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().unique().references(() => user.id),
-    currentSelf: text('currentSelf').notNull(),
-    desiredSelf: text('desiredSelf').notNull(),
-    goals2026: json('goals2026').notNull(), // JSON: [{area, outcome, why, deadline}]
-    wheelOfLife: json('wheelOfLife').notNull(), // JSON: {healthEnergy, physical, mental, ...}
+
+    // Legacy fields (kept for migration compatibility)
+    currentSelf: text('currentSelf'),
+    desiredSelf: text('desiredSelf'),
+    goals2026: json('goals2026'), // JSON: [{area, outcome, why, deadline}]
+
+    // Goal Collections (GPS-structured)
+    activeGoals: json('activeGoals'),      // 2-3 PlanningGoal[] with full GPS structure
+    backlogGoals: json('backlogGoals'),    // Thick goals not selected as active
+    archivedGoals: json('archivedGoals'),  // Thin + Considering goals
+
+    // Progress Tracking (exact step resume)
+    currentModule: integer('currentModule').default(1), // 1-3
+    currentStep: integer('currentStep').default(1),     // Step within module
+    currentGoalIndex: integer('currentGoalIndex').default(0), // Which active goal (0, 1, 2)
+    status: text('status').default('draft'), // 'draft' | 'completed'
+
+    // From Review
+    previousIdentity: text('previousIdentity'), // Identity from 2025 review
+    wheelOfLife: json('wheelOfLife'), // JSON: {healthEnergy, physical, mental, ...}
+
+    // Step 1: Empty Your Head + Future Identity
+    brainDump: text('brainDump'), // Free-form notes
+    futureIdentity: text('futureIdentity'), // "In Dec 2026, I'm the kind of person who..."
+
+    // Step 2: Wheel of Life Vision
+    targetWheelOfLife: json('targetWheelOfLife'), // Target scores for each dimension
+    wheelVisionStatements: json('wheelVisionStatements'), // Per-dimension "what would be true"
+
+    // Step 3: Letter from Future You (Optional)
+    futureYouLetter: text('futureYouLetter'),
+
+    // Step 4-6: Goals
+    goals: json('goals'), // Full goal backlog with categories
+    annualGoalIds: json('annualGoalIds'), // Selected annual goal IDs
+    annualGoals: json('annualGoals'), // Detailed annual goals with definition of done, etc.
+
+    // Step 7: Anti-Vision + Anti-Goals
+    antiVision: text('antiVision'), // Single failure narrative (story)
+    antiGoals: json('antiGoals'), // Unlimited list of "I refuse to..." statements
+
+    // Step 8: Commitment
+    themeWord: text('themeWord'), // Deprecated
+    commitmentStatement: text('commitmentStatement'), // "The kind of year I'm choosing..."
+    signatureName: text('signatureName'), // Signature name
+    signatureImage: text('signatureImage'), // Base64 signature
+    signedAt: timestamp('signedAt'), // When signed
+
+    // Quarterly archive review
+    lastArchiveReviewDate: timestamp('lastArchiveReviewDate'),
+
+    completedAt: timestamp('completedAt'),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
@@ -132,24 +180,28 @@ export const yearlyReview = pgTable('yearlyReview', {
     userId: text('userId').notNull().references(() => user.id),
     year: integer('year').notNull(), // 2025, 2026, etc.
     status: text('status').notNull().default('draft'), // 'draft' | 'completed'
-    currentStep: integer('currentStep').notNull().default(1), // 1-6
-    
+    currentStep: integer('currentStep').notNull().default(1), // 1-3 (updated from 1-6)
+
     // Step 2: Wheel ratings
     wheelRatings: json('wheelRatings'), // {health: 4, training: 3, ...}
-    
+
     // Step 3: What's working (wins per dimension)
     wheelWins: json('wheelWins'), // {health: "text...", training: "text...", ...}
-    
+
     // Step 4: What's missing (gaps per dimension)
     wheelGaps: json('wheelGaps'), // {health: "text...", training: "text...", ...}
-    
-    // Step 5: Big Three
+
+    // Step 5: Big Three (deprecated - kept for migration)
     bigThreeWins: json('bigThreeWins'), // ["win1", "win2", "win3"]
     damnGoodDecision: text('damnGoodDecision'),
-    
-    // Step 6: Generated summary
+
+    // Step 6: Generated summary (deprecated - kept for migration)
     generatedNarrative: text('generatedNarrative'),
-    
+
+    // New simplified fields
+    wins: json('wins'), // ["win1", "win2", ...] - flexible array
+    otherDetails: text('otherDetails'), // Freeform notes
+
     completedAt: timestamp('completedAt'),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),

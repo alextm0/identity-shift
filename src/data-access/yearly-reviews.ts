@@ -74,6 +74,8 @@ export async function getOrCreateYearlyReview(userId: string, year: number): Pro
                 bigThreeWins: null,
                 damnGoodDecision: null,
                 generatedNarrative: null,
+                wins: null,
+                otherDetails: null,
                 completedAt: null,
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -179,6 +181,24 @@ export async function completeYearlyReview(id: string, userId: string): Promise<
             return result[0];
         },
         "Failed to complete yearly review"
+    );
+}
+
+/**
+ * Delete a yearly review
+ */
+export async function deleteYearlyReview(id: string, userId: string): Promise<void> {
+    return await withDatabaseErrorHandling(
+        async () => {
+            const result = await db.delete(yearlyReview)
+                .where(createOwnershipAndIdCondition(yearlyReview.id, id, yearlyReview.userId, userId))
+                .returning();
+            
+            if (result.length === 0) {
+                throw new Error("Yearly review not found");
+            }
+        },
+        "Failed to delete yearly review"
     );
 }
 

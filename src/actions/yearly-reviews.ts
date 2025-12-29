@@ -13,12 +13,13 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { getOrCreateYearlyReview, getYearlyReviewById, updateYearlyReview, completeYearlyReview, getCompletedYearlyReview } from "@/data-access/yearly-reviews";
+import { getOrCreateYearlyReview, getYearlyReviewById, updateYearlyReview, completeYearlyReview, getCompletedYearlyReview, deleteYearlyReview } from "@/data-access/yearly-reviews";
 import { sanitizeText } from "@/lib/sanitize";
-import { YearlyReviewFormSchema, CompleteYearlyReviewSchema } from "@/lib/validators";
+import { YearlyReviewFormSchema, CompleteYearlyReviewSchema, WheelRatingsSchema } from "@/lib/validators/yearly-review";
 import { NotFoundError } from "@/lib/errors";
 import { ActionResult, success } from "@/lib/actions/result";
 import { withAuth, withValidation, withErrorHandling } from "@/lib/actions/middleware";
+import { migrateReviewData } from "@/lib/db/migrations/migrate-review-data";
 
 /**
  * Get or create a yearly review for a specific year
@@ -28,7 +29,17 @@ export async function getOrCreateYearlyReviewAction(year: number): Promise<Actio
         withAuth(
             async (userId) => {
                 const review = await getOrCreateYearlyReview(userId, year);
-                
+
+                // Apply migration if needed
+                const migrated = migrateReviewData(review);
+                if (migrated.wins.length > 0 || migrated.otherDetails) {
+                    // Update review with migrated data
+                    await updateYearlyReview(review.id, userId, {
+                        wins: migrated.wins.length > 0 ? migrated.wins : null,
+                        otherDetails: migrated.otherDetails || null,
+                    });
+                }
+
                 return success(
                     {
                         reviewId: review.id,
@@ -44,8 +55,8 @@ export async function getOrCreateYearlyReviewAction(year: number): Promise<Actio
         ),
         "Failed to load yearly review. Please try again."
     );
-    
-    return await wrappedAction(year);
+
+    return await wrappedAction();
 }
 
 /**
@@ -97,8 +108,20 @@ export async function saveYearlyReviewProgressAction(reviewId: string, formData:
                         updateData.wheelGaps = sanitizedGaps;
                     }
 
+                    // Handle new wins field
+                    if (validated.wins !== undefined) {
+                        updateData.wins = validated.wins.map(win =>
+                            win && win.trim() ? sanitizeText(win, 1000) : ""
+                        ).filter(w => w && w.trim());
+                    }
+
+                    if (validated.otherDetails) {
+                        updateData.otherDetails = sanitizeText(validated.otherDetails, 5000);
+                    }
+
+                    // Deprecated fields (kept for migration compatibility)
                     if (validated.bigThreeWins) {
-                        updateData.bigThreeWins = validated.bigThreeWins.map(win => 
+                        updateData.bigThreeWins = validated.bigThreeWins.map(win =>
                             win && win.trim() ? sanitizeText(win, 1000) : ""
                         ) as [string, string, string];
                     }
@@ -111,7 +134,7 @@ export async function saveYearlyReviewProgressAction(reviewId: string, formData:
                     await updateYearlyReview(reviewId, userId, updateData);
 
                     revalidatePath("/review");
-                    
+
                     return success(
                         { reviewId },
                         { message: "Progress saved" }
@@ -124,7 +147,7 @@ export async function saveYearlyReviewProgressAction(reviewId: string, formData:
         ),
         "Failed to save progress. Please try again."
     );
-    
+
     return await wrappedAction(formData);
 }
 
@@ -151,41 +174,24 @@ export async function completeYearlyReviewAction(reviewId: string, formData: unk
                         updatedAt: new Date(),
                     };
 
-                    updateData.damnGoodDecision = sanitizeText(validated.damnGoodDecision, 3000);
-                    updateData.generatedNarrative = sanitizeText(validated.generatedNarrative, 5000);
+                    // Handle new fields
+                    updateData.wins = validated.wins.map(win =>
+                        win && win.trim() ? sanitizeText(win, 1000) : ""
+                    ).filter(w => w && w.trim());
 
-                    const sanitizedWins: Record<string, string> = {};
-                    for (const [key, value] of Object.entries(validated.wheelWins)) {
-                        if (value) {
-                            sanitizedWins[key] = sanitizeText(value, 2000);
-                        }
+                    if (validated.otherDetails) {
+                        updateData.otherDetails = sanitizeText(validated.otherDetails, 5000);
                     }
-                    updateData.wheelWins = sanitizedWins;
-
-                    // Ensure wheelGaps is always an object (even if empty)
-                    const sanitizedGaps: Record<string, string> = {};
-                    if (validated.wheelGaps) {
-                        for (const [key, value] of Object.entries(validated.wheelGaps)) {
-                            if (value && typeof value === 'string') {
-                                sanitizedGaps[key] = sanitizeText(value, 2000);
-                            }
-                        }
-                    }
-                    updateData.wheelGaps = sanitizedGaps;
-
-                    updateData.bigThreeWins = validated.bigThreeWins.map(win => 
-                        sanitizeText(win, 1000)
-                    );
 
                     await updateYearlyReview(reviewId, userId, updateData);
                     await completeYearlyReview(reviewId, userId);
 
                     revalidatePath("/review");
                     revalidatePath("/dashboard");
-                    
+
                     return success(
                         { reviewId },
-                        { 
+                        {
                             message: "Review completed successfully",
                             redirect: "/dashboard"
                         }
@@ -198,7 +204,7 @@ export async function completeYearlyReviewAction(reviewId: string, formData: unk
         ),
         "Failed to complete review. Please try again."
     );
-    
+
     return await wrappedAction(formData);
 }
 
@@ -210,7 +216,7 @@ export async function hasCompletedYearlyReviewAction(year: number): Promise<Acti
         withAuth(
             async (userId) => {
                 const review = await getCompletedYearlyReview(userId, year);
-                
+
                 return success(
                     { hasCompleted: !!review },
                     { message: "Check completed" }
@@ -222,8 +228,8 @@ export async function hasCompletedYearlyReviewAction(year: number): Promise<Acti
         ),
         "Failed to check review status. Please try again."
     );
-    
-    return await wrappedAction(year);
+
+    return await wrappedAction();
 }
 
 /**
@@ -247,7 +253,7 @@ export async function editYearlyReviewAction(reviewId: string): Promise<ActionRe
 
                 revalidatePath("/review");
                 revalidatePath("/dashboard");
-                
+
                 return success(
                     { reviewId },
                     { message: "Review unlocked for editing" }
@@ -259,7 +265,78 @@ export async function editYearlyReviewAction(reviewId: string): Promise<ActionRe
         ),
         "Failed to enable editing. Please try again."
     );
-    
-    return await wrappedAction(reviewId);
+
+    return await wrappedAction();
+}
+
+/**
+ * Update wheel ratings for a review
+ */
+export async function updateWheelRatingsAction(reviewId: string, wheelRatings: unknown): Promise<ActionResult<{ reviewId: string }>> {
+    const wrappedAction = withErrorHandling(
+        withValidation(
+            WheelRatingsSchema,
+            withAuth(
+                async (userId, validated) => {
+                    const review = await getYearlyReviewById(reviewId, userId);
+                    if (!review) {
+                        throw new NotFoundError("Yearly review not found");
+                    }
+
+                    await updateYearlyReview(reviewId, userId, {
+                        wheelRatings: validated,
+                        updatedAt: new Date(),
+                    });
+
+                    revalidatePath(`/review/${review.year}`);
+                    revalidatePath("/dashboard");
+
+                    return success(
+                        { reviewId },
+                        { message: "Wheel ratings updated" }
+                    );
+                },
+                {
+                    rateLimit: { key: 'update-wheel-ratings', limit: 20, windowMs: 60000 }
+                }
+            )
+        ),
+        "Failed to update wheel ratings. Please try again."
+    );
+
+    return await wrappedAction(wheelRatings);
+}
+
+
+/**
+ * Delete/reset a yearly review
+ */
+export async function deleteYearlyReviewAction(reviewId: string): Promise<ActionResult<void>> {
+    const wrappedAction = withErrorHandling(
+        withAuth(
+            async (userId) => {
+                const review = await getYearlyReviewById(reviewId, userId);
+                if (!review) {
+                    throw new NotFoundError("Yearly review not found");
+                }
+
+                await deleteYearlyReview(reviewId, userId);
+
+                revalidatePath("/review");
+                revalidatePath("/dashboard");
+
+                return success(
+                    undefined,
+                    { message: "Review deleted successfully" }
+                );
+            },
+            {
+                rateLimit: { key: 'delete-yearly-review', limit: 5, windowMs: 60000 }
+            }
+        ),
+        "Failed to delete review. Please try again."
+    );
+
+    return await wrappedAction();
 }
 

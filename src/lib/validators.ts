@@ -49,16 +49,6 @@ export type ProofOfWork = z.infer<typeof ProofOfWorkSchema>;
 
 // --- Form Schemas (Server Actions) ---
 
-// Planning Form
-export const PlanningFormSchema = z.object({
-    currentSelf: z.string().min(10, "Describe your current self in more detail"),
-    desiredSelf: z.string().min(10, "Describe your desired self in more detail"),
-    goals2026: z.array(GoalSchema),
-    wheelOfLife: WheelOfLifeSchema,
-    wheelOfLifeTarget: WheelOfLifeSchema.optional(),
-});
-export type PlanningFormData = z.infer<typeof PlanningFormSchema>;
-
 // Sprint Form
 export const SprintFormSchema = z.object({
     name: z.string().min(3, "Sprint name is required"),
@@ -141,3 +131,24 @@ export {
     type BigThreeWins,
     type LifeDimension,
 } from "./validators/yearly-review";
+
+// Planning - re-export from dedicated file
+export {
+    PlanningFormSchema,
+    CompletePlanningSchema,
+    PlanningGoalSchema,
+    SimplifiedGoalSchema,
+    AnnualGoalSchema,
+    AntiGoalSchema,
+    CommitmentSchema,
+    PlanningStatus,
+    WheelOfLifeCategorySchema,
+    type PlanningFormData,
+    type CompletePlanningData,
+    type PlanningGoal,
+    type SimplifiedGoal,
+    type AnnualGoal,
+    type AntiGoal,
+    type Commitment,
+    type WheelOfLifeCategory,
+} from "./validators/planning";

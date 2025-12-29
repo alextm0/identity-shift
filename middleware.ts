@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard/sprint', request.url));
     }
     if (request.nextUrl.pathname === "/planning" || request.nextUrl.pathname.startsWith("/planning/")) {
-        return NextResponse.redirect(new URL('/dashboard/identity', request.url));
+        return NextResponse.redirect(new URL('/dashboard/planning', request.url));
     }
     
     // Check for session cookie existence only (no API calls)

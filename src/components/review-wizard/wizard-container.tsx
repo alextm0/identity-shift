@@ -6,17 +6,12 @@ import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { saveYearlyReviewProgressAction } from "@/actions/yearly-reviews";
 import { WizardProgress } from "./wizard-progress";
 import { WizardNavigation } from "./wizard-navigation";
-import { StepWelcome } from "./step-welcome";
 import { StepWheelRating } from "./step-wheel-rating";
-import { StepAuditAll } from "./step-audit-all";
-import { StepBigThree } from "./step-big-three";
-import { StepSummary } from "./step-summary";
+import { StepWins } from "./step-wins";
+import { StepYearSnapshot } from "./step-year-snapshot";
 import type { YearlyReviewWithTypedFields } from "@/lib/types";
-import { generateNarrative } from "@/lib/narrative-generator";
 import { REVIEW_WIZARD_STEPS } from "@/lib/constants/review";
-import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 import { useAutoSave } from "@/hooks/use-auto-save";
-import { useWizardNavigation } from "@/hooks/use-wizard-navigation";
 import { handleReviewCompletion } from "@/lib/review/completion-handler";
 
 interface ReviewWizardContainerProps {
@@ -35,14 +30,12 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
         wheelRatings,
         wheelWins,
         wheelGaps,
-        bigThreeWins,
-        damnGoodDecision,
-        generatedNarrative,
+        wins,
+        otherDetails,
         loadFromServer,
         setStep,
         markSaving,
         getFormData,
-        setNarrative,
     } = useReviewStore();
 
     // Load initial data - only once on mount
@@ -82,47 +75,40 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
     useAutoSave({
         onSave: autoSave,
         isDirty,
-        enabled: currentStep > 1 && !!reviewId,
+        enabled: !!reviewId,
         dependencies: [
             wheelRatings,
             wheelWins,
             wheelGaps,
-            bigThreeWins,
-            damnGoodDecision,
-            generatedNarrative,
+            wins,
+            otherDetails,
         ],
     });
 
-    // Wizard navigation hook
-    const {
-        subStepIndex,
-        handleNext: handleNextNavigation,
-        handleBack: handleBackNavigation,
-        canGoNext: canGoNextNavigation,
-        canGoBack: canGoBackNavigation,
-    } = useWizardNavigation({
-        totalSteps: REVIEW_WIZARD_STEPS,
-        currentStep,
-        onStepChange: setStep,
-    });
-
-    // Generate narrative when reaching step 6
-    useEffect(() => {
-        if (currentStep === REVIEW_WIZARD_STEPS) {
-            const formData = getFormData();
-            if (formData.wheelRatings && formData.bigThreeWins && formData.damnGoodDecision) {
-                const narrative = generateNarrative(
-                    formData.wheelRatings,
-                    formData.bigThreeWins as [string, string, string],
-                    formData.damnGoodDecision
-                );
-                setNarrative(narrative);
-            }
+    // Simple navigation handlers (no sub-steps needed anymore)
+    const handleNextNavigation = () => {
+        if (currentStep < REVIEW_WIZARD_STEPS) {
+            setStep(currentStep + 1);
         }
-    }, [currentStep, getFormData, setNarrative]);
+    };
+
+    const handleBackNavigation = () => {
+        if (currentStep > 1) {
+            setStep(currentStep - 1);
+        }
+    };
+
+    const canGoNextNavigation = () => {
+        return currentStep < REVIEW_WIZARD_STEPS;
+    };
+
+    const canGoBackNavigation = () => {
+        return currentStep > 1;
+    };
+
 
     const handleNext = async () => {
-        // If not on last step, use navigation hook
+        // If not on last step, move to next step
         if (currentStep < REVIEW_WIZARD_STEPS) {
             // Save before moving to next step
             if (isDirty && reviewId) {
@@ -130,22 +116,11 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
             }
             handleNextNavigation();
         } else {
-            // Complete review - ensure all required fields are present
+            // Complete review
             const formData = getFormData();
-            const completeFormData = {
-                ...formData,
-                year,
-                wheelRatings: wheelRatings || {},
-                wheelWins: wheelWins || {},
-                wheelGaps: wheelGaps || {},
-                bigThreeWins: bigThreeWins || ["", "", ""],
-                damnGoodDecision: damnGoodDecision || "",
-                generatedNarrative: generatedNarrative || "",
-            };
-            
             await handleReviewCompletion({
                 reviewId: reviewId!,
-                formData: completeFormData,
+                formData,
                 year,
                 currentStep,
                 isEditMode,
@@ -154,7 +129,6 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
                 },
                 onError: (error) => {
                     console.error("Failed to complete review:", error);
-                    markSaving(false);
                 },
                 onSavingChange: markSaving,
             });
@@ -166,49 +140,31 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
     };
 
     const handleExit = () => {
-        // Discard all changes and reload from server
-        if (initialReview) {
-            loadFromServer(initialReview);
-        } else {
-            // If no initial review, just reset the store
-            useReviewStore.getState().reset();
+        // Auto-save before exiting
+        if (isDirty && reviewId) {
+            autoSave();
         }
         router.push("/dashboard");
     };
 
     const canGoNext = (): boolean => {
-        // For step 6 (summary), always allow completion
+        // For step 3 (Year Snapshot), always allow completion
         if (currentStep === REVIEW_WIZARD_STEPS) {
             return true;
         }
         
-        // For step 2 (wheel rating), check if all dimensions are rated
+        // For step 2 (Wins), always allow proceeding (0 wins allowed - hard years happen)
         if (currentStep === 2) {
-            // Check store directly - all dimensions must have valid values
-            return LIFE_DIMENSIONS.every(dim => {
-                const value = wheelRatings[dim];
-                return value !== undefined && value >= 1 && value <= 10;
-            });
-        }
-        
-        // For step 3 (audit), allow proceeding (wins/gaps are optional)
-        if (currentStep === 3) {
             return true;
         }
         
-        // For step 4 (big three), check if big three and decision are filled
-        if (currentStep === 4) {
-            const bigThree = getFormData().bigThreeWins;
-            const decision = getFormData().damnGoodDecision;
-            return !!(bigThree && bigThree.every(w => w && w.trim().length > 0) && decision && decision.trim().length > 0);
+        // For step 1 (Wheel of Life), check if all dimensions are rated
+        if (currentStep === 1) {
+            const ratings = getFormData().wheelRatings;
+            return !!(ratings && Object.keys(ratings).length === 8);
         }
         
-        // For multi-dimension steps, use navigation hook logic
-        if (canGoNextNavigation()) {
-            return true;
-        }
-        
-        return false;
+        return canGoNextNavigation();
     };
     
     const canGoBack = () => {
@@ -218,15 +174,11 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
     const renderStep = () => {
         switch (currentStep) {
             case 1:
-                return <StepWelcome year={year} isEditMode={isEditMode} />;
+                return <StepWheelRating />;
             case 2:
-                return <StepWheelRating currentDimensionIndex={subStepIndex} />;
+                return <StepWins />;
             case 3:
-                return <StepAuditAll />;
-            case 4:
-                return <StepBigThree />;
-            case 5:
-                return <StepSummary year={year} />;
+                return <StepYearSnapshot year={year} />;
             default:
                 return null;
         }

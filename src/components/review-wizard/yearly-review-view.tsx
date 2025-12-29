@@ -2,15 +2,19 @@
 
 import { WheelOfLife } from "@/components/planning/wheel-of-life";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { editYearlyReviewAction } from "@/actions/yearly-reviews";
+import { deleteYearlyReviewAction } from "@/actions/yearly-reviews";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { YearlyReviewWithTypedFields } from "@/lib/types";
 import { format } from "date-fns";
 import { analyzeDimensions, convertRatingsToWheelFormat } from "@/lib/utils/dimension-analysis";
-import { LIFE_DIMENSIONS, DIMENSION_LABELS } from "@/lib/validators/yearly-review";
+import { EditableWheelSection } from "./editable-wheel-section";
+import { EditableBigThreeSection } from "./editable-big-three-section";
+import { EditableDecisionSection } from "./editable-decision-section";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 interface YearlyReviewViewProps {
     review: YearlyReviewWithTypedFields;
@@ -19,23 +23,26 @@ interface YearlyReviewViewProps {
 
 export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
     const router = useRouter();
-    const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const handleEdit = async () => {
-        setIsEditing(true);
+    const handleDelete = async () => {
+        setIsDeleting(true);
         try {
-            const result = await editYearlyReviewAction(review.id);
+            const result = await deleteYearlyReviewAction(review.id);
             if (result.success) {
-                router.push(`/review?edit=true&year=${year}`);
+                toast.success("Review deleted successfully");
+                router.push("/dashboard");
             } else {
-                console.error("Failed to enable editing:", result.error);
-                setIsEditing(false);
+                toast.error(result.error || "Failed to delete review");
+                setIsDeleting(false);
             }
         } catch (error) {
-            console.error("Failed to enable editing:", error);
-            setIsEditing(false);
+            toast.error("Failed to delete review");
+            setIsDeleting(false);
         }
     };
+
     // Convert wheelRatings to format expected by WheelOfLife component
     const wheelValues = convertRatingsToWheelFormat(review.wheelRatings);
 
@@ -65,13 +72,12 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                     </div>
                     <div className="flex items-center gap-3">
                         <Button
-                            onClick={handleEdit}
-                            disabled={isEditing}
-                            variant="violet"
-                            className="font-mono text-xs uppercase tracking-widest"
+                            onClick={() => setShowDeleteDialog(true)}
+                            variant="outline"
+                            className="font-mono text-xs uppercase tracking-widest text-bullshit-crimson hover:text-bullshit-crimson hover:bg-bullshit-crimson/10"
                         >
-                            <Edit className="h-4 w-4 mr-2" />
-                            {isEditing ? "Opening Editor..." : "Edit Review"}
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Reset Review
                         </Button>
                         <Link href="/dashboard">
                             <Button variant="outline" className="font-mono text-xs uppercase tracking-widest">
@@ -83,125 +89,92 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                 </div>
 
                 {/* Wheel Visualization */}
-                <div className="glass-pane p-8">
-                    <div className="flex justify-center mb-8">
-                        <WheelOfLife 
-                            values={wheelValues}
-                            highlightedArea={weakDimensions[0]?.key || null}
-                            showWeakStrong={true}
-                        />
-                    </div>
+                <div className="space-y-4">
+                    <EditableWheelSection reviewId={review.id} initialRatings={review.wheelRatings} />
+                    <div className="glass-pane p-8">
+                        <div className="flex justify-center mb-8">
+                            <WheelOfLife 
+                                values={wheelValues}
+                                highlightedArea={weakDimensions[0]?.key || null}
+                                showWeakStrong={true}
+                            />
+                        </div>
 
-                    {/* Weak/Strong Highlights */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {weakDimensions.length > 0 && (
-                            <div className="space-y-2">
-                                <h3 className="text-sm font-bold text-white uppercase tracking-tight">
-                                    Weakest Areas
-                                </h3>
-                                <div className="space-y-1">
-                                    {weakDimensions.map((dim) => (
-                                        <div key={dim.key} className="text-sm text-white/80">
-                                            <span className="font-semibold">{dim.label}</span>
-                                            <span className="text-white/40 ml-2">({dim.score}/10)</span>
-                                        </div>
-                                    ))}
+                        {/* Weak/Strong Highlights */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {weakDimensions.length > 0 && (
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">
+                                        Weakest Areas
+                                    </h3>
+                                    <div className="space-y-1">
+                                        {weakDimensions.map((dim) => (
+                                            <div key={dim.key} className="text-sm text-white/80">
+                                                <span className="font-semibold">{dim.label}</span>
+                                                <span className="text-white/40 ml-2">({dim.score}/10)</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {strongDimensions.length > 0 && (
-                            <div className="space-y-2">
-                                <h3 className="text-sm font-bold text-white uppercase tracking-tight">
-                                    Strongest Areas
-                                </h3>
-                                <div className="space-y-1">
-                                    {strongDimensions.map((dim) => (
-                                        <div key={dim.key} className="text-sm text-white/80">
-                                            <span className="font-semibold">{dim.label}</span>
-                                            <span className="text-white/40 ml-2">({dim.score}/10)</span>
-                                        </div>
-                                    ))}
+                            {strongDimensions.length > 0 && (
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">
+                                        Strongest Areas
+                                    </h3>
+                                    <div className="space-y-1">
+                                        {strongDimensions.map((dim) => (
+                                            <div key={dim.key} className="text-sm text-white/80">
+                                                <span className="font-semibold">{dim.label}</span>
+                                                <span className="text-white/40 ml-2">({dim.score}/10)</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Dimension Audit (Wins & Gaps) */}
-                {(Object.keys(review.wheelWins).length > 0 || Object.keys(review.wheelGaps).length > 0) && (
-                    <div className="glass-pane p-8">
-                        <h2 className="text-xl font-bold text-white uppercase tracking-tight mb-6">
-                            Dimension Deep Dive
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {LIFE_DIMENSIONS.map((dimension) => {
-                                const label = DIMENSION_LABELS[dimension];
-                                const rating = review.wheelRatings[dimension] || 0;
-                                const win = review.wheelWins[dimension] || "";
-                                const gap = review.wheelGaps[dimension] || "";
-                                
-                                if (!win && !gap) return null;
-
-                                const getWinQuestion = (r: number): string => {
-                                    const targetRating = Math.max(1, r - 1);
-                                    return `Why didn't you write a ${targetRating}?`;
-                                };
-
-                                const getGapQuestion = (r: number): string => {
-                                    const targetRating = Math.min(10, r + 1);
-                                    return `Why isn't it a ${targetRating}?`;
-                                };
-
-                                return (
-                                    <div key={dimension} className="space-y-4 border border-white/5 rounded-lg p-4">
-                                        <div className="space-y-1">
-                                            <h3 className="text-base font-bold text-white uppercase tracking-tight">
-                                                {label}
-                                            </h3>
-                                            <span className="text-xs font-mono text-white/60">
-                                                Rated {rating}/10
-                                            </span>
-                                        </div>
-                                        
-                                        {win && (
-                                            <div className="space-y-2">
-                                                <p className="text-xs font-mono text-white/60 uppercase tracking-widest">
-                                                    {getWinQuestion(rating)}
-                                                </p>
-                                                <p className="text-sm text-white/80 whitespace-pre-wrap">{win}</p>
-                                            </div>
-                                        )}
-                                        
-                                        {gap && (
-                                            <div className="space-y-2">
-                                                <p className="text-xs font-mono text-white/60 uppercase tracking-widest">
-                                                    {getGapQuestion(rating)}
-                                                </p>
-                                                <p className="text-sm text-white/80 whitespace-pre-wrap">{gap}</p>
-                                            </div>
-                                        )}
+                {/* Wins - New format */}
+                {review.wins && review.wins.length > 0 && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
+                                Wins
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {review.wins.map((win, i) => (
+                                <div key={i} className="glass-pane p-6 relative group border-white/[0.05] hover:border-white/10 transition-all">
+                                    <div className="absolute top-4 right-4 flex-shrink-0 w-6 h-6 rounded-full bg-action-emerald/10 border border-action-emerald/20 flex items-center justify-center">
+                                        <span className="text-action-emerald text-[10px] font-mono">{i + 1}</span>
                                     </div>
-                                );
-                            })}
+                                    <p className="text-white/80 text-sm leading-relaxed pr-6">{win}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
 
-                {/* Big Three Wins */}
-                {review.bigThreeWins.some(w => w) && (
-                    <div className="glass-pane p-8">
-                        <h2 className="text-xl font-bold text-white uppercase tracking-tight mb-4">
-                            Top 3 Wins
-                        </h2>
-                        <div className="space-y-4">
+                {/* Big Three Wins - Legacy format (backward compatibility) */}
+                {!review.wins && review.bigThreeWins && review.bigThreeWins.some(w => w) && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
+                                Top 3 Wins (Legacy)
+                            </h2>
+                            <EditableBigThreeSection reviewId={review.id} initialWins={review.bigThreeWins} />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
                             {review.bigThreeWins.map((win, i) => (
                                 win && (
-                                    <div key={i} className="space-y-2">
-                                        <h3 className="text-sm font-mono text-white/60 uppercase tracking-widest">
-                                            Win {i + 1}
-                                        </h3>
-                                        <p className="text-white/80 whitespace-pre-wrap">{win}</p>
+                                    <div key={i} className="glass-pane p-6 relative border-white/[0.05]">
+                                        <div className="absolute top-4 right-4 flex-shrink-0 w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                                            <span className="text-white/40 text-[10px] font-mono">{i + 1}</span>
+                                        </div>
+                                        <p className="text-white/80 text-sm leading-relaxed pr-6">{win}</p>
                                     </div>
                                 )
                             ))}
@@ -209,26 +182,62 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                     </div>
                 )}
 
-                {/* Damn Good Decision */}
-                {review.damnGoodDecision && (
-                    <div className="glass-pane p-8">
-                        <h2 className="text-xl font-bold text-white uppercase tracking-tight mb-4">
-                            The Damn Good Decision
-                        </h2>
-                        <p className="text-white/80 whitespace-pre-wrap">{review.damnGoodDecision}</p>
+                {/* Other Details - New format */}
+                {review.otherDetails && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
+                                Other Details
+                            </h2>
+                        </div>
+                        <div className="glass-pane p-8 relative border-white/[0.05] bg-action-emerald/[0.01]">
+                            <div className="absolute top-0 left-8 w-px h-full bg-gradient-to-b from-transparent via-action-emerald/20 to-transparent opacity-50" />
+                            <p className="text-white/90 text-sm leading-relaxed pl-4 italic">
+                                "{review.otherDetails}"
+                            </p>
+                        </div>
                     </div>
                 )}
 
-                {/* Generated Narrative */}
+                {/* Damn Good Decision - Legacy format (backward compatibility) */}
+                {!review.otherDetails && review.damnGoodDecision && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
+                                The Decision (Legacy)
+                            </h2>
+                            <EditableDecisionSection reviewId={review.id} initialDecision={review.damnGoodDecision} />
+                        </div>
+                        <div className="glass-pane p-8 border-white/[0.05]">
+                            <p className="text-white/80 text-sm leading-relaxed italic">"{review.damnGoodDecision}"</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Generated Narrative - Legacy format (backward compatibility) */}
                 {review.generatedNarrative && (
-                    <div className="glass-pane p-8">
-                        <h2 className="text-xl font-bold text-white uppercase tracking-tight mb-4">
-                            Summary
+                    <div className="space-y-6">
+                        <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest px-2">
+                            Narrative Summary (Legacy)
                         </h2>
-                        <p className="text-white/80 whitespace-pre-wrap">{review.generatedNarrative}</p>
+                        <div className="glass-pane p-8 border-white/[0.05]">
+                            <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{review.generatedNarrative}</p>
+                        </div>
                     </div>
                 )}
             </div>
+
+            <ConfirmDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+                title="Reset Review?"
+                description={`Are you sure you want to delete your ${year} review? This will permanently remove all your ratings, wins, and decisions. You'll be able to start fresh from the beginning.`}
+                confirmText="Yes, Reset Review"
+                cancelText="Cancel"
+                onConfirm={handleDelete}
+                variant="destructive"
+                isLoading={isDeleting}
+            />
         </div>
     );
 }
