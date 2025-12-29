@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/server";
-import { getOrCreateYearlyReview, getYearlyReviewById } from "@/data-access/yearly-reviews";
+import { getOrCreateYearlyReview } from "@/data-access/yearly-reviews";
 import { toYearlyReviewWithTypedFields } from "@/lib/type-helpers";
 import { ReviewWizardContainer } from "@/components/review-wizard/wizard-container";
+import { EditableWheelSection } from "@/components/review-wizard/editable-wheel-section";
+import { EditableWinsSection } from "@/components/review-wizard/editable-wins-section";
 
 // Review year: Review the previous year (e.g., in Jan 2026, review 2025)
 // For now, default to 2025 as specified in the requirements
@@ -25,27 +27,38 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
 
     let review;
     
-    if (editMode) {
-        // In edit mode, get existing review (completed or draft)
-        const existingReview = await getOrCreateYearlyReview(userId, reviewYear);
-        review = await getYearlyReviewById(existingReview.id, userId);
-        
-        if (!review) {
-            redirect('/dashboard');
-        }
-    } else {
-        // Normal mode: get or create review
-        review = await getOrCreateYearlyReview(userId, reviewYear);
-        
-        // If review is already completed and not in edit mode, redirect to dashboard
-        if (review.status === 'completed') {
-            redirect('/dashboard');
-        }
+    // In edit mode or normal mode, get or create review.
+    // The redundant getYearlyReviewById call has been removed as per performance analysis.
+    review = await getOrCreateYearlyReview(userId, reviewYear);
+    
+    if (!review) {
+        redirect('/dashboard');
+    }
+
+    // If review is already completed and not in edit mode, redirect to dashboard
+    if (review.status === 'completed' && !editMode) {
+        redirect('/dashboard');
     }
 
     // Convert to typed format
     const typedReview = toYearlyReviewWithTypedFields(review);
 
+    if (editMode) {
+        // If in editMode, render individual editable sections
+        return (
+            <div className="min-h-screen flex flex-col p-6 md:p-12">
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="w-full max-w-4xl space-y-8">
+                        <EditableWheelSection reviewId={typedReview.id} initialRatings={typedReview.wheelRatings} />
+                        <EditableWinsSection reviewId={typedReview.id} initialWins={typedReview.wins || []} year={reviewYear} />
+                        {/* Potentially other editable sections here */}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Otherwise, render the step-by-step wizard
     return (
         <ReviewWizardContainer 
             initialReview={typedReview}

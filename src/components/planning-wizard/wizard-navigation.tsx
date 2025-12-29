@@ -94,8 +94,8 @@ export function WizardNavigation({
                 onOpenChange={setShowExitDialog}
                 title="Exit Planning?"
                 description="Your progress will be saved as a draft. You can continue later from where you left off."
-                confirmLabel="Exit"
-                cancelLabel="Continue Planning"
+                confirmText="Exit"
+                cancelText="Continue Planning"
                 onConfirm={onExit}
                 variant="destructive"
             />
