@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { InteractiveWheelOfLife } from "./interactive-wheel-of-life";
+import { WheelOfLife } from "@/components/ui/WheelOfLife";
 import { Button } from "@/components/ui/button";
 import { Edit2, Save, X } from "lucide-react";
 import { updateWheelRatingsAction } from "@/actions/yearly-reviews";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { LIFE_DIMENSIONS, DIMENSION_LABELS } from "@/lib/validators/yearly-review";
+import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 import { DEFAULT_RATING } from "@/lib/constants/review";
 import type { WheelRatings } from "@/lib/validators/yearly-review";
 
@@ -86,12 +86,14 @@ export function EditableWheelSection({ reviewId, initialRatings }: EditableWheel
                     </div>
                 </div>
                 <div className="glass-pane p-8">
-                    <InteractiveWheelOfLife
+                    <WheelOfLife
                         values={wheelValues}
                         onChange={(dimension, value) => {
                             setRatings(prev => ({ ...prev, [dimension]: value }));
                         }}
                         showWeakStrong={false}
+                        interactive={true}
+                        useDimensionLabels={true}
                     />
                 </div>
             </div>
@@ -99,7 +101,7 @@ export function EditableWheelSection({ reviewId, initialRatings }: EditableWheel
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white uppercase tracking-tight">
                     Wheel of Life
@@ -113,6 +115,14 @@ export function EditableWheelSection({ reviewId, initialRatings }: EditableWheel
                     <Edit2 className="h-4 w-4 mr-2" />
                     Edit
                 </Button>
+            </div>
+            <div className="glass-pane p-8">
+                <WheelOfLife
+                    values={wheelValues}
+                    showWeakStrong={false}
+                    interactive={false}
+                    useDimensionLabels={true}
+                />
             </div>
         </div>
     );

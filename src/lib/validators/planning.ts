@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LIFE_DIMENSIONS, type LifeDimension } from "./yearly-review";
+import { sanitizeText } from "@/lib/sanitize";
 
 /**
  * Planning Status
@@ -16,20 +17,16 @@ export const WheelOfLifeCategorySchema = z.enum(LIFE_DIMENSIONS as unknown as [L
 export type WheelOfLifeCategory = z.infer<typeof WheelOfLifeCategorySchema>;
 
 /**
- * Annual Goal Schema
- * Goals with definition of done, progress signal, and optional why
- */
-/**
  * Annual Goal Schema (Strict)
  * Goals with definition of done, progress signal, and optional why
  */
 export const AnnualGoalSchema = z.object({
     id: z.string().uuid(),
-    text: z.string().min(1, "Goal text is required").max(500),
+    text: z.string().min(1, "Goal text is required").max(500).transform(val => sanitizeText(val, 500)),
     category: WheelOfLifeCategorySchema.optional(),
-    definitionOfDone: z.string().min(1, "Definition of done is required").max(1000),
-    progressSignal: z.string().max(500).optional(),
-    whyMatters: z.string().max(1000).optional(),
+    definitionOfDone: z.string().min(1, "Definition of done is required").max(1000).transform(val => sanitizeText(val, 1000)),
+    progressSignal: z.string().max(500).optional().transform(val => val ? sanitizeText(val, 500) : val),
+    whyMatters: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
     createdAt: z.date().or(z.string().transform(str => new Date(str))),
     updatedAt: z.date().or(z.string().transform(str => new Date(str))).optional(),
 });
@@ -40,9 +37,9 @@ export type AnnualGoal = z.infer<typeof AnnualGoalSchema>;
  * Allows incomplete goal details during planning flow
  */
 export const DraftAnnualGoalSchema = AnnualGoalSchema.extend({
-    definitionOfDone: z.string().max(1000).optional(),
-    progressSignal: z.string().max(500).optional(),
-    whyMatters: z.string().max(1000).optional(),
+    definitionOfDone: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
+    progressSignal: z.string().max(500).optional().transform(val => val ? sanitizeText(val, 500) : val),
+    whyMatters: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
 });
 export type DraftAnnualGoal = z.infer<typeof DraftAnnualGoalSchema>;
 
@@ -52,7 +49,7 @@ export type DraftAnnualGoal = z.infer<typeof DraftAnnualGoalSchema>;
  */
 export const SimplifiedGoalSchema = z.object({
     id: z.string().uuid(),
-    text: z.string().min(1, "Goal text is required").max(500),
+    text: z.string().min(1, "Goal text is required").max(500).transform(val => sanitizeText(val, 500)),
     category: WheelOfLifeCategorySchema.optional(),
     createdAt: z.date().or(z.string().transform(str => new Date(str))),
     updatedAt: z.date().or(z.string().transform(str => new Date(str))).optional(),
@@ -65,7 +62,7 @@ export type SimplifiedGoal = z.infer<typeof SimplifiedGoalSchema>;
  */
 export const AntiGoalSchema = z.object({
     id: z.string().uuid(),
-    text: z.string().min(1, "Anti-goal text is required").max(500),
+    text: z.string().min(1, "Anti-goal text is required").max(500).transform(val => sanitizeText(val, 500)),
     createdAt: z.date().or(z.string().transform(str => new Date(str))).optional(),
 });
 export type AntiGoal = z.infer<typeof AntiGoalSchema>;
@@ -75,9 +72,9 @@ export type AntiGoal = z.infer<typeof AntiGoalSchema>;
  * Signature and oath for the year plan
  */
 export const CommitmentSchema = z.object({
-    commitmentStatement: z.string().max(1000).optional(),
-    signatureName: z.string().min(1, "Signature name is required").max(200),
-    signatureImage: z.string().optional(),
+    commitmentStatement: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
+    signatureName: z.string().min(1, "Signature name is required").max(200).transform(val => sanitizeText(val, 200)),
+    signatureImage: z.string().optional().transform(val => val ? val.substring(0, 500000) : val), // 500KB limit for base64
     signedAt: z.date().or(z.string().transform(str => new Date(str))),
 });
 export type Commitment = z.infer<typeof CommitmentSchema>;
@@ -95,16 +92,23 @@ export type PlanningGoal = SimplifiedGoal;
  */
 export const PlanningFormSchema = z.object({
     // Step 1: Empty Your Head + Future Identity
-    brainDump: z.string().max(5000).optional(),
-    futureIdentity: z.string().max(1000).optional(),
+    brainDump: z.string().max(5000).optional().transform(val => val ? sanitizeText(val, 5000) : val),
+    futureIdentity: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
 
     // Step 2: Wheel of Life Vision
     targetWheelOfLife: z.record(z.string(), z.number().min(1).max(10)).optional(),
     focusAreas: z.array(z.string()).max(3).optional(),
-    wheelVisionStatements: z.record(z.string(), z.string().max(500)).optional(),
+    wheelVisionStatements: z.record(z.string(), z.string().max(500)).optional().transform(val => {
+        if (!val) return val;
+        const sanitized: Record<string, string> = {};
+        Object.entries(val).forEach(([key, value]) => {
+            sanitized[key] = sanitizeText(value, 500);
+        });
+        return sanitized;
+    }),
 
     // Step 3: Letter from Future You
-    futureYouLetter: z.string().max(2000).optional(),
+    futureYouLetter: z.string().max(2000).optional().transform(val => val ? sanitizeText(val, 2000) : val),
 
     // Step 4-6: Goals
     goals: z.array(SimplifiedGoalSchema).optional(), // Full backlog
@@ -112,14 +116,16 @@ export const PlanningFormSchema = z.object({
     annualGoals: z.array(DraftAnnualGoalSchema).optional(), // Detailed annual goals with definition of done
 
     // Step 7: Anti-Vision + Anti-Goals
-    antiVision: z.string().max(2000).optional(), // Failure narrative
+    antiVision: z.string().max(2000).optional().transform(val => val ? sanitizeText(val, 2000) : val), // Failure narrative
     antiGoals: z.array(AntiGoalSchema).optional(), // Unlimited list
-    driftResponse: z.string().max(140).optional(), // Optional if/then response
+    driftResponse: z.string().max(140).optional().transform(val => val ? sanitizeText(val, 140) : val), // Optional if/then response
 
     // Step 8: Commitment
-    commitmentStatement: z.string().max(1000).optional(),
-    signatureName: z.string().max(200).optional(),
-    signatureImage: z.string().optional(),
+    commitmentStatement: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
+    signatureImage: z.string().optional().transform(val => val ? val.substring(0, 500000) : val).refine(
+        (val) => !val || val.startsWith("data:image/"),
+        { message: "Invalid signature format. Must be a data URL." }
+    ), // 500KB limit for base64
     signedAt: z.date().or(z.string().transform(str => new Date(str))).optional(),
 
     // Progress Tracking
@@ -128,7 +134,7 @@ export const PlanningFormSchema = z.object({
 
 
     // From Review (for reference)
-    previousIdentity: z.string().max(2000).optional(),
+    previousIdentity: z.string().max(2000).optional().transform(val => val ? sanitizeText(val, 2000) : val),
     wheelOfLife: z.record(z.string(), z.number().min(1).max(10)).optional(),
 
     // Legacy fields (for backward compatibility)

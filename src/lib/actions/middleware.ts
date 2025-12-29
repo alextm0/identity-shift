@@ -9,10 +9,10 @@
 
 import { ZodSchema } from "zod";
 import { getRequiredSession } from "@/lib/auth/server";
-import { enforceRateLimit, checkRateLimit } from "@/lib/rate-limit";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { validateAndParse } from "@/lib/validators/utils";
-import { ValidationError, RateLimitError, AppError, getErrorMessage, getErrorCode } from "@/lib/errors";
-import { ActionResult, success, failure } from "./result";
+import { AppError, getErrorMessage, getErrorCode } from "@/lib/errors";
+import { ActionResult } from "./result";
 
 /**
  * Rate limit configuration
@@ -28,6 +28,13 @@ export interface RateLimitConfig {
  */
 export interface AuthOptions {
     rateLimit?: RateLimitConfig;
+}
+
+/**
+ * Options for createAction factory
+ */
+export interface CreateActionOptions extends AuthOptions {
+    errorMessage?: string;
 }
 
 /**
@@ -47,11 +54,11 @@ export interface AuthOptions {
  * });
  * ```
  */
-export function withAuth<T extends any[]>(
-    action: (userId: string, ...args: T) => Promise<any>,
+export function withAuth<TArgs extends unknown[], TReturn>(
+    action: (userId: string, ...args: TArgs) => Promise<TReturn>,
     options?: AuthOptions
 ) {
-    return async (...args: T): Promise<any> => {
+    return async (...args: TArgs): Promise<TReturn> => {
         // Verify session - throws if not authenticated
         const session = await getRequiredSession();
         const userId = session.user.id;
@@ -111,7 +118,7 @@ export function withValidation<TInput, TOutput>(
  * }, "Failed to perform action");
  * ```
  */
-export function withErrorHandling<TArgs extends any[], TReturn>(
+export function withErrorHandling<TArgs extends unknown[], TReturn>(
     action: (...args: TArgs) => Promise<TReturn>,
     defaultErrorMessage: string = "An error occurred"
 ): (...args: TArgs) => Promise<TReturn> {
@@ -154,7 +161,7 @@ export function withErrorHandling<TArgs extends any[], TReturn>(
  * );
  * ```
  */
-export function compose<TArgs extends any[], TReturn>(
+export function compose<TArgs extends unknown[], TReturn>(
     action: (...args: TArgs) => Promise<TReturn>,
     middlewares: Array<(fn: (...args: TArgs) => Promise<TReturn>) => (...args: TArgs) => Promise<TReturn>>
 ): (...args: TArgs) => Promise<TReturn> {
@@ -166,7 +173,7 @@ export function compose<TArgs extends any[], TReturn>(
  * 
  * @param schema - Zod schema for validation
  * @param action - The action function (userId, validatedData) => Promise<ActionResult<T>>
- * @param options - Optional configuration
+ * @param options - Optional configuration including custom error message
  * @returns Fully wrapped action
  * 
  * @example
@@ -178,7 +185,8 @@ export function compose<TArgs extends any[], TReturn>(
  *     return success(result, { message: "Saved!" });
  *   },
  *   {
- *     rateLimit: { key: 'save-data', limit: 20, windowMs: 60000 }
+ *     rateLimit: { key: 'save-data', limit: 20, windowMs: 60000 },
+ *     errorMessage: "Failed to save data. Please try again."
  *   }
  * );
  * ```
@@ -186,7 +194,7 @@ export function compose<TArgs extends any[], TReturn>(
 export function createAction<TInput, TOutput>(
     schema: ZodSchema<TInput>,
     action: (userId: string, data: TInput) => Promise<ActionResult<TOutput>>,
-    options?: AuthOptions
+    options?: CreateActionOptions
 ) {
     return withErrorHandling(
         withValidation(
@@ -196,7 +204,78 @@ export function createAction<TInput, TOutput>(
                 options
             )
         ),
-        "Action failed"
+        options?.errorMessage || "Action failed"
     );
+}
+
+/**
+ * Creates an action wrapper with auth and error handling (no validation)
+ * Useful for actions that don't require input validation (e.g., delete, get)
+ * 
+ * @param action - The action function (userId, ...args) => Promise<ActionResult<T>>
+ * @param options - Optional configuration including custom error message
+ * @returns Fully wrapped action
+ * 
+ * @example
+ * ```typescript
+ * export const deleteItemAction = createActionWithoutValidation(
+ *   async (userId, itemId: string) => {
+ *     await deleteItem(itemId, userId);
+ *     return success({ deleted: true });
+ *   },
+ *   {
+ *     rateLimit: { key: 'delete-item', limit: 10, windowMs: 60000 },
+ *     errorMessage: "Failed to delete item. Please try again."
+ *   }
+ * );
+ * ```
+ */
+export function createActionWithoutValidation<TOutput, TArgs extends unknown[] = unknown[]>(
+    action: (userId: string, ...args: TArgs) => Promise<ActionResult<TOutput>>,
+    options?: CreateActionOptions
+) {
+    return withErrorHandling(
+        withAuth(
+            action,
+            options
+        ),
+        options?.errorMessage || "Action failed"
+    );
+}
+
+/**
+ * Creates an action factory for actions that take additional parameters before formData
+ * Returns a function that accepts the additional params and returns the action
+ * 
+ * @param schema - Zod schema for validation
+ * @param action - The action function (userId, param, validatedData) => Promise<ActionResult<T>>
+ * @param options - Optional configuration
+ * @returns Factory function that accepts param and returns the action
+ * 
+ * @example
+ * ```typescript
+ * export const updateItemAction = createActionWithParam(
+ *   ItemSchema.partial(),
+ *   async (userId, itemId: string, validated) => {
+ *     await updateItem(itemId, userId, validated);
+ *     return success({ id: itemId });
+ *   },
+ *   { errorMessage: "Failed to update item" }
+ * );
+ * // Usage: updateItemAction(itemId)(formData)
+ * ```
+ */
+export function createActionWithParam<TParam, TInput, TOutput>(
+    schema: ZodSchema<TInput>,
+    action: (userId: string, param: TParam, data: TInput) => Promise<ActionResult<TOutput>>,
+    options?: CreateActionOptions
+) {
+    return (param: TParam) => {
+        return createAction(
+            schema,
+            async (userId, data) => action(userId, param, data),
+            options
+        );
+    };
 }
 

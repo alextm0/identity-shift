@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean, json, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, boolean, json, uniqueIndex, index } from 'drizzle-orm/pg-core';
 
 // USER table (managed by Better Auth - defined here for foreign keys)
 export const user = pgTable('user', {
@@ -53,12 +53,8 @@ export const verification = pgTable('verification', {
 // PLANNING
 export const planning = pgTable('planning', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().unique().references(() => user.id),
-
-    // Legacy fields (kept for migration compatibility)
-    currentSelf: text('currentSelf'),
-    desiredSelf: text('desiredSelf'),
-    goals2026: json('goals2026'), // JSON: [{area, outcome, why, deadline}]
+    userId: text('userId').notNull().references(() => user.id),
+    year: integer('year').notNull().default(new Date().getFullYear()), // Planning year (e.g., 2026)
 
     // Goal Collections (GPS-structured)
     activeGoals: json('activeGoals'),      // 2-3 PlanningGoal[] with full GPS structure
@@ -96,7 +92,6 @@ export const planning = pgTable('planning', {
     antiGoals: json('antiGoals'), // Unlimited list of "I refuse to..." statements
 
     // Step 8: Commitment
-    themeWord: text('themeWord'), // Deprecated
     commitmentStatement: text('commitmentStatement'), // "The kind of year I'm choosing..."
     signatureName: text('signatureName'), // Signature name
     signatureImage: text('signatureImage'), // Base64 signature
@@ -108,7 +103,10 @@ export const planning = pgTable('planning', {
     completedAt: timestamp('completedAt'),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-});
+}, (table) => ({
+    // Ensure one plan per user per year
+    uniqueUserYear: uniqueIndex('planning_userId_year_idx').on(table.userId, table.year),
+}));
 
 // SPRINT
 export const sprint = pgTable('sprint', {
@@ -117,8 +115,23 @@ export const sprint = pgTable('sprint', {
     name: text('name').notNull(),
     startDate: timestamp('startDate').notNull(),
     endDate: timestamp('endDate').notNull(),
-    priorities: json('priorities').notNull(), // JSON: [{key, label, type: 'habit'|'work', weeklyTargetUnits, unitDefinition}]
     active: boolean('active').notNull().default(true),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+}, (table) => ({
+    activeSprintIdx: index('sprint_userId_active_idx').on(table.userId, table.active),
+    sprintOrderIdx: index('sprint_userId_startDate_idx').on(table.userId, table.startDate),
+}));
+
+// SPRINT_PRIORITY
+export const sprintPriority = pgTable('sprintPriority', {
+    id: text('id').primaryKey(),
+    sprintId: text('sprintId').notNull().references(() => sprint.id, { onDelete: 'cascade' }),
+    priorityKey: text('priorityKey').notNull(),
+    label: text('label').notNull(),
+    type: text('type').notNull(), // 'habit' | 'work'
+    weeklyTargetUnits: integer('weeklyTargetUnits').notNull().default(0),
+    unitDefinition: text('unitDefinition'),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
@@ -127,7 +140,7 @@ export const sprint = pgTable('sprint', {
 export const dailyLog = pgTable('dailyLog', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().references(() => user.id),
-    sprintId: text('sprintId').notNull().references(() => sprint.id),
+    sprintId: text('sprintId').references(() => sprint.id),
     date: timestamp('date').notNull(), // format: YYYY-MM-DD
     energy: integer('energy').notNull(), // 1-5
     sleepHours: integer('sleepHours'), // optional: hours or null
@@ -143,13 +156,14 @@ export const dailyLog = pgTable('dailyLog', {
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => ({
     uniqueUserSprintDate: uniqueIndex('dailyLog_userId_sprintId_date_idx').on(table.userId, table.sprintId, table.date),
+    dailyLogSprintDateIdx: index('dailyLog_sprintId_date_idx').on(table.sprintId, table.date),
 }));
 
 // WEEKLY_REVIEW
 export const weeklyReview = pgTable('weeklyReview', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().references(() => user.id),
-    sprintId: text('sprintId').notNull().references(() => sprint.id),
+    sprintId: text('sprintId').references(() => sprint.id),
     weekEndDate: timestamp('weekEndDate').notNull(),
     progressRatios: json('progressRatios').notNull(), // JSON: {priorityKey: ratio}
     evidenceRatio: integer('evidenceRatio').notNull(), // 0-100 %
@@ -158,13 +172,16 @@ export const weeklyReview = pgTable('weeklyReview', {
     oneChange: text('oneChange').notNull(), // 'CUT_SCOPE'|'ADD_RECOVERY'|'FIX_MORNING'|'REMOVE_DISTRACTION'|'KEEP_SAME'
     changeReason: text('changeReason'), // optional: user's reasoning
     createdAt: timestamp('createdAt').notNull().defaultNow(),
-});
+}, (table) => ({
+    weeklyReviewOrderIdx: index('weeklyReview_userId_weekEndDate_idx').on(table.userId, table.weekEndDate),
+    weeklyReviewSprintIdx: index('weeklyReview_sprintId_idx').on(table.sprintId),
+}));
 
 // MONTHLY_REVIEW
 export const monthlyReview = pgTable('monthlyReview', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().references(() => user.id),
-    sprintId: text('sprintId').notNull().references(() => sprint.id),
+    sprintId: text('sprintId').references(() => sprint.id),
     month: text('month').notNull(), // YYYY-MM
     whoWereYou: text('whoWereYou'), // optional: identity description
     desiredIdentity: text('desiredIdentity'), // 'yes'|'partially'|'no'
@@ -172,7 +189,10 @@ export const monthlyReview = pgTable('monthlyReview', {
     actualProgress: json('actualProgress').notNull(), // JSON: {progressRatio, evidenceRatio}
     oneChange: text('oneChange'), // optional: next sprint change
     createdAt: timestamp('createdAt').notNull().defaultNow(),
-});
+}, (table) => ({
+    monthlyReviewOrderIdx: index('monthlyReview_userId_createdAt_idx').on(table.userId, table.createdAt),
+    monthlyReviewSprintIdx: index('monthlyReview_sprintId_idx').on(table.sprintId),
+}));
 
 // YEARLY_REVIEW
 export const yearlyReview = pgTable('yearlyReview', {
@@ -191,14 +211,7 @@ export const yearlyReview = pgTable('yearlyReview', {
     // Step 4: What's missing (gaps per dimension)
     wheelGaps: json('wheelGaps'), // {health: "text...", training: "text...", ...}
 
-    // Step 5: Big Three (deprecated - kept for migration)
-    bigThreeWins: json('bigThreeWins'), // ["win1", "win2", "win3"]
-    damnGoodDecision: text('damnGoodDecision'),
-
-    // Step 6: Generated summary (deprecated - kept for migration)
-    generatedNarrative: text('generatedNarrative'),
-
-    // New simplified fields
+    // Wins and other details
     wins: json('wins'), // ["win1", "win2", ...] - flexible array
     otherDetails: text('otherDetails'), // Freeform notes
 
@@ -219,4 +232,24 @@ export const auditLog = pgTable('auditLog', {
     changes: json('changes'), // JSON: {field: {old, new}} - optional, for UPDATE actions
     metadata: json('metadata'), // JSON: additional context (IP, user agent, etc.)
     createdAt: timestamp('createdAt').notNull().defaultNow(),
-});
+}, (table) => ({
+    // Index for querying user's audit history
+    auditLogUserIdx: index('auditLog_userId_createdAt_idx').on(table.userId, table.createdAt),
+    // Index for querying entity history
+    auditLogEntityIdx: index('auditLog_entityType_entityId_idx').on(table.entityType, table.entityId),
+}));
+
+// RELATIONS
+import { relations } from 'drizzle-orm';
+
+export const sprintRelations = relations(sprint, ({ many }) => ({
+    priorities: many(sprintPriority),
+}));
+
+export const sprintPriorityRelations = relations(sprintPriority, ({ one }) => ({
+    sprint: one(sprint, {
+        fields: [sprintPriority.sprintId],
+        references: [sprint.id],
+    }),
+}));
+

@@ -12,14 +12,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Save, Loader2, Sparkles, Target, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DailyLog, Sprint } from "@/lib/types";
+import { DailyLog, SprintWithPriorities, MonthlyReviewWithTypedFields } from "@/lib/types";
 import { DesiredIdentityStatus } from "@/lib/enums";
+import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
 
 interface MonthlyReviewPanelProps {
-  activeSprint: Sprint;
+  activeSprint?: SprintWithPriorities;
   monthlyLogs: DailyLog[];
   monthStr: string;
-  latestReview?: any;
+  latestReview?: MonthlyReviewWithTypedFields;
 }
 
 export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latestReview }: MonthlyReviewPanelProps) {
@@ -28,16 +29,17 @@ export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latest
   const [desiredIdentity, setDesiredIdentity] = useState(DesiredIdentityStatus.PARTIALLY);
   const [oneChange, setOneChange] = useState("");
 
-  const priorities = (activeSprint.priorities as any[]) || [];
+  const priorities = activeSprint?.priorities || [];
   const [perceivedProgress, setPerceivedProgress] = useState<Record<string, number>>(
     priorities.reduce((acc, p) => ({ ...acc, [p.key]: 5 }), {})
   );
 
   const actualData = useMemo(() => {
+    if (!activeSprint) return [];
     return priorities.map(p => {
       const actualUnits = monthlyLogs.reduce((total, log) => {
-        const logPriorities = log.priorities as any;
-        return total + (logPriorities[p.key]?.units || 0);
+        const typedLog = toDailyLogWithTypedFields(log);
+        return total + (typedLog.priorities[p.key]?.units || 0);
       }, 0);
 
       const targetPerMonth = p.weeklyTargetUnits * 4;
@@ -49,7 +51,7 @@ export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latest
         actual: Math.round(normalizedActual * 10) / 10
       };
     });
-  }, [monthlyLogs, priorities, perceivedProgress]);
+  }, [monthlyLogs, priorities, perceivedProgress, activeSprint]);
 
   async function handleSaveReview() {
     setIsPending(true);
@@ -59,10 +61,10 @@ export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latest
         : 0;
 
       await createMonthlyReviewAction({
-        sprintId: activeSprint.id,
+        sprintId: activeSprint?.id ?? null,
         month: monthStr,
         whoWereYou,
-        desiredIdentity: desiredIdentity as any,
+        desiredIdentity,
         perceivedProgress,
         actualProgress: {
           progressRatio: avgActual / 10,

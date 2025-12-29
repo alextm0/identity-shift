@@ -1,15 +1,15 @@
 "use client";
 
 import { useReviewStore } from "@/hooks/stores/use-review-store";
-import { InteractiveWheelOfLife } from "./interactive-wheel-of-life";
-import { LIFE_DIMENSIONS, DIMENSION_LABELS } from "@/lib/validators/yearly-review";
+import { WheelOfLife } from "@/components/ui/WheelOfLife";
+import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 import { DEFAULT_RATING } from "@/lib/constants/review";
 import { useMemo } from "react";
 
 export function StepWheelRating() {
     const { wheelRatings, setWheelRating } = useReviewStore();
     
-    // Convert wheelRatings to format expected by InteractiveWheelOfLife
+    // Convert wheelRatings to format expected by WheelOfLife
     // Use dimension keys as labels, but ensure all dimensions are present
     const wheelValues = useMemo(() => {
         const values: Record<string, number> = {};
@@ -37,10 +37,12 @@ export function StepWheelRating() {
                 </p>
             </div>
 
-            <InteractiveWheelOfLife
+            <WheelOfLife
                 values={wheelValues}
                 onChange={handleChange}
                 showWeakStrong={false}
+                interactive={true}
+                useDimensionLabels={true}
             />
         </div>
     );

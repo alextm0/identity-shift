@@ -10,7 +10,7 @@ import {
     monthlyReview,
     yearlyReview
 } from '@/lib/db/schema';
-import type { Goal, WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AntiGoal, CrystalBallFailures } from '@/lib/validators';
+import type { Goal, WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AntiGoal, CrystalBallFailures, AnnualGoal } from '@/lib/validators';
 
 // --- DB Types ---
 export type User = InferSelectModel<typeof user>;
@@ -39,12 +39,11 @@ export type NewYearlyReview = InferInsertModel<typeof yearlyReview>;
 /**
  * Planning with properly typed JSON fields
  */
-export interface PlanningWithTypedFields extends Omit<Planning, 'goals2026' | 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'goals' | 'quarterlyGoalIds' | 'annualGoalIds' | 'targetWheelOfLife' | 'focusAreas' | 'wheelVisionStatements' | 'crystalBallFailures' | 'antiGoals' | 'antiVision' | 'driftResponse' | 'brainDump' | 'futureIdentity' | 'futureYouLetter' | 'themeWord' | 'commitmentStatement' | 'signatureName' | 'signatureImage' | 'signedAt' | 'currentModule'> {
-    goals2026?: Goal[]; // Legacy field
+export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'goals' | 'quarterlyGoalIds' | 'annualGoalIds' | 'targetWheelOfLife' | 'focusAreas' | 'wheelVisionStatements' | 'crystalBallFailures' | 'antiGoals' | 'antiVision' | 'driftResponse' | 'brainDump' | 'futureIdentity' | 'futureYouLetter' | 'commitmentStatement' | 'signatureName' | 'signatureImage' | 'signedAt' | 'currentModule'> {
     wheelOfLife?: WheelOfLife;
     activeGoals?: PlanningGoal[]; // Legacy - use goals instead
-    backlogGoals?: any[]; // Legacy - deprecated
-    archivedGoals?: any[]; // Legacy - deprecated
+    backlogGoals?: unknown[]; // Legacy - deprecated
+    archivedGoals?: unknown[]; // Legacy - deprecated
     // Step 1: Empty Your Head + Future Identity
     brainDump?: string;
     futureIdentity?: string;
@@ -53,19 +52,17 @@ export interface PlanningWithTypedFields extends Omit<Planning, 'goals2026' | 'w
     focusAreas?: string[];
     wheelVisionStatements?: Record<string, string>;
     // Step 3: Letter from Future You
-
     futureYouLetter?: string;
     // Step 4-6: Goals
     goals?: SimplifiedGoal[];
     quarterlyGoalIds?: string[]; // Legacy
     annualGoalIds?: string[];
-    annualGoals?: any[]; // Goals with details (definitionOfDone, progressSignal, etc.)
+    annualGoals?: AnnualGoal[]; // Goals with details (definitionOfDone, progressSignal, etc.)
     // Step 7: Anti-Vision + Anti-Goals
     antiVision?: string;
     antiGoals?: AntiGoal[];
     driftResponse?: string;
     // Step 8: Commitment
-    themeWord?: string;
     commitmentStatement?: string;
     signatureName?: string;
     signatureImage?: string;
@@ -115,11 +112,10 @@ export interface MonthlyReviewWithTypedFields extends Omit<MonthlyReview, 'perce
 /**
  * YearlyReview with properly typed JSON fields
  */
-export interface YearlyReviewWithTypedFields extends Omit<YearlyReview, 'wheelRatings' | 'wheelWins' | 'wheelGaps' | 'bigThreeWins' | 'wins'> {
+export interface YearlyReviewWithTypedFields extends Omit<YearlyReview, 'wheelRatings' | 'wheelWins' | 'wheelGaps' | 'wins' | 'otherDetails'> {
     wheelRatings: Record<string, number>;
     wheelWins: Record<string, string>;
     wheelGaps: Record<string, string>;
-    bigThreeWins: [string, string, string]; // Deprecated, kept for migration
-    wins?: string[]; // New flexible wins array
-    otherDetails?: string; // New freeform field
+    wins?: string[]; // Flexible wins array
+    otherDetails?: string; // Freeform field
 }

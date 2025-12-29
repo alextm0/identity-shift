@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { DIMENSION_LABELS } from "@/lib/validators/yearly-review";
+import { WEAK_DIMENSION_THRESHOLD, STRONG_DIMENSION_THRESHOLD, WHEEL_MIN_VALUE, WHEEL_MAX_VALUE } from "@/lib/constants/thresholds";
 
 interface InteractiveWheelOfLifeProps {
   values: Record<string, number>;
@@ -10,10 +11,10 @@ interface InteractiveWheelOfLifeProps {
   showWeakStrong?: boolean;
 }
 
-export function InteractiveWheelOfLife({ 
-  values, 
+export function InteractiveWheelOfLife({
+  values,
   onChange,
-  showWeakStrong = false 
+  showWeakStrong = false
 }: InteractiveWheelOfLifeProps) {
   const dimensions = Object.keys(values);
   const size = 400;
@@ -21,53 +22,53 @@ export function InteractiveWheelOfLife({
   const radius = size * 0.4;
   const angleStep = (Math.PI * 2) / dimensions.length;
   const viewBoxPadding = 50;
-  
+
   const [activeDimension, setActiveDimension] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Get status for coloring
-  const getStatus = (value: number): 'weak' | 'strong' | 'normal' => {
+  const getStatus = useCallback((value: number): 'weak' | 'strong' | 'normal' => {
     if (!showWeakStrong) return 'normal';
-    if (value < 5) return 'weak';
-    if (value >= 8) return 'strong';
+    if (value < WEAK_DIMENSION_THRESHOLD) return 'weak';
+    if (value >= STRONG_DIMENSION_THRESHOLD) return 'strong';
     return 'normal';
-  };
+  }, [showWeakStrong]);
 
   // Calculate value from mouse position projected onto spoke
   const getValueFromMouse = useCallback((dimensionIndex: number, clientX: number, clientY: number): number => {
-    if (!svgRef.current) return 5;
-    
+    if (!svgRef.current) return (WHEEL_MIN_VALUE + WHEEL_MAX_VALUE) / 2; // Default to middle value
+
     const svg = svgRef.current;
     const rect = svg.getBoundingClientRect();
     const viewBoxSize = size + viewBoxPadding * 2;
-    
+
     // Convert to SVG coordinates
     const svgX = (clientX - rect.left) / rect.width * viewBoxSize;
     const svgY = (clientY - rect.top) / rect.height * viewBoxSize;
-    
+
     // Adjusted center (accounting for viewBox padding)
     const adjustedCenter = center + viewBoxPadding;
-    
+
     // Vector from center to mouse
     const dx = svgX - adjustedCenter;
     const dy = svgY - adjustedCenter;
-    
+
     // The spoke's angle
     const spokeAngle = dimensionIndex * angleStep - Math.PI / 2;
-    
+
     // Unit vector along the spoke
     const spokeX = Math.cos(spokeAngle);
     const spokeY = Math.sin(spokeAngle);
-    
+
     // Project mouse vector onto spoke (dot product)
     const projection = dx * spokeX + dy * spokeY;
-    
-    // Convert projection distance to value (0 to radius -> 1 to 10)
+
+    // Convert projection distance to value (0 to radius -> WHEEL_MIN_VALUE to WHEEL_MAX_VALUE)
     const clampedProjection = Math.max(0, Math.min(radius, projection));
-    const value = Math.round((clampedProjection / radius) * 9 + 1);
-    
-    return Math.max(1, Math.min(10, value));
+    const value = Math.round((clampedProjection / radius) * (WHEEL_MAX_VALUE - WHEEL_MIN_VALUE) + WHEEL_MIN_VALUE);
+
+    return Math.max(WHEEL_MIN_VALUE, Math.min(WHEEL_MAX_VALUE, value));
   }, [angleStep, radius, size, center, viewBoxPadding]);
 
   // Pointer handlers
@@ -76,7 +77,7 @@ export function InteractiveWheelOfLife({
     (e.target as Element).setPointerCapture(e.pointerId);
     setActiveDimension(dimension);
     setIsDragging(true);
-    
+
     const dimIndex = dimensions.indexOf(dimension);
     const value = getValueFromMouse(dimIndex, e.clientX, e.clientY);
     onChange(dimension, value);
@@ -84,7 +85,7 @@ export function InteractiveWheelOfLife({
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging || !activeDimension) return;
-    
+
     const dimIndex = dimensions.indexOf(activeDimension);
     const value = getValueFromMouse(dimIndex, e.clientX, e.clientY);
     onChange(activeDimension, value);
@@ -98,13 +99,13 @@ export function InteractiveWheelOfLife({
   // Computed data for rendering
   const spokeData = useMemo(() => {
     const adjustedCenter = center + viewBoxPadding;
-    
+
     return dimensions.map((dimension, i) => {
       const angle = i * angleStep - Math.PI / 2;
-      const value = values[dimension] || 5;
-      const r = (value / 10) * radius;
+      const value = values[dimension] || (WHEEL_MIN_VALUE + WHEEL_MAX_VALUE) / 2;
+      const r = (value / WHEEL_MAX_VALUE) * radius;
       const status = getStatus(value);
-      
+
       return {
         dimension,
         value,
@@ -124,7 +125,7 @@ export function InteractiveWheelOfLife({
         centerY: adjustedCenter,
       };
     });
-  }, [dimensions, values, radius, center, angleStep, viewBoxPadding]);
+  }, [dimensions, values, radius, center, angleStep, viewBoxPadding, getStatus]);
 
   const polygonPoints = spokeData.map(d => `${d.x},${d.y}`).join(" ");
   const adjustedCenter = center + viewBoxPadding;
@@ -141,12 +142,12 @@ export function InteractiveWheelOfLife({
         onPointerLeave={handlePointerUp}
       >
         {/* Background Circles */}
-        {[2, 4, 6, 8, 10].map((level) => (
+        {[2, 4, 6, 8, WHEEL_MAX_VALUE].map((level) => (
           <circle
             key={level}
             cx={adjustedCenter}
             cy={adjustedCenter}
-            r={(level / 10) * radius}
+            r={(level / WHEEL_MAX_VALUE) * radius}
             className="fill-none stroke-white/5 stroke-1"
           />
         ))}
@@ -154,7 +155,7 @@ export function InteractiveWheelOfLife({
         {/* Axis Lines (Spokes) */}
         {spokeData.map((spoke, i) => {
           const isActive = activeDimension === spoke.dimension;
-          
+
           return (
             <g key={`spoke-${i}`}>
               {/* Invisible hit area */}
@@ -170,7 +171,7 @@ export function InteractiveWheelOfLife({
                 onPointerEnter={() => !isDragging && setActiveDimension(spoke.dimension)}
                 onPointerLeave={() => !isDragging && setActiveDimension(null)}
               />
-              
+
               {/* Visible spoke line */}
               <line
                 x1={spoke.centerX}
@@ -182,10 +183,10 @@ export function InteractiveWheelOfLife({
                   isActive
                     ? "stroke-focus-violet"
                     : spoke.status === 'weak'
-                    ? "stroke-bullshit-crimson/30"
-                    : spoke.status === 'strong'
-                    ? "stroke-action-emerald/30"
-                    : "stroke-white/10"
+                      ? "stroke-bullshit-crimson/30"
+                      : spoke.status === 'strong'
+                        ? "stroke-action-emerald/30"
+                        : "stroke-white/10"
                 )}
               />
             </g>
@@ -201,7 +202,7 @@ export function InteractiveWheelOfLife({
         {/* Data Points */}
         {spokeData.map((spoke, i) => {
           const isActive = activeDimension === spoke.dimension;
-          
+
           return (
             <g key={`point-${i}`}>
               {/* Hit area for the point */}
@@ -215,7 +216,7 @@ export function InteractiveWheelOfLife({
                 onPointerEnter={() => !isDragging && setActiveDimension(spoke.dimension)}
                 onPointerLeave={() => !isDragging && setActiveDimension(null)}
               />
-              
+
               {/* Visible data point */}
               <circle
                 cx={spoke.x}
@@ -226,18 +227,18 @@ export function InteractiveWheelOfLife({
                   isActive
                     ? "fill-focus-violet"
                     : spoke.status === 'weak'
-                    ? "fill-bullshit-crimson/60"
-                    : spoke.status === 'strong'
-                    ? "fill-action-emerald/60"
-                    : "fill-white/40"
+                      ? "fill-bullshit-crimson/60"
+                      : spoke.status === 'strong'
+                        ? "fill-action-emerald/60"
+                        : "fill-white/40"
                 )}
                 style={{
-                  filter: isActive 
+                  filter: isActive
                     ? "drop-shadow(0 0 8px rgba(139, 92, 246, 0.8))"
                     : undefined,
                 }}
               />
-              
+
               {/* Value label when active */}
               {isActive && (
                 <text
@@ -259,13 +260,13 @@ export function InteractiveWheelOfLife({
 
         {/* Labels */}
         {spokeData.map((spoke, i) => {
-          const textAnchor = Math.cos(spoke.angle) > 0.1 
-            ? "start" 
-            : Math.cos(spoke.angle) < -0.1 
-            ? "end" 
-            : "middle";
+          const textAnchor = Math.cos(spoke.angle) > 0.1
+            ? "start"
+            : Math.cos(spoke.angle) < -0.1
+              ? "end"
+              : "middle";
           const isActive = activeDimension === spoke.dimension;
-          
+
           return (
             <text
               key={`label-${i}`}
@@ -278,10 +279,10 @@ export function InteractiveWheelOfLife({
                 isActive
                   ? "fill-focus-violet font-semibold"
                   : spoke.status === 'weak'
-                  ? "fill-bullshit-crimson/80 font-semibold"
-                  : spoke.status === 'strong'
-                  ? "fill-action-emerald/80 font-semibold"
-                  : "fill-white/40"
+                    ? "fill-bullshit-crimson/80 font-semibold"
+                    : spoke.status === 'strong'
+                      ? "fill-action-emerald/80 font-semibold"
+                      : "fill-white/40"
               )}
             >
               {DIMENSION_LABELS[spoke.dimension as keyof typeof DIMENSION_LABELS] || spoke.dimension}
@@ -289,7 +290,7 @@ export function InteractiveWheelOfLife({
           );
         })}
       </svg>
-      
+
       {/* Instructions */}
       <div className="mt-6 text-center">
         <p className="text-xs font-mono text-white/40 uppercase tracking-widest">

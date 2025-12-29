@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeText } from "@/lib/sanitize";
 
 /**
  * Life dimensions for the wheel of life review
@@ -62,7 +63,7 @@ export type WheelRatings = z.infer<typeof WheelRatingsSchema>;
  */
 export const WheelAuditSchema = z.record(
     z.string(),
-    z.string().max(2000).optional() // ~200 words max
+    z.string().max(2000).optional().transform(val => val ? sanitizeText(val, 2000) : val) // ~200 words max
 ).refine(
     (data) => {
         const keys = Object.keys(data);
@@ -77,18 +78,14 @@ export type WheelAudit = z.infer<typeof WheelAuditSchema>;
  * Big Three Wins schema - array of 3 strings (deprecated, kept for migration)
  * Made lenient for partial saves - allows empty strings
  */
-export const BigThreeWinsSchema = z.tuple([
-    z.string().max(1000), // ~100 words max, can be empty
-    z.string().max(1000),
-    z.string().max(1000),
-]);
+export const BigThreeWinsSchema = z.array(z.string().max(1000)).max(3);
 
 export type BigThreeWins = z.infer<typeof BigThreeWinsSchema>;
 
 /**
  * Wins schema - flexible array of strings (no hard cap)
  */
-export const WinsSchema = z.array(z.string().max(1000)).max(100); // Soft limit at 100 for safety
+export const WinsSchema = z.array(z.string().max(1000).transform(val => sanitizeText(val, 1000))).max(100); // Soft limit at 100 for safety
 
 export type Wins = z.infer<typeof WinsSchema>;
 
@@ -102,13 +99,8 @@ export const YearlyReviewFormSchema = z.object({
     wheelRatings: WheelRatingsSchema.optional(),
     wheelWins: WheelAuditSchema.optional(),
     wheelGaps: WheelAuditSchema.optional(),
-    // Deprecated fields (kept for migration)
-    bigThreeWins: z.array(z.string().max(1000)).length(3).optional(),
-    damnGoodDecision: z.string().max(3000).optional(),
-    generatedNarrative: z.string().max(5000).optional(),
-    // New fields
     wins: WinsSchema.optional(),
-    otherDetails: z.string().max(5000).optional(), // ~500 words max
+    otherDetails: z.string().max(5000).optional().transform(val => val ? sanitizeText(val, 5000) : val), // ~500 words max
 });
 
 export type YearlyReviewFormData = z.infer<typeof YearlyReviewFormSchema>;

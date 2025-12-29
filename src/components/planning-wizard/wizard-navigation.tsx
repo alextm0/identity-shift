@@ -7,8 +7,6 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface WizardNavigationProps {
-    currentStep: number;
-    totalSteps: number;
     isLastStep: boolean;
     onBack: () => void;
     onNext: () => void;
@@ -22,8 +20,6 @@ interface WizardNavigationProps {
 
 
 export function WizardNavigation({
-    currentStep,
-    totalSteps,
     isLastStep,
     onBack,
     onNext,

@@ -7,6 +7,7 @@ import type { PlanningWithTypedFields } from "@/lib/types";
 import { format } from "date-fns";
 import { DIMENSION_LABELS } from "@/lib/validators/yearly-review";
 import type { LifeDimension } from "@/lib/validators/yearly-review";
+import type { SimplifiedGoal, AnnualGoal } from "@/lib/validators";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { WheelOfLife } from "@/components/planning/wheel-of-life";
 import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
@@ -55,13 +56,13 @@ export function PlanningView({ planning }: PlanningViewProps) {
         }
 
         // Fallback: Filter from backlog (simplified data only)
-        return goals.filter((g: any) =>
-            annualGoalIds.includes(g.id) || g.isAnnualGoal
+        return goals.filter((g: SimplifiedGoal) =>
+            annualGoalIds.includes(g.id) || (g as SimplifiedGoal & { isAnnualGoal?: boolean }).isAnnualGoal
         );
     }, [goals, annualGoalIds, richAnnualGoals]);
 
-    const backlogGoals = useMemo(() => goals.filter((g: any) =>
-        !annualGoalIds.includes(g.id) && !g.isAnnualGoal
+    const backlogGoals = useMemo(() => goals.filter((g: SimplifiedGoal) =>
+        !annualGoalIds.includes(g.id) && !(g as SimplifiedGoal & { isAnnualGoal?: boolean }).isAnnualGoal
     ), [goals, annualGoalIds]);
 
     const targetWheelOfLife = planning.targetWheelOfLife || {};
@@ -73,7 +74,6 @@ export function PlanningView({ planning }: PlanningViewProps) {
     const signatureImage = planning.signatureImage;
     const signedAt = planning.signedAt;
     const futureYouLetter = planning.futureYouLetter;
-    const wheelVisionStatements = planning.wheelVisionStatements || {};
     const brainDump = planning.brainDump;
     const themeWord = planning.themeWord;
     const driftResponse = planning.driftResponse;
@@ -104,7 +104,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-white/30">
                             <Clock className="h-3 w-3" />
-                            <span className="text-[10px] font-mono uppercase tracking-[0.3em] font-bold">2026 STRATEGIC PATH</span>
+                            <span className="text-[10px] font-mono uppercase tracking-[0.3em] font-bold">{planning.year} STRATEGIC PATH</span>
                         </div>
                         <div className="space-y-4">
                             <h1 className="text-4xl md:text-5xl font-bold font-sans text-white uppercase tracking-tighter leading-none">
@@ -170,7 +170,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
                             </div>
 
                             <div className="space-y-3">
-                                {annualGoals.map((goal: any, index: number) => {
+                                {annualGoals.map((goal: AnnualGoal, index: number) => {
                                     const isExpanded = expandedGoals[goal.id];
                                     return (
                                         <div
@@ -229,7 +229,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                                             <div className="space-y-1">
                                                                 <p className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Why This Matters</p>
                                                                 <p className="text-sm text-white/60 italic font-light leading-relaxed">
-                                                                    "{goal.whyMatters}"
+                                                                    &quot;{goal.whyMatters}&quot;
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -290,7 +290,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                         <div className="space-y-2">
                                             <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest pl-1">Constraints (Anti-Goals)</p>
                                             <div className="flex flex-col gap-2">
-                                                {antiGoals.map((antiGoal: any, index: number) => (
+                                                {antiGoals.map((antiGoal, index: number) => (
                                                     <div key={index} className="flex gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 items-center group hover:bg-white/[0.04] transition-colors">
                                                         <div className="h-1.5 w-1.5 rounded-full bg-white/20 group-hover:bg-white/40 transition-colors shrink-0" />
                                                         <p className="text-sm text-white/70 leading-relaxed group-hover:text-white/90 transition-colors">{antiGoal.text}</p>
@@ -356,7 +356,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
 
                                 {expandedSections.backlog && (
                                     <div className="pt-2 space-y-1 animate-in fade-in slide-in-from-top-1">
-                                        {backlogGoals.map((goal: any) => (
+                                        {backlogGoals.map((goal: SimplifiedGoal) => (
                                             <div key={goal.id} className="group flex items-start gap-3 p-3 rounded-lg hover:bg-white/[0.02] transition-colors">
                                                 <div className="mt-1.5 h-1 w-1 rounded-full bg-white/10 group-hover:bg-white/30 shrink-0 transition-colors" />
                                                 <p className="text-xs text-white/40 group-hover:text-white/70 transition-colors leading-relaxed">
@@ -385,7 +385,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                     <div className="space-y-2">
                                         {commitmentStatement ? (
                                             <p className="text-xs text-white/50 italic leading-relaxed text-center">
-                                                "{commitmentStatement}"
+                                                &quot;{commitmentStatement}&quot;
                                             </p>
                                         ) : (
                                             <p className="text-xs text-white/30 italic text-center">No formal statement, sealed by signature.</p>

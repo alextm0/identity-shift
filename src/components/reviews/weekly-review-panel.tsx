@@ -13,12 +13,12 @@ import { calculateWeeklySummary } from "@/use-cases/weekly-summary";
 import { generateAlerts } from "@/use-cases/alerts";
 import { calculateABS } from "@/use-cases/anti-bullshit";
 import { BarChart3, ShieldAlert, Calendar, Zap as ZapIcon, Target, ChevronDown } from "lucide-react";
-import { DailyLog, Sprint, WeeklyReview } from "@/lib/types";
-import { toSprintWithPriorities, toDailyLogWithTypedFields } from "@/lib/type-helpers";
+import { DailyLog, SprintWithPriorities, WeeklyReview } from "@/lib/types";
+import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
 import { cn } from "@/lib/utils";
 
 interface WeeklyReviewPanelProps {
-  activeSprint: Sprint;
+  activeSprint?: SprintWithPriorities;
   weeklyLogs: DailyLog[];
   latestReview?: WeeklyReview | null;
   allReviews?: WeeklyReview[];
@@ -27,9 +27,15 @@ interface WeeklyReviewPanelProps {
 type ChartType = "trend" | "progress";
 
 export function WeeklyReviewPanel({ activeSprint, weeklyLogs, latestReview, allReviews = [] }: WeeklyReviewPanelProps) {
-  const [selectedChart, setSelectedChart] = useState<ChartType>("trend");
+  // Default to "trend" chart when no sprint (since "progress" requires sprint priorities)
+  const [selectedChart, setSelectedChart] = useState<ChartType>(activeSprint ? "trend" : "trend");
   
-  const summary = useMemo(() => calculateWeeklySummary(weeklyLogs, activeSprint), [weeklyLogs, activeSprint]);
+  const summary = useMemo(() => activeSprint ? calculateWeeklySummary(weeklyLogs, activeSprint) : {
+    prioritySummary: {},
+    avgEnergy: weeklyLogs.length > 0 ? weeklyLogs.reduce((sum, log) => sum + log.energy, 0) / weeklyLogs.length : 0,
+    motionUnits: 0,
+    actionUnits: 0,
+  }, [weeklyLogs, activeSprint]);
   const absScore = useMemo(() => calculateABS(summary.motionUnits, summary.actionUnits), [summary]);
   const alerts = useMemo(() => generateAlerts(weeklyLogs, summary), [weeklyLogs, summary]);
 
@@ -118,27 +124,29 @@ export function WeeklyReviewPanel({ activeSprint, weeklyLogs, latestReview, allR
                   {selectedChart === "trend" ? "Weekly_Trends" : "Integrity Mirror"}
                 </h3>
               </div>
-              <div className="relative inline-flex items-center w-full sm:w-auto">
-                <select
-                  value={selectedChart}
-                  onChange={(e) => setSelectedChart(e.target.value as ChartType)}
-                  className={cn(
-                    "appearance-none bg-white/5 border border-focus-violet/30 rounded-full px-3 sm:px-4 py-2 pr-9 sm:pr-10 w-full sm:w-auto",
-                    "text-[10px] sm:text-xs font-mono text-white uppercase tracking-widest",
-                    "hover:bg-white/10 hover:border-focus-violet/50",
-                    "focus:outline-none focus:ring-2 focus:ring-focus-violet/50 focus:border-focus-violet/50",
-                    "transition-all cursor-pointer min-w-[140px] sm:min-w-[160px]"
-                  )}
-                >
-                  <option value="trend" className="bg-[#050505] text-white">
-                    Weekly Trends
-                  </option>
-                  <option value="progress" className="bg-[#050505] text-white">
-                    Integrity Mirror
-                  </option>
-                </select>
-                <ChevronDown className="absolute right-2.5 sm:right-3 h-3.5 w-3.5 sm:h-4 sm:w-4 text-white/60 pointer-events-none" />
-              </div>
+              {activeSprint && (
+                <div className="relative inline-flex items-center w-full sm:w-auto">
+                  <select
+                    value={selectedChart}
+                    onChange={(e) => setSelectedChart(e.target.value as ChartType)}
+                    className={cn(
+                      "appearance-none bg-white/5 border border-focus-violet/30 rounded-full px-3 sm:px-4 py-2 pr-9 sm:pr-10 w-full sm:w-auto",
+                      "text-[10px] sm:text-xs font-mono text-white uppercase tracking-widest",
+                      "hover:bg-white/10 hover:border-focus-violet/50",
+                      "focus:outline-none focus:ring-2 focus:ring-focus-violet/50 focus:border-focus-violet/50",
+                      "transition-all cursor-pointer min-w-[140px] sm:min-w-[160px]"
+                    )}
+                  >
+                    <option value="trend" className="bg-[#050505] text-white">
+                      Weekly Trends
+                    </option>
+                    <option value="progress" className="bg-[#050505] text-white">
+                      Integrity Mirror
+                    </option>
+                  </select>
+                  <ChevronDown className="absolute right-2.5 sm:right-3 h-3.5 w-3.5 sm:h-4 sm:w-4 text-white/60 pointer-events-none" />
+                </div>
+              )}
             </div>
 
             {selectedChart === "trend" ? (
@@ -148,7 +156,7 @@ export function WeeklyReviewPanel({ activeSprint, weeklyLogs, latestReview, allR
                 </p>
                 <WeeklyTrendChart weeklyLogs={weeklyLogs} />
               </>
-            ) : (
+            ) : activeSprint ? (
               <>
                 <p className="text-[9px] sm:text-[10px] font-mono text-white/20 uppercase tracking-widest mb-6 sm:mb-8">
                   Reality vs Targets
@@ -169,6 +177,13 @@ export function WeeklyReviewPanel({ activeSprint, weeklyLogs, latestReview, allR
                     <p className="text-lg sm:text-xl font-bold text-action-emerald">{summary.actionUnits}</p>
                   </div>
                 </div>
+              </>
+            ) : (
+              <>
+                <p className="text-[9px] sm:text-[10px] font-mono text-white/20 uppercase tracking-widest mb-4 sm:mb-6">
+                  Energy & Units Over Time
+                </p>
+                <WeeklyTrendChart weeklyLogs={weeklyLogs} />
               </>
             )}
           </GlassPanel>

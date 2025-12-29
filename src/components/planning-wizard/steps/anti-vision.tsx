@@ -15,13 +15,14 @@ export function AntiVisionStep() {
         addAntiGoal,
         removeAntiGoal,
         updateAntiGoal,
+        year,
     } = usePlanningStore();
 
     return (
         <StepContainer>
             <StepHeader
                 title="Anti-goals"
-                subtitle="In Dec 2026, I refuse to become…"
+                subtitle={`In Dec ${year}, I refuse to become…`}
                 description="Define what you're not doing and who you're not becoming. This provides clarity through contrast."
             >
                 <div className="flex flex-col items-center gap-2 mt-4">
@@ -56,7 +57,7 @@ export function AntiVisionStep() {
                 <Textarea
                     value={antiVision || ""}
                     onChange={(e) => setAntiVision(e.target.value)}
-                    placeholder="It’s Dec 2026, and things went wrong because…"
+                    placeholder={`It’s Dec ${year}, and things went wrong because…`}
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/30 min-h-[160px] text-sm focus:border-focus-violet/30 focus:ring-focus-violet/10 transition-all"
                     maxLength={2000}
                 />
@@ -64,4 +65,3 @@ export function AntiVisionStep() {
         </StepContainer>
     );
 }
-

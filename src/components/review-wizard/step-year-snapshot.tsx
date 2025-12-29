@@ -3,7 +3,7 @@
 import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { WheelOfLife } from "@/components/planning/wheel-of-life";
+import { WheelOfLife } from "@/components/ui/WheelOfLife";
 import { convertRatingsToWheelFormat } from "@/lib/utils/dimension-analysis";
 import { useCallback, useMemo } from "react";
 import { WORD_LIMITS } from "@/lib/constants/review";

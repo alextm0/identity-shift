@@ -2,13 +2,18 @@
 
 import { usePlanningStore } from "@/hooks/stores/use-planning-store";
 import { DIMENSION_LABELS, LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
-import { WheelOfLife } from "@/components/planning/wheel-of-life";
+import { WheelOfLife } from "@/components/ui/WheelOfLife";
 import { StepHeader } from "../ui/step-header";
 import { StepContainer } from "../ui/step-container";
 import { SelectionCard } from "../ui/selection-card";
 
 export function AnnualGoalsStep() {
-    const { goals, annualGoalIds, targetWheelOfLife, wheelOfLife, toggleAnnualGoal } = usePlanningStore();
+    const goals = usePlanningStore((state) => state.goals);
+    const annualGoalIds = usePlanningStore((state) => state.annualGoalIds);
+    const targetWheelOfLife = usePlanningStore((state) => state.targetWheelOfLife);
+    const wheelOfLife = usePlanningStore((state) => state.wheelOfLife);
+    const toggleAnnualGoal = usePlanningStore((state) => state.toggleAnnualGoal);
+    const year = usePlanningStore((state) => state.year);
 
     // Group goals by category
     const goalsByCategory = LIFE_DIMENSIONS.reduce((acc, dim) => {
@@ -158,11 +163,12 @@ export function AnnualGoalsStep() {
 
             {annualGoalIds.length > 0 && (
                 <p className="text-sm text-action-emerald text-center font-mono uppercase tracking-widest">
-                    ✓ {annualGoalIds.length} {annualGoalIds.length === 1 ? 'goal' : 'goals'} selected for 2026.
+                    ✓ {annualGoalIds.length} {annualGoalIds.length === 1 ? 'goal' : 'goals'} selected for {year}.
                 </p>
             )}
         </StepContainer>
     );
 }
+
 
 

@@ -11,7 +11,7 @@ import { EditableWinsSection } from "@/components/review-wizard/editable-wins-se
 const currentDate = new Date();
 const CURRENT_YEAR = currentDate.getMonth() === 0 && currentDate.getDate() <= 5
     ? currentDate.getFullYear() - 1
-    : 2025;
+    : currentDate.getFullYear();
 
 interface ReviewPageProps {
     searchParams: Promise<{ edit?: string; year?: string }>;
@@ -25,12 +25,8 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     const yearParam = params.year ? parseInt(params.year, 10) : CURRENT_YEAR;
     const reviewYear = isNaN(yearParam) ? CURRENT_YEAR : yearParam;
 
-    let review;
-    
-    // In edit mode or normal mode, get or create review.
-    // The redundant getYearlyReviewById call has been removed as per performance analysis.
-    review = await getOrCreateYearlyReview(userId, reviewYear);
-    
+    const review = await getOrCreateYearlyReview(userId, reviewYear);
+
     if (!review) {
         redirect('/dashboard');
     }
@@ -60,7 +56,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
 
     // Otherwise, render the step-by-step wizard
     return (
-        <ReviewWizardContainer 
+        <ReviewWizardContainer
             initialReview={typedReview}
             year={reviewYear}
             isEditMode={editMode}

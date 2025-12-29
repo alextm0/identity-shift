@@ -7,7 +7,7 @@ import { StepHeader } from "../ui/step-header";
 import { StepContainer } from "../ui/step-container";
 
 export function FutureLetterStep() {
-    const { futureYouLetter, setFutureYouLetter } = usePlanningStore();
+    const { futureYouLetter, setFutureYouLetter, year } = usePlanningStore();
 
     return (
         <StepContainer size="lg" className="h-full flex flex-col">
@@ -18,7 +18,7 @@ export function FutureLetterStep() {
 
             <WizardTextarea
                 id="futureYouLetter"
-                label="Letter from December 2026"
+                label={`Letter from December ${year}`}
                 value={futureYouLetter}
                 onChange={setFutureYouLetter}
                 placeholder="Dear Future Me..."
@@ -32,7 +32,7 @@ export function FutureLetterStep() {
                         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
                             <Mail className="h-4 w-4 text-focus-violet" />
                             <p className="text-[10px] font-mono text-white/60 uppercase tracking-widest">
-                                Will be delivered Dec 2026
+                                Will be delivered Dec {year}
                             </p>
                         </div>
                     </div>

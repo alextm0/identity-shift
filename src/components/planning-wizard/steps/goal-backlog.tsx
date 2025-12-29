@@ -7,13 +7,13 @@ import { StepContainer } from "../ui/step-container";
 import { ItemListInput } from "../ui/item-list-input";
 
 export function GoalBacklogStep() {
-    const { goals, addGoal, removeGoal, updateGoal, updateGoalCategory } = usePlanningStore();
+    const { goals, addGoal, removeGoal, updateGoal, updateGoalCategory, year } = usePlanningStore();
 
     return (
         <StepContainer>
             <StepHeader
                 title="Goal Backlog"
-                subtitle="List your goals for 2026."
+                subtitle={`List your goals for ${year}.`}
                 description="Encourage quantity; allow messy wording. We'll refine them together."
             >
                 <p className="text-xs text-white/40 font-mono uppercase tracking-widest mt-4">
@@ -53,4 +53,3 @@ export function GoalBacklogStep() {
         </StepContainer>
     );
 }
-

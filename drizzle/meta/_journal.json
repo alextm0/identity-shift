@@ -64,6 +64,41 @@
       "when": 1767008883577,
       "tag": "0008_thin_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1767034465231,
+      "tag": "0009_dusty_fenris",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1767036930466,
+      "tag": "0010_first_kinsey_walden",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1767038061523,
+      "tag": "0011_add_planning_year_and_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1767038889751,
+      "tag": "0012_remove_deprecated_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1767042392196,
+      "tag": "0013_lush_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

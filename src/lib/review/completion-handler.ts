@@ -37,6 +37,9 @@ export async function handleReviewCompletion({
   onSavingChange(true);
 
 
+  const wheelRatings = formData.wheelRatings || {};
+  const wins = formData.wins || [];
+
   try {
     if (isEditMode) {
       // In edit mode, save and re-complete, then redirect to view
@@ -56,11 +59,12 @@ export async function handleReviewCompletion({
       const completeResult = await completeYearlyReviewAction(reviewId, {
         ...formData,
         year,
-        wheelRatings: formData.wheelRatings!,
-        wins: formData.wins || [],
+        wheelRatings,
+        wins,
       });
 
       if (completeResult.success) {
+        onSavingChange(false);
         onSuccess(`/review/${year}`);
       } else {
         onError(completeResult.error || "Failed to complete review");
@@ -71,11 +75,12 @@ export async function handleReviewCompletion({
       const result = await completeYearlyReviewAction(reviewId, {
         ...formData,
         year,
-        wheelRatings: formData.wheelRatings!,
-        wins: formData.wins || [],
+        wheelRatings,
+        wins,
       });
 
       if (result.success) {
+        onSavingChange(false);
         const redirectPath = result.redirect || "/dashboard";
         onSuccess(redirectPath);
       } else {

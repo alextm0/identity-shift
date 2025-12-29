@@ -20,28 +20,18 @@ interface ReviewStore {
     wheelRatings: Record<string, number>;
     wheelWins: Record<string, string>;
     wheelGaps: Record<string, string>;
-    // New fields
     wins: string[];
     otherDetails: string;
-    // Deprecated fields (kept for migration)
-    bigThreeWins: [string, string, string];
-    damnGoodDecision: string;
-    generatedNarrative: string;
     
     // Actions
     setStep: (step: number) => void;
     setWheelRating: (dimension: string, value: number) => void;
     setWheelWin: (dimension: string, text: string) => void;
     setWheelGap: (dimension: string, text: string) => void;
-    // New actions
     addWin: () => void;
     removeWin: (index: number) => void;
     updateWin: (index: number, text: string) => void;
     setOtherDetails: (text: string) => void;
-    // Deprecated actions (kept for migration)
-    setBigThreeWin: (index: 0 | 1 | 2, text: string) => void;
-    setDamnGoodDecision: (text: string) => void;
-    setNarrative: (text: string) => void;
     loadFromServer: (data: YearlyReviewWithTypedFields) => void;
     reset: () => void;
     getFormData: () => Partial<YearlyReviewFormData>;
@@ -69,10 +59,6 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
     wheelGaps: { ...initialWheelAudit },
     wins: [""], // Start with one empty win
     otherDetails: "",
-    // Deprecated fields (kept for migration)
-    bigThreeWins: ["", "", ""],
-    damnGoodDecision: "",
-    generatedNarrative: "",
     
     setStep: (step) => set({ currentStep: step, isDirty: true }),
     
@@ -122,38 +108,12 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
     
     setOtherDetails: (text) => set({ otherDetails: text, isDirty: true }),
     
-    // Deprecated actions (kept for migration)
-    setBigThreeWin: (index, text) => {
-        const wins = [...get().bigThreeWins] as [string, string, string];
-        wins[index] = text;
-        set({ bigThreeWins: wins, isDirty: true });
-    },
-    
-    setDamnGoodDecision: (text) => set({ damnGoodDecision: text, isDirty: true }),
-    
-    setNarrative: (text) => set({ generatedNarrative: text, isDirty: true }),
-    
     loadFromServer: (data) => {
-        // Migrate old data if needed
-        let wins: string[] = [""];
-        let otherDetails = "";
-        
-        // Check if new fields exist
-        if (data.wins && Array.isArray(data.wins) && data.wins.length > 0) {
-            wins = data.wins.filter(w => w && w.trim());
-            if (wins.length === 0) wins = [""];
-        } else if (data.bigThreeWins) {
-            // Migrate from old bigThreeWins
-            wins = (data.bigThreeWins as string[]).filter(w => w && w.trim());
-            if (wins.length === 0) wins = [""];
-        }
-        
-        if (data.otherDetails) {
-            otherDetails = data.otherDetails;
-        } else if (data.damnGoodDecision) {
-            // Migrate from old damnGoodDecision
-            otherDetails = data.damnGoodDecision;
-        }
+        // Use new fields
+        const wins = data.wins && Array.isArray(data.wins) && data.wins.length > 0
+            ? data.wins.filter(w => w && w.trim())
+            : [""];
+        const otherDetails = data.otherDetails || "";
         
         set({
             reviewId: data.id,
@@ -161,12 +121,8 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
             wheelRatings: data.wheelRatings || { ...initialWheelRatings },
             wheelWins: data.wheelWins || { ...initialWheelAudit },
             wheelGaps: data.wheelGaps || { ...initialWheelAudit },
-            wins,
+            wins: wins.length > 0 ? wins : [""],
             otherDetails,
-            // Keep deprecated fields for backward compatibility
-            bigThreeWins: data.bigThreeWins || ["", "", ""],
-            damnGoodDecision: data.damnGoodDecision || "",
-            generatedNarrative: data.generatedNarrative || "",
             isDirty: false,
         });
     },
@@ -182,9 +138,6 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
             wheelGaps: { ...initialWheelAudit },
             wins: [""],
             otherDetails: "",
-            bigThreeWins: ["", "", ""],
-            damnGoodDecision: "",
-            generatedNarrative: "",
         });
     },
     
@@ -221,23 +174,6 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
         
         if (state.otherDetails.trim()) {
             formData.otherDetails = state.otherDetails;
-        }
-        
-        // Deprecated fields (kept for migration compatibility)
-        if (state.bigThreeWins.some(w => w && w.trim())) {
-            formData.bigThreeWins = [
-                state.bigThreeWins[0] || "",
-                state.bigThreeWins[1] || "",
-                state.bigThreeWins[2] || "",
-            ] as [string, string, string];
-        }
-        
-        if (state.damnGoodDecision.trim()) {
-            formData.damnGoodDecision = state.damnGoodDecision;
-        }
-        
-        if (state.generatedNarrative.trim()) {
-            formData.generatedNarrative = state.generatedNarrative;
         }
         
         return formData;

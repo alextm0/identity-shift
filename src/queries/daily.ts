@@ -10,13 +10,9 @@ export async function getDailyData(date: Date = new Date()) {
     const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
 
-    const [activeSprint, todayLog] = await Promise.all([
-        getActiveSprint(userId),
-        getDailyLogByDate(userId, targetDate)
-    ]);
+    const todayLog = await getDailyLogByDate(userId, targetDate);
 
     return {
-        activeSprint,
         todayLog,
         userId,
         date: targetDate

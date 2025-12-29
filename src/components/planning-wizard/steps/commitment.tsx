@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { usePlanningStore } from "@/hooks/stores/use-planning-store";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import SignatureCanvas from 'react-signature-canvas';
+import { SignaturePad } from "@/components/ui/SignaturePad";
 import { ShieldCheck } from "lucide-react";
 import { StepHeader } from "../ui/step-header";
 import { StepContainer } from "../ui/step-container";
@@ -16,24 +15,17 @@ interface CommitmentStepProps {
 export function CommitmentStep({ onComplete }: CommitmentStepProps) {
     const {
         setSignatureImage,
-        isSaving
     } = usePlanningStore();
 
-    const sigCanvas = useRef<any>(null);
     const [isSigned, setIsSigned] = useState(false);
 
-    const clearSignature = () => {
-        sigCanvas.current?.clear();
-        setIsSigned(false);
-        setSignatureImage("");
+    const handleSignatureChange = (dataUrl: string) => {
+        setSignatureImage(dataUrl);
+        setIsSigned(dataUrl.length > 0);
     };
 
-    const handleSignatureEnd = () => {
-        if (!sigCanvas.current?.isEmpty()) {
-            setIsSigned(true);
-            const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
-            setSignatureImage(dataUrl);
-        }
+    const handleClear = () => {
+        setIsSigned(false);
     };
 
     return (
@@ -50,26 +42,11 @@ export function CommitmentStep({ onComplete }: CommitmentStepProps) {
             </StepHeader>
 
             <div className="space-y-6">
-                <div className="relative aspect-[3/1] rounded-2xl border border-white/10 bg-black/40 overflow-hidden cursor-crosshair group hover:border-white/20 transition-colors">
-                    <SignatureCanvas
-                        ref={sigCanvas}
-                        penColor="white"
-                        canvasProps={{
-                            className: "w-full h-full"
-                        }}
-                        onEnd={handleSignatureEnd}
-                    />
-                    <div className="absolute top-4 right-4 transition-opacity group-hover:opacity-100 opacity-0">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearSignature}
-                            className="h-8 px-3 rounded-lg bg-black/60 hover:bg-black text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white border border-white/5"
-                        >
-                            Clear
-                        </Button>
-                    </div>
-                </div>
+                <SignaturePad
+                    onSignatureChange={handleSignatureChange}
+                    onClear={handleClear}
+                    isSigned={isSigned}
+                />
 
                 <div className="text-center">
                     <Label className="text-xs font-mono text-white/40 uppercase tracking-widest">
@@ -90,5 +67,6 @@ export function CommitmentStep({ onComplete }: CommitmentStepProps) {
         </StepContainer>
     );
 }
+
 
 

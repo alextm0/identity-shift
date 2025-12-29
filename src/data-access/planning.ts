@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { planning } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { NewPlanning, Planning } from "@/lib/types";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
@@ -12,15 +12,38 @@ import { randomUUID } from "crypto";
  * No business logic - just CRUD operations.
  */
 
+/**
+ * Get planning by user ID (returns the most recent/current year's plan)
+ * @deprecated Use getPlanningByUserIdAndYear for explicit year handling
+ */
 export async function getPlanningByUserId(userId: string): Promise<Planning | undefined> {
     return await withDatabaseErrorHandling(
         async () => {
             const result = await db.select()
                 .from(planning)
-                .where(createOwnershipCondition(planning.userId, userId));
+                .where(createOwnershipCondition(planning.userId, userId))
+                .orderBy(desc(planning.year));
             return result[0];
         },
         "Failed to fetch planning by user ID"
+    );
+}
+
+/**
+ * Get planning by user ID and year
+ */
+export async function getPlanningByUserIdAndYear(userId: string, year: number): Promise<Planning | undefined> {
+    return await withDatabaseErrorHandling(
+        async () => {
+            const result = await db.select()
+                .from(planning)
+                .where(and(
+                    createOwnershipCondition(planning.userId, userId),
+                    eq(planning.year, year)
+                ));
+            return result[0];
+        },
+        "Failed to fetch planning by user ID and year"
     );
 }
 
@@ -37,24 +60,26 @@ export async function getPlanningById(id: string, userId: string): Promise<Plann
 }
 
 /**
- * Get or create planning for a user (1:1 relationship)
+ * Get or create planning for a user for a specific year
+ * Defaults to next year (planning is typically for the upcoming year)
  */
-export async function getOrCreatePlanning(userId: string): Promise<Planning> {
+export async function getOrCreatePlanning(userId: string, year?: number): Promise<Planning> {
+    // Default to next year for planning (e.g., in 2025, plan for 2026)
+    const planningYear = year ?? new Date().getFullYear() + 1;
+
     return await withDatabaseErrorHandling(
         async () => {
-            const existing = await getPlanningByUserId(userId);
-            
+            const existing = await getPlanningByUserIdAndYear(userId, planningYear);
+
             if (existing) {
                 return existing;
             }
-            
-            // Create new planning
+
+            // Create new planning for the specified year
             const newPlanning: NewPlanning = {
                 id: randomUUID(),
                 userId,
-                currentSelf: null,
-                desiredSelf: null,
-                goals2026: null,
+                year: planningYear,
                 activeGoals: null,
                 backlogGoals: null,
                 archivedGoals: null,
@@ -69,7 +94,7 @@ export async function getOrCreatePlanning(userId: string): Promise<Planning> {
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
-            
+
             const result = await db.insert(planning).values(newPlanning).returning();
             return result[0];
         },
@@ -113,7 +138,7 @@ export async function updatePlanning(id: string, userId: string, data: Partial<N
                 .set(updateData)
                 .where(createOwnershipAndIdCondition(planning.id, id, planning.userId, userId))
                 .returning();
-            
+
             if (result.length === 0) {
                 throw new Error("Planning not found");
             }
@@ -137,7 +162,7 @@ export async function completePlanning(id: string, userId: string): Promise<Plan
                 })
                 .where(createOwnershipAndIdCondition(planning.id, id, planning.userId, userId))
                 .returning();
-            
+
             if (result.length === 0) {
                 throw new Error("Planning not found");
             }

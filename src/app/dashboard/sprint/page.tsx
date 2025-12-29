@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getSprintsData } from "@/queries/sprints";
 import { SprintForm } from "@/components/sprints/sprint-form";
 import { CloseSprintButton } from "@/components/sprints/close-sprint-button";
@@ -7,17 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Target, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { toSprintWithPriorities } from "@/lib/type-helpers";
 
 export default async function SprintControlPage() {
-  const { allSprints, activeSprint } = await getSprintsData();
+  const { activeSprint } = await getSprintsData();
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 md:px-0">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white uppercase">
-              Sprint <span className="text-white/20 font-light">//</span> <span className="text-action-emerald">Control</span>
+              Sprint <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">Control</span>
             </h1>
             <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/40 mt-4">
               Time-boxed focus units. Max 3 priorities. No distractions.
@@ -62,7 +60,7 @@ export default async function SprintControlPage() {
                   Focus Priorities
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {toSprintWithPriorities(activeSprint).priorities.map((p, idx: number) => (
+                  {activeSprint.priorities.map((p) => (
                     <div key={p.key} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-focus-violet" />

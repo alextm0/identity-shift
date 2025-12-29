@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { WEAK_DIMENSION_THRESHOLD, STRONG_DIMENSION_THRESHOLD, WHEEL_MAX_VALUE } from "@/lib/constants/thresholds";
 
 interface WheelOfLifeProps {
   values: Record<string, number>;
@@ -21,8 +22,8 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
   const getDimensionStatus = (dimension: string): 'weak' | 'strong' | 'normal' => {
     if (!showWeakStrong) return 'normal';
     const score = values[dimension] || 0;
-    if (score < 5) return 'weak';
-    if (score >= 8) return 'strong';
+    if (score < WEAK_DIMENSION_THRESHOLD) return 'weak';
+    if (score >= STRONG_DIMENSION_THRESHOLD) return 'strong';
     return 'normal';
   };
 
@@ -30,7 +31,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
     return dimensions.map((key, i) => {
       const val = values[key];
       const angle = i * angleStep - Math.PI / 2;
-      const r = (val / 10) * radius;
+      const r = (val / WHEEL_MAX_VALUE) * radius;
       return {
         x: center + r * Math.cos(angle),
         y: center + r * Math.sin(angle),
@@ -47,7 +48,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
     return dimensions.map((key, i) => {
       const val = targetValues[key] || values[key];
       const angle = i * angleStep - Math.PI / 2;
-      const r = (val / 10) * radius;
+      const r = (val / WHEEL_MAX_VALUE) * radius;
       return {
         x: center + r * Math.cos(angle),
         y: center + r * Math.sin(angle),
@@ -68,12 +69,12 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
         style={{ overflow: 'visible' }}
       >
         {/* Background Circles */}
-        {[2, 4, 6, 8, 10].map((level) => (
+        {[2, 4, 6, 8, WHEEL_MAX_VALUE].map((level) => (
           <circle
             key={level}
             cx={center}
             cy={center}
-            r={(level / 10) * radius}
+            r={(level / WHEEL_MAX_VALUE) * radius}
             className="fill-none stroke-white/5 stroke-1"
           />
         ))}

@@ -48,7 +48,7 @@ export function WeeklyHistory({ reviews }: WeeklyHistoryProps) {
 
       <div className="space-y-3">
         {displayReviews.map((review) => {
-          const progressRatios = review.progressRatios as any;
+          const progressRatios = review.progressRatios as Record<string, number>;
           const alerts = review.alerts as string[];
           const oneChange = review.oneChange;
 
@@ -131,6 +131,7 @@ export function WeeklyHistory({ reviews }: WeeklyHistoryProps) {
     </div>
   );
 }
+
 
 
 

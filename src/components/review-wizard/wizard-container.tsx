@@ -59,7 +59,7 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
                 year,
                 currentStep,
             });
-            
+
             if (result.success) {
                 // Mark as not dirty after successful save
                 useReviewStore.setState({ isDirty: false });
@@ -117,9 +117,13 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
             handleNextNavigation();
         } else {
             // Complete review
+            if (!reviewId) {
+                console.error("Cannot complete review: reviewId is missing.");
+                return;
+            }
             const formData = getFormData();
             await handleReviewCompletion({
-                reviewId: reviewId!,
+                reviewId: reviewId,
                 formData,
                 year,
                 currentStep,
@@ -139,10 +143,10 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
         handleBackNavigation();
     };
 
-    const handleExit = () => {
+    const handleExit = async () => {
         // Auto-save before exiting
         if (isDirty && reviewId) {
-            autoSave();
+            await autoSave();
         }
         router.push("/dashboard");
     };
@@ -152,21 +156,21 @@ export function ReviewWizardContainer({ initialReview, year, isEditMode = false 
         if (currentStep === REVIEW_WIZARD_STEPS) {
             return true;
         }
-        
+
         // For step 2 (Wins), always allow proceeding (0 wins allowed - hard years happen)
         if (currentStep === 2) {
             return true;
         }
-        
+
         // For step 1 (Wheel of Life), check if all dimensions are rated
         if (currentStep === 1) {
             const ratings = getFormData().wheelRatings;
             return !!(ratings && Object.keys(ratings).length === 8);
         }
-        
+
         return canGoNextNavigation();
     };
-    
+
     const canGoBack = () => {
         return canGoBackNavigation();
     };

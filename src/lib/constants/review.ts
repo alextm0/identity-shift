@@ -17,9 +17,6 @@ export const WORD_LIMITS = {
   wheelAudit: 200,
   win: 100, // For individual wins
   otherDetails: 500,
-  // Deprecated (kept for backward compatibility with old editable components)
-  bigThreeWin: 100,
-  damnGoodDecision: 300,
 } as const;
 
 /**

@@ -12,14 +12,13 @@ import { StepWins } from "./step-wins"; // The component for editing wins
 interface EditableWinsSectionProps {
     reviewId: string;
     initialWins: string[];
-    year: number; // To refresh the correct path
 }
 
-export function EditableWinsSection({ reviewId, initialWins, year }: EditableWinsSectionProps) {
+export function EditableWinsSection({ reviewId, initialWins }: EditableWinsSectionProps) {
     const router = useRouter();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const { wins, setWins, resetWins } = useReviewStore(); // Access wins from the store
+    const { setWins, resetWins } = useReviewStore(); // Access wins from the store
 
     // Initialize store wins with initialWins when entering edit mode or on mount
     useEffect(() => {
@@ -52,6 +51,7 @@ export function EditableWinsSection({ reviewId, initialWins, year }: EditableWin
             }
         } catch (error) {
             toast.error("Failed to update wins");
+            console.error("Error updating wins:", error);
         } finally {
             setIsSaving(false);
         }

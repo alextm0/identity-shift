@@ -1,6 +1,6 @@
 "use client";
 
-import { WheelOfLife } from "@/components/planning/wheel-of-life";
+import { WheelOfLife } from "@/components/ui/WheelOfLife";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -11,8 +11,6 @@ import type { YearlyReviewWithTypedFields } from "@/lib/types";
 import { format } from "date-fns";
 import { analyzeDimensions, convertRatingsToWheelFormat } from "@/lib/utils/dimension-analysis";
 import { EditableWheelSection } from "./editable-wheel-section";
-import { EditableBigThreeSection } from "./editable-big-three-section";
-import { EditableDecisionSection } from "./editable-decision-section";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 
@@ -158,31 +156,7 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                     </div>
                 )}
 
-                {/* Big Three Wins - Legacy format (backward compatibility) */}
-                {!review.wins && review.bigThreeWins && review.bigThreeWins.some(w => w) && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-2">
-                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
-                                Top 3 Wins (Legacy)
-                            </h2>
-                            <EditableBigThreeSection reviewId={review.id} initialWins={review.bigThreeWins} />
-                        </div>
-                        <div className="grid grid-cols-1 gap-4">
-                            {review.bigThreeWins.map((win, i) => (
-                                win && (
-                                    <div key={i} className="glass-pane p-6 relative border-white/[0.05]">
-                                        <div className="absolute top-4 right-4 flex-shrink-0 w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                                            <span className="text-white/40 text-[10px] font-mono">{i + 1}</span>
-                                        </div>
-                                        <p className="text-white/80 text-sm leading-relaxed pr-6">{win}</p>
-                                    </div>
-                                )
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Other Details - New format */}
+                {/* Other Details */}
                 {review.otherDetails && (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between px-2">
@@ -193,35 +167,8 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                         <div className="glass-pane p-8 relative border-white/[0.05] bg-action-emerald/[0.01]">
                             <div className="absolute top-0 left-8 w-px h-full bg-gradient-to-b from-transparent via-action-emerald/20 to-transparent opacity-50" />
                             <p className="text-white/90 text-sm leading-relaxed pl-4 italic">
-                                "{review.otherDetails}"
+                                &quot;{review.otherDetails}&quot;
                             </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Damn Good Decision - Legacy format (backward compatibility) */}
-                {!review.otherDetails && review.damnGoodDecision && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-2">
-                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
-                                The Decision (Legacy)
-                            </h2>
-                            <EditableDecisionSection reviewId={review.id} initialDecision={review.damnGoodDecision} />
-                        </div>
-                        <div className="glass-pane p-8 border-white/[0.05]">
-                            <p className="text-white/80 text-sm leading-relaxed italic">"{review.damnGoodDecision}"</p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Generated Narrative - Legacy format (backward compatibility) */}
-                {review.generatedNarrative && (
-                    <div className="space-y-6">
-                        <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest px-2">
-                            Narrative Summary (Legacy)
-                        </h2>
-                        <div className="glass-pane p-8 border-white/[0.05]">
-                            <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{review.generatedNarrative}</p>
                         </div>
                     </div>
                 )}

@@ -6,13 +6,13 @@ import { StepHeader } from "../ui/step-header";
 import { StepContainer } from "../ui/step-container";
 
 export function FutureIdentityStep() {
-    const { futureIdentity, setFutureIdentity } = usePlanningStore();
+    const { futureIdentity, setFutureIdentity, year } = usePlanningStore();
 
     return (
         <StepContainer>
             <StepHeader
                 title="Future identity."
-                subtitle="In Dec 2026, I’m the kind of person who…"
+                subtitle={`In Dec ${year}, I’m the kind of person who…`}
             />
 
             <WizardTextarea
@@ -30,7 +30,7 @@ export function FutureIdentityStep() {
                     <div className="pt-8 flex justify-center">
                         <div className="px-6 py-3 rounded-full bg-action-emerald/5 border border-action-emerald/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
                             <p className="text-[10px] font-mono text-action-emerald uppercase tracking-[0.2em]">
-                                ✓ Identity locked for 2026
+                                ✓ Identity locked for {year}
                             </p>
                         </div>
                     </div>

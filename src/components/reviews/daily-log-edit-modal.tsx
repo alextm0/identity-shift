@@ -22,12 +22,13 @@ import { ProofInput } from "@/components/daily/proof-input";
 import { toast } from "sonner";
 import { Save, Loader2, Trophy, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DailyLog, Sprint } from "@/lib/types";
+import { DailyLog, SprintWithPriorities, DailyLogWithTypedFields } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
 
 interface DailyLogEditModalProps {
   log: DailyLog;
-  activeSprint: Sprint;
+  activeSprint?: SprintWithPriorities;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -35,7 +36,8 @@ interface DailyLogEditModalProps {
 export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: DailyLogEditModalProps) {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
-  const priorities = (activeSprint.priorities as any[]) || [];
+  const priorities = activeSprint?.priorities || [];
+  const typedLog = toDailyLogWithTypedFields(log);
 
   const form = useForm<DailyLogFormData>({
     resolver: zodResolver(DailyLogFormSchema),
@@ -46,11 +48,11 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
       mainFocusCompleted: log.mainFocusCompleted,
       morningGapMin: log.morningGapMin || 0,
       distractionMin: log.distractionMin || 0,
-      priorities: (log.priorities as any) || priorities.reduce((acc, p) => ({
+      priorities: typedLog.priorities || priorities.reduce((acc, p) => ({
         ...acc,
         [p.key]: { done: false, units: 0 }
       }), {}),
-      proofOfWork: (log.proofOfWork as any) || [],
+      proofOfWork: typedLog.proofOfWork || [],
       win: log.win || "",
       drain: log.drain || "",
       note: log.note || "",
@@ -163,78 +165,164 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
               </GlassPanel>
             </div>
 
-            <div className="lg:col-span-2 space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                {priorities.map((priority) => {
-                  const proof = form.watch("proofOfWork")?.find((p) => p.type === priority.key) || { type: priority.key, value: "", url: "" };
 
-                  const updateProof = (field: "value" | "url", content: string) => {
-                    const currentProofs = form.getValues("proofOfWork") || [];
-                    const index = currentProofs.findIndex((p) => p.type === priority.key);
 
-                    if (index === -1) {
-                      form.setValue("proofOfWork", [
-                        ...currentProofs,
-                        {
-                          type: priority.key,
-                          value: field === "value" ? content : "",
-                          url: field === "url" ? content : ""
-                        }
-                      ]);
-                    } else {
-                      const newProofs = [...currentProofs];
-                      newProofs[index] = { ...newProofs[index], [field]: content };
-                      form.setValue("proofOfWork", newProofs);
-                    }
-                  };
+<div className="lg:col-span-2 space-y-4">
 
-                  return (
-                    <GlassPanel key={priority.key} className="p-4">
-                      <ProgressBar
-                        label={priority.label}
-                        value={form.watch(`priorities.${priority.key}.units`) || 0}
-                        onChange={(val) => {
-                          form.setValue(`priorities.${priority.key}.units`, val);
-                          form.setValue(`priorities.${priority.key}.done`, val > 0);
-                        }}
-                      />
+              {priorities.length > 0 ? (
 
-                      <ProofInput
-                        isActive={(form.watch(`priorities.${priority.key}.units`) || 0) > 0}
-                        value={proof.value}
-                        url={proof.url || ""}
-                        onChange={(val) => updateProof("value", val)}
-                        onUrlChange={(val) => updateProof("url", val)}
-                      />
-                    </GlassPanel>
-                  );
-                })}
-              </div>
+                <div className="grid grid-cols-1 gap-4">
+
+                  {priorities.map((priority) => {
+
+                    const proof = form.watch("proofOfWork")?.find((p) => p.type === priority.key) || { type: priority.key, value: "", url: "" };
+
+
+
+                    const updateProof = (field: "value" | "url", content: string) => {
+
+                      const currentProofs = form.getValues("proofOfWork") || [];
+
+                      const index = currentProofs.findIndex((p) => p.type === priority.key);
+
+
+
+                      if (index === -1) {
+
+                        form.setValue("proofOfWork", [
+
+                          ...currentProofs,
+
+                          {
+
+                            type: priority.key,
+
+                            value: field === "value" ? content : "",
+
+                            url: field === "url" ? content : ""
+
+                          }
+
+                        ]);
+
+                      } else {
+
+                        const newProofs = [...currentProofs];
+
+                        newProofs[index] = { ...newProofs[index], [field]: content };
+
+                        form.setValue("proofOfWork", newProofs);
+
+                      }
+
+                    };
+
+
+
+                    return (
+
+                      <GlassPanel key={priority.key} className="p-4">
+
+                        <ProgressBar
+
+                          label={priority.label}
+
+                          value={form.watch(`priorities.${priority.key}.units`) || 0}
+
+                          onChange={(val) => {
+
+                            form.setValue(`priorities.${priority.key}.units`, val);
+
+                            form.setValue(`priorities.${priority.key}.done`, val > 0);
+
+                          }}
+
+                        />
+
+
+
+                        <ProofInput
+
+                          isActive={(form.watch(`priorities.${priority.key}.units`) || 0) > 0}
+
+                          value={proof.value}
+
+                          url={proof.url || ""}
+
+                          onChange={(val) => updateProof("value", val)}
+
+                          onUrlChange={(val) => updateProof("url", val)}
+
+                        />
+
+                      </GlassPanel>
+
+                    );
+
+                  })}
+
+                </div>
+
+              ) : (
+
+                <GlassPanel className="p-4 text-center">
+
+                  <p className="text-white/40">Priorities can be set when a sprint is active.</p>
+
+                </GlassPanel>
+
+              )}
+
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                 <GlassPanel className="p-4 space-y-2 border-action-emerald/10">
+
                   <div className="flex items-center gap-2">
+
                     <Trophy className="h-3 w-3 text-action-emerald" />
+
                     <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">The_Win</Label>
+
                   </div>
+
                   <Input
+
                     {...form.register("win")}
+
                     placeholder="One win today..."
+
                     className="bg-transparent border-none px-2 text-sm text-white focus:ring-0 placeholder:text-white/10"
+
                   />
+
                 </GlassPanel>
 
+
+
                 <GlassPanel className="p-4 space-y-2 border-bullshit-crimson/10">
+
                   <div className="flex items-center gap-2">
+
                     <Flame className="h-3 w-3 text-bullshit-crimson" />
+
                     <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">The_Drain</Label>
+
                   </div>
+
                   <Input
+
                     {...form.register("drain")}
+
                     placeholder="What leaked energy?"
+
                     className="bg-transparent border-none px-2 text-sm text-white focus:ring-0 placeholder:text-white/10"
+
                   />
+
                 </GlassPanel>
+
               </div>
 
               <GlassPanel className="p-4 space-y-2">
@@ -280,6 +368,7 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
     </Dialog>
   );
 }
+
 
 
 

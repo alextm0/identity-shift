@@ -1,27 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Sprint } from "@/lib/types";
+import { SprintWithPriorities } from "@/lib/types";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
-import { Calendar, Target, CheckCircle2, Clock, Edit2, Trash2, Loader2 } from "lucide-react";
+import { Clock, Edit2, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { deleteSprintAction } from "@/actions/sprints";
 import { toast } from "sonner";
 import { SprintForm } from "./sprint-form";
-import { toSprintWithPriorities } from "@/lib/type-helpers";
 
 interface SprintCardProps {
-  sprint: Sprint;
+  sprint: SprintWithPriorities;
   isActive: boolean;
   onUpdate?: () => void;
 }
 
 export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
-  const sprintWithPriorities = toSprintWithPriorities(sprint);
-  const priorities = sprintWithPriorities.priorities;
+  const priorities = sprint.priorities;
   const [isDeleting, setIsDeleting] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -41,8 +39,8 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
 
   if (showEditForm) {
     return (
-      <SprintForm 
-        sprintToEdit={sprint} 
+      <SprintForm
+        sprintToEdit={sprint}
         onSuccess={() => {
           setShowEditForm(false);
           onUpdate?.();
@@ -58,11 +56,11 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
   const daysLeft = Math.max(0, differenceInDays(endDate, today));
 
   return (
-    <GlassPanel 
+    <GlassPanel
       className={cn(
         "p-6 flex flex-col space-y-6 transition-all duration-500",
-        isActive 
-          ? "border-action-emerald/30 bg-action-emerald/[0.02] shadow-[0_0_40px_rgba(16,185,129,0.05)]" 
+        isActive
+          ? "border-action-emerald/30 bg-action-emerald/[0.02] shadow-[0_0_40px_rgba(16,185,129,0.05)]"
           : "border-white/5 opacity-60 hover:opacity-100"
       )}
     >
@@ -78,7 +76,7 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
             {format(new Date(sprint.startDate), "MMM d")} — {format(new Date(sprint.endDate), "MMM d, yyyy")}
           </p>
         </div>
-        
+
         {isActive ? (
           <div className="px-2 py-1 rounded bg-action-emerald/10 border border-action-emerald/20">
             <p className="text-[8px] font-mono font-bold text-action-emerald uppercase tracking-tighter">ACTIVE_NODE</p>
@@ -109,14 +107,14 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
 
       <div className="pt-4 mt-auto border-t border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-4 text-white/20">
-           <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3" />
-              <span className="text-[10px] font-mono uppercase tracking-tighter">
-                {daysLeft}d left
-              </span>
-           </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3" />
+            <span className="text-[10px] font-mono uppercase tracking-tighter">
+              {daysLeft}d left
+            </span>
+          </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"

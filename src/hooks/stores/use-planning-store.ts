@@ -1,7 +1,7 @@
 /**
  * Planning Store
  * 
- * Manages client-side state for the 8-step planning ceremony.
+ * Manages client-side state for the 9-step planning ceremony.
  * Step 1: Empty Your Head + Future Identity
  * Step 2: Wheel of Life Vision
  * Step 3: Letter from Future You (Optional)
@@ -9,7 +9,8 @@
  * Step 5: Annual Goals
  * Step 6: Goal Details
  * Step 7: Anti-Vision + Anti-Goals
- * Step 8: Commitment
+ * Step 8: Future You Letter
+ * Step 9: Commitment
  */
 
 import { create } from "zustand";
@@ -26,6 +27,7 @@ interface PlanningStore {
     // Current wizard state
     planningId: string | null;
     currentStep: number; // Support up to 9 or more dynamically
+    year: number;
     isDirty: boolean;
     isSaving: boolean;
     status: PlanningStatus;
@@ -124,6 +126,7 @@ interface PlanningStore {
 export const usePlanningStore = create<PlanningStore>((set, get) => ({
     planningId: null,
     currentStep: 1,
+    year: new Date().getFullYear() + 1,
     isDirty: false,
     isSaving: false,
     status: PlanningStatus.DRAFT,
@@ -237,7 +240,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
         }));
     },
     updateGoalCategory: (id, category) => {
-        get().updateGoal(id, { category: category as any });
+        get().updateGoal(id, { category });
     },
 
     // Step 5 Actions
@@ -351,9 +354,9 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
     setSignatureImage: (base64) => set({ signatureImage: base64, isDirty: true }),
     setSignedAt: (date) => set({ signedAt: date, isDirty: true }),
 
-    loadFromServer: (data) => {
+    loadFromServer: (data: PlanningWithTypedFields) => {
         // Load all fields from server data
-        const goals: SimplifiedGoal[] = (data.goals || []).map((g: any) => ({
+        const goals: SimplifiedGoal[] = (data.goals || []).map((g) => ({
             id: g.id,
             text: g.text || "",
             category: g.category,
@@ -364,7 +367,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
         const annualGoalIds = (data.annualGoalIds || []).map((id: string) => id);
 
         // Load annual goals with details
-        const annualGoals: AnnualGoal[] = (data.annualGoals || []).map((ag: any) => ({
+        const annualGoals: AnnualGoal[] = (data.annualGoals || []).map((ag) => ({
             id: ag.id,
             text: ag.text || "",
             category: ag.category,
@@ -375,7 +378,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             updatedAt: ag.updatedAt ? new Date(ag.updatedAt) : undefined,
         }));
 
-        const antiGoals: AntiGoal[] = (data.antiGoals || []).map((ag: any) => ({
+        const antiGoals: AntiGoal[] = (data.antiGoals || []).map((ag) => ({
             id: ag.id,
             text: ag.text || "",
             createdAt: ag.createdAt ? new Date(ag.createdAt) : undefined,
@@ -383,6 +386,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
 
         set({
             planningId: data.id,
+            year: data.year,
             currentStep: data.currentStep || 1,
             status: (data.status as PlanningStatus) || PlanningStatus.DRAFT,
             brainDump: data.brainDump || "",
@@ -399,7 +403,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             driftResponse: data.driftResponse || "",
             commitmentStatement: data.commitmentStatement || "",
             signatureName: data.signatureName || "",
-            signatureImage: (data as any).signatureImage || "",
+            signatureImage: data.signatureImage || "",
             signedAt: data.signedAt ? new Date(data.signedAt) : null,
             previousIdentity: data.previousIdentity || "",
             wheelOfLife: (data.wheelOfLife as Record<string, number>) || {},
@@ -411,6 +415,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
         set({
             planningId: null,
             currentStep: 1,
+            year: new Date().getFullYear() + 1,
             isDirty: false,
             isSaving: false,
             status: PlanningStatus.DRAFT,

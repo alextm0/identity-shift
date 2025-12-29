@@ -7,13 +7,11 @@ export async function getWeeklyData() {
     const session = await getRequiredSession();
     const userId = session.user.id;
 
-    const [activeSprint, allReviews] = await Promise.all([
+    const [activeSprint, allReviews, weeklyLogs] = await Promise.all([
         getActiveSprint(userId),
-        getWeeklyReviews(userId)
+        getWeeklyReviews(userId),
+        getLast7DaysLogs(userId)
     ]);
-
-    // Get logs for the active sprint's last 7 days
-    const weeklyLogs = activeSprint ? await getLast7DaysLogs(activeSprint.id) : [];
 
     const today = new Date();
     today.setHours(23, 59, 59, 999);

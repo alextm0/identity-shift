@@ -96,7 +96,7 @@ export function GoalDetailsStep() {
                             What specific, binary outcome will verify this goal is achieved by Dec 31?
                         </p>
                         <Textarea
-                            value={goal.definitionOfDone}
+                            value={goal.definitionOfDone || ""}
                             onChange={(e) => updateAnnualGoalDetails(goal.id, { definitionOfDone: e.target.value })}
                             placeholder="I have..."
                             className="bg-white/5 border-white/10 text-white placeholder:text-white/30 min-h-[160px] text-base focus:border-white/20 focus:ring-white/10 transition-all resize-none rounded-xl p-4 leading-relaxed"
@@ -123,7 +123,7 @@ export function GoalDetailsStep() {
                 </GlassPanel>
             </div>
 
-            {annualGoals.every(ag => ag.definitionOfDone.trim().length > 0) && (
+            {annualGoals.every(ag => (ag.definitionOfDone || "").trim().length > 0) && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <p className="text-sm text-action-emerald text-center font-mono uppercase tracking-widest">
                         ✓ All goals defined
@@ -133,5 +133,6 @@ export function GoalDetailsStep() {
         </div>
     );
 }
+
 
 

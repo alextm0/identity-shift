@@ -48,20 +48,6 @@ export async function getYearlyReviewById(id: string, userId: string): Promise<Y
 export async function getOrCreateYearlyReview(userId: string, year: number): Promise<YearlyReview> {
     return await withDatabaseErrorHandling(
         async () => {
-            // Try to find existing review
-            const existing = await db.select()
-                .from(yearlyReview)
-                .where(and(
-                    eq(yearlyReview.userId, userId),
-                    eq(yearlyReview.year, year)
-                ))
-                .limit(1);
-
-            if (existing.length > 0) {
-                return existing[0];
-            }
-
-            // Create new review
             const newReview: NewYearlyReview = {
                 id: randomUUID(),
                 userId,
@@ -71,9 +57,6 @@ export async function getOrCreateYearlyReview(userId: string, year: number): Pro
                 wheelRatings: null,
                 wheelWins: null,
                 wheelGaps: null,
-                bigThreeWins: null,
-                damnGoodDecision: null,
-                generatedNarrative: null,
                 wins: null,
                 otherDetails: null,
                 completedAt: null,
@@ -81,8 +64,33 @@ export async function getOrCreateYearlyReview(userId: string, year: number): Pro
                 updatedAt: new Date(),
             };
 
-            const result = await db.insert(yearlyReview).values(newReview).returning();
-            return result[0];
+            // Try to insert, but do nothing if a review for this user/year already exists.
+            const inserted = await db.insert(yearlyReview)
+                .values(newReview)
+                .onConflictDoNothing()
+                .returning();
+
+            if (inserted.length > 0) {
+                // The insert was successful, return the new review.
+                return inserted[0];
+            }
+
+            // If the insert did nothing, it means the review already exists. Now, safely fetch it.
+            const existing = await db.select()
+                .from(yearlyReview)
+                .where(and(
+                    eq(yearlyReview.userId, userId),
+                    eq(yearlyReview.year, year)
+                ))
+                .limit(1);
+            
+            if (existing.length === 0) {
+                // This state should be unreachable if the unique constraint is in place.
+                // It indicates a potential database issue or misconfiguration.
+                throw new Error("Failed to get or create yearly review: could not find existing review after insert conflict.");
+            }
+
+            return existing[0];
         },
         "Failed to get or create yearly review"
     );
