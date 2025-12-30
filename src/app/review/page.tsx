@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/server";
 import { getOrCreateYearlyReview } from "@/data-access/yearly-reviews";
-import { parseWheelRatings, parseWheelWins, parseWheelGaps } from "@/lib/type-helpers";
+import { parseWheelRatings, parseWheelWins, parseWheelGaps, toYearlyReviewWithTypedFields } from "@/lib/type-helpers";
 import { ReviewWizardContainer } from "@/components/review-wizard/wizard-container";
 import { EditableWheelSection } from "@/components/review-wizard/editable-wheel-section";
 import { EditableWinsSection } from "@/components/review-wizard/editable-wins-section";
@@ -37,17 +37,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     }
 
     // Convert to typed format and ensure only serializable data is passed to Client Components
-    const serializableReview = {
-        id: review.id,
-        year: review.year,
-        status: review.status,
-        currentStep: review.currentStep,
-        wheelRatings: parseWheelRatings(review),
-        wheelWins: parseWheelWins(review),
-        wheelGaps: parseWheelGaps(review),
-        wins: review.wins ? (Array.isArray(review.wins) ? (review.wins as string[]) : JSON.parse(review.wins as string) as string[]) : [],
-        otherDetails: review.otherDetails || "",
-    };
+    const serializableReview = toYearlyReviewWithTypedFields(review);
 
     if (editMode) {
         // If in editMode, render individual editable sections
@@ -67,7 +57,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     // Otherwise, render the step-by-step wizard
     return (
         <ReviewWizardContainer
-            initialReview={serializableReview as any}
+            initialReview={serializableReview}
             year={reviewYear}
             isEditMode={editMode}
         />

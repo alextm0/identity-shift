@@ -3,6 +3,7 @@ import { getActiveSprint } from "@/data-access/sprints";
 import { getDailyLogs } from "@/data-access/daily-logs";
 import { getMonthlyReviews } from "@/data-access/reviews";
 import { startOfMonth, endOfMonth, format } from "date-fns";
+import { toMonthlyReviewWithTypedFields } from "@/lib/type-helpers";
 
 export async function getMonthlyData() {
     const session = await getRequiredSession();
@@ -24,10 +25,12 @@ export async function getMonthlyData() {
         return logDate >= monthStart && logDate <= monthEnd;
     });
 
+    const latestReview = existingReviews[0] ? toMonthlyReviewWithTypedFields(existingReviews[0]) : null;
+
     return {
         activeSprint,
         monthlyLogs,
-        latestReview: existingReviews[0] || null,
+        latestReview,
         userId,
         monthStr
     };

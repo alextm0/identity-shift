@@ -82,9 +82,9 @@ export function usePlanningCompletion({
       try {
         if (isEditMode) {
           await savePlanningProgressAction(activeId, formData);
-          result = await completePlanningAction(activeId, completeData);
+          result = await completePlanningAction(activeId, completeData as any);
         } else {
-          result = await completePlanningAction(activeId, completeData);
+          result = await completePlanningAction(activeId, completeData as any);
         }
       } catch (actionError: unknown) {
         console.error("Action error:", actionError);
@@ -112,13 +112,15 @@ export function usePlanningCompletion({
     } catch (error: unknown) {
       console.error("Failed to complete planning:", error);
       let errorMessage = "An unexpected error occurred. Please try again.";
-      if (error?.message) {
+
+      if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
         errorMessage = error;
-      } else if (error?.error) {
-        errorMessage = error.error;
+      } else if (error && typeof error === 'object' && 'error' in error) {
+        errorMessage = String(error.error);
       }
+
       setError(errorMessage);
       markSaving(false);
       return false;

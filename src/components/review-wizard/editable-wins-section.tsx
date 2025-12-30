@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Edit2, Save, X } from "lucide-react";
@@ -20,16 +20,27 @@ export function EditableWinsSection({ reviewId, initialWins }: EditableWinsSecti
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { setWins, resetWins } = useReviewStore(); // Access wins from the store
+    const currentWins = useReviewStore(state => state.wins); // Subscribed wins
 
-    // Initialize store wins with initialWins when entering edit mode or on mount
+    // Use a ref to store the previous value of isEditing
+    const prevIsEditingRef = useRef(isEditing);
+
     useEffect(() => {
-        if (isEditing) {
-            setWins(initialWins);
-        } else {
-            // When exiting edit mode or initially rendering in view mode, ensure store matches initial
+        // Initialize store wins when component mounts or initialWins change, but only if not currently editing
+        // This ensures the view mode always reflects the latest initialWins
+        if (!isEditing) {
             resetWins(initialWins);
         }
-    }, [initialWins, isEditing, setWins, resetWins]);
+    }, [initialWins, isEditing, resetWins]);
+
+    useEffect(() => {
+        // When transitioning from NOT editing to editing, set the store wins
+        // This initializes the form with the current initialWins
+        if (isEditing && !prevIsEditingRef.current) {
+            setWins(initialWins);
+        }
+        prevIsEditingRef.current = isEditing;
+    }, [isEditing, initialWins, setWins]);
 
 
     const handleSave = async () => {
@@ -37,7 +48,7 @@ export function EditableWinsSection({ reviewId, initialWins }: EditableWinsSecti
         try {
             // The store's `wins` array is already being updated by StepWins
             // We need to pass the store's current wins to the action
-            const currentWinsInStore = useReviewStore.getState().wins;
+            const currentWinsInStore = currentWins;
 
             // Filter out empty strings before saving
             const nonEmptyWins = currentWinsInStore.filter(w => w && w.trim());

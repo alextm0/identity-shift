@@ -195,5 +195,5 @@ function revalidateSprintPaths() {
     revalidatePath("/dashboard", "layout");
     revalidatePath("/dashboard/sprint", "layout");
     revalidatePath("/sprints", "layout");
-    revalidateTag("active-sprint");
+
 }

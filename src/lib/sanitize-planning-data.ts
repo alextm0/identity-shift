@@ -35,20 +35,20 @@ export function sanitizePlanningData(validated: Partial<PlanningFormData>): Part
 
     // Sanitize goals if present
     if (validated.goals) {
-        updateData.goals = validated.goals.map((goal: SimplifiedGoal) => ({
+        updateData.goals = validated.goals.map((goal) => ({
             ...goal,
             text: goal.text ? sanitizeText(goal.text, 500) : goal.text,
         }));
     }
 
     if (validated.annualGoals) {
-        updateData.annualGoals = validated.annualGoals.map((goal: AnnualGoal) => ({
+        updateData.annualGoals = validated.annualGoals.map((goal) => ({
             ...goal,
             text: goal.text ? sanitizeText(goal.text, 500) : goal.text,
             definitionOfDone: goal.definitionOfDone ? sanitizeText(goal.definitionOfDone, 1000) : goal.definitionOfDone,
             progressSignal: goal.progressSignal ? sanitizeText(goal.progressSignal, 500) : goal.progressSignal,
             whyMatters: goal.whyMatters ? sanitizeText(goal.whyMatters, 1000) : goal.whyMatters,
-        }));
+        })) as any;
     }
 
     // Sanitize Step 7 fields
@@ -56,7 +56,7 @@ export function sanitizePlanningData(validated: Partial<PlanningFormData>): Part
         updateData.antiVision = sanitizeText(validated.antiVision, 2000);
     }
     if (validated.antiGoals) {
-        updateData.antiGoals = validated.antiGoals.map((antiGoal: AntiGoal) => ({
+        updateData.antiGoals = validated.antiGoals.map((antiGoal) => ({
             ...antiGoal,
             text: antiGoal.text ? sanitizeText(antiGoal.text, 500) : antiGoal.text,
         }));
@@ -81,7 +81,7 @@ export function sanitizePlanningData(validated: Partial<PlanningFormData>): Part
 
     // Legacy support: sanitize activeGoals if present (for backward compatibility)
     if (validated.activeGoals) {
-        updateData.activeGoals = validated.activeGoals.map((goal: PlanningGoal) => ({
+        updateData.activeGoals = (validated.activeGoals as any[]).map((goal) => ({
             ...goal,
             text: goal.text ? sanitizeText(goal.text, 500) : goal.text,
         }));

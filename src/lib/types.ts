@@ -10,7 +10,7 @@ import {
     monthlyReview,
     yearlyReview
 } from '@/lib/db/schema';
-import type { Goal, WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AntiGoal, CrystalBallFailures, AnnualGoal } from '@/lib/validators';
+import type { Goal, WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal } from '@/lib/validators';
 
 // --- DB Types ---
 export type User = InferSelectModel<typeof user>;
@@ -39,7 +39,7 @@ export type NewYearlyReview = InferInsertModel<typeof yearlyReview>;
 /**
  * Planning with properly typed JSON fields
  */
-export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'goals' | 'quarterlyGoalIds' | 'annualGoalIds' | 'targetWheelOfLife' | 'focusAreas' | 'wheelVisionStatements' | 'crystalBallFailures' | 'antiGoals' | 'antiVision' | 'driftResponse' | 'brainDump' | 'futureIdentity' | 'futureYouLetter' | 'commitmentStatement' | 'signatureName' | 'signatureImage' | 'signedAt' | 'currentModule'> {
+export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'goals' | 'quarterlyGoalIds' | 'annualGoalIds' | 'annualGoals' | 'targetWheelOfLife' | 'focusAreas' | 'wheelVisionStatements' | 'crystalBallFailures' | 'antiGoals' | 'antiVision' | 'driftResponse' | 'brainDump' | 'futureIdentity' | 'futureYouLetter' | 'commitmentStatement' | 'signatureName' | 'signatureImage' | 'signedAt' | 'currentModule' | 'currentStep' | 'currentGoalIndex'> {
     wheelOfLife?: WheelOfLife;
     activeGoals?: PlanningGoal[]; // Legacy - use goals instead
     backlogGoals?: unknown[]; // Legacy - deprecated
@@ -68,7 +68,7 @@ export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 
     signatureImage?: string;
     signedAt?: Date | string;
     // Legacy fields
-    crystalBallFailures?: CrystalBallFailures;
+    crystalBallFailures?: any;
     // Progress tracking
     currentStep?: number;
     currentModule?: number | null; // Legacy - can be null from DB
@@ -116,6 +116,6 @@ export interface YearlyReviewWithTypedFields extends Omit<YearlyReview, 'wheelRa
     wheelRatings: Record<string, number>;
     wheelWins: Record<string, string>;
     wheelGaps: Record<string, string>;
-    wins?: string[]; // Flexible wins array
+    wins: string[]; // Flexible wins array
     otherDetails?: string; // Freeform field
 }

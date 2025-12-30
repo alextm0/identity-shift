@@ -22,7 +22,7 @@ export default async function DailyPage() {
         </div>
       </div>
 
-      <DailyLogForm activeSprint={activeSprint} initialData={todayLog} />
+      <DailyLogForm activeSprint={activeSprint ?? undefined} initialData={todayLog} />
     </div>
   );
 }

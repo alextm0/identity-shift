@@ -6,6 +6,8 @@
  * Shared by both /review (wizard) and /review/[year] (view) routes.
  */
 
+export const dynamic = 'force-dynamic';
+
 interface ReviewLayoutProps {
   children: React.ReactNode;
 }

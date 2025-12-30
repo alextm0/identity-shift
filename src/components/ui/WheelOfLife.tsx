@@ -304,8 +304,8 @@ export function WheelOfLife({
               r="5"
               className={cn(
                 "fill-focus-violet shadow-lg transition-all duration-500 ease-in-out pointer-events-none",
-                isHighlighted && "scale-125"
               )}
+              transform={isHighlighted ? `scale(1.25 ${p.x} ${p.y})` : undefined}
               style={{
                 filter: "drop-shadow(0 0 6px rgba(139, 92, 246, 0.8))",
               }}

@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/db";
 import { sprint, sprintPriority } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, not, notInArray } from "drizzle-orm";
 import { Sprint, NewSprint, SprintWithPriorities } from "@/lib/types";
 import { SprintPriority, SprintPriorityType } from "@/lib/validators";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
@@ -129,7 +129,7 @@ export async function createSprint(data: NewSprintWithPriorities): Promise<Sprin
             }
 
             // Insert priorities sequentially
-            const prioritiesToInsert = sprintPriorities as SprintPriority[];
+            const prioritiesToInsert = sprintPriorities;
             if (Array.isArray(prioritiesToInsert) && prioritiesToInsert.length > 0) {
                 try {
                     await db.insert(sprintPriority).values(prioritiesToInsert.map(p => ({
@@ -150,7 +150,7 @@ export async function createSprint(data: NewSprintWithPriorities): Promise<Sprin
                         await db.delete(sprint).where(eq(sprint.id, newSprint.id));
                     } catch (cleanupError) {
                         // Log but don't throw - the original error is more important
-                        console.error("Failed to cleanup sprint after priorities insert failure:", cleanupError);
+                        console.error("Failed to cleanup sprint after priorities insert failure. Orphaned sprint ID:", newSprint.id, cleanupError);
                     }
                     throw error;
                 }
@@ -190,23 +190,33 @@ export async function updateSprint(id: string, userId: string, data: Partial<New
 
             if (data.priorities !== undefined) {
                 try {
-                    // Update priorities: Delete all and re-insert
-                    await db.delete(sprintPriority).where(eq(sprintPriority.sprintId, id));
+                    const priorities = data.priorities;
+                    const newPriorityRecords = priorities.map(p => ({
+                        id: uuidv4(), // Generate new UUID for each new priority
+                        sprintId: id,
+                        priorityKey: p.key,
+                        label: p.label,
+                        type: p.type,
+                        weeklyTargetUnits: p.weeklyTargetUnits,
+                        unitDefinition: p.unitDefinition,
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    }));
 
-                    const priorities = data.priorities as SprintPriority[];
+                    // Insert new priorities first
                     if (Array.isArray(priorities) && priorities.length > 0) {
-                        await db.insert(sprintPriority).values(priorities.map(p => ({
-                            id: uuidv4(),
-                            sprintId: id,
-                            priorityKey: p.key,
-                            label: p.label,
-                            type: p.type,
-                            weeklyTargetUnits: p.weeklyTargetUnits,
-                            unitDefinition: p.unitDefinition,
-                            createdAt: new Date(),
-                            updatedAt: new Date()
-                        })));
+                        await db.insert(sprintPriority).values(newPriorityRecords);
                     }
+
+                    // Delete old priorities that are not in the new set
+                    // This assumes that if a priority is being updated, it will have a new ID.
+                    // If a priority remains the same, it would still get a new ID and the old one would be deleted.
+                    const newPriorityIds = newPriorityRecords.map(p => p.id);
+                    await db.delete(sprintPriority)
+                        .where(and(
+                            eq(sprintPriority.sprintId, id),
+                            newPriorityIds.length > 0 ? notInArray(sprintPriority.id, newPriorityIds) : undefined // If no new priorities, delete all existing
+                        ));
                 } catch (error) {
                     // If priorities update fails, we can't rollback the sprint update
                     // but we log the error and rethrow

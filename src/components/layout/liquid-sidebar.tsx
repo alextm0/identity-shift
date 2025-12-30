@@ -25,7 +25,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const navItems = [
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+}
+
+const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Home", href: "/dashboard" },
   { icon: Sparkles, label: "Planning", href: "/dashboard/planning" },
   { icon: Target, label: "Sprint", href: "/dashboard/sprint" },
@@ -34,7 +40,7 @@ const navItems = [
   { icon: CalendarRange, label: "Monthly", href: "/dashboard/monthly" },
 ];
 
-function MobileMoreMenu({ pathname, navItems }: { pathname: string; navItems: typeof navItems }) {
+function MobileMoreMenu({ pathname, navItems }: { pathname: string; navItems: NavItem[] }) {
   const [open, setOpen] = useState(false);
   
   return (

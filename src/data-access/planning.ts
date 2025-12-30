@@ -101,7 +101,7 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
             if (existing) {
                 // If existing planning has no wheelOfLife yet, but we found a review, update it
                 // We check if it's strictly null or an empty object (serialized as such in some cases)
-                const isWheelEmpty = !existing.wheelOfLife || Object.keys(existing.wheelOfLife as object).length === 0;
+                const isWheelEmpty = !existing.wheelOfLife || Object.keys(existing.wheelOfLife).length === 0;
 
                 if (isWheelEmpty && previousReview) {
                     const result = await db.update(planning)

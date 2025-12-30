@@ -259,7 +259,7 @@ export function createActionWithParam<TParam, TInput, TOutput>(
 ) {
     function curriedAction(param: TParam): (data: TInput) => Promise<ActionResult<TOutput>>;
     function curriedAction(param: TParam, data: TInput): Promise<ActionResult<TOutput>>;
-    function curriedAction(param: TParam, data?: TInput): (data: TInput) => Promise<ActionResult<TOutput>> | Promise<ActionResult<TOutput>> {
+    function curriedAction(param: TParam, data?: TInput): ((data: TInput) => Promise<ActionResult<TOutput>>) | Promise<ActionResult<TOutput>> {
         const execute = async (formData: TInput): Promise<ActionResult<TOutput>> => {
             return withErrorHandling(
                 withValidation(

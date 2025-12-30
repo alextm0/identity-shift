@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { OneChangeOption, SprintPriorityType, DesiredIdentityStatus } from "@/lib/enums";
+export { OneChangeOption, SprintPriorityType, DesiredIdentityStatus };
 
 // --- Validations for JSON columns ---
 
@@ -19,7 +20,6 @@ export type WheelOfLife = z.infer<typeof WheelOfLifeSchema>;
 
 // Sprint: Priorities
 export const SprintPriorityTypeSchema = z.nativeEnum(SprintPriorityType);
-export type SprintPriorityType = z.infer<typeof SprintPriorityTypeSchema>;
 
 export const SprintPrioritySchema = z.object({
     key: z.string(),
@@ -33,7 +33,7 @@ export type SprintPriority = z.infer<typeof SprintPrioritySchema>;
 // Daily Log: Priorities (The actual logging of them)
 export const DailyPriorityLogSchema = z.object({
     done: z.boolean(),
-    units: z.number().default(0),
+    units: z.number(),
     deepWorkMin: z.number().optional(),
     autonomyLevel: z.number().optional(), // 1-5?
 });

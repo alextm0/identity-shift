@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sprint } from "@/lib/types";
+import { SprintWithPriorities } from "@/lib/types"; // Changed import
 import { SprintCard } from "@/components/sprints/sprint-card";
 
 interface SprintHistoryProps {
-  sprints: Sprint[];
+  sprints: SprintWithPriorities[]; // Changed type
   activeSprintId?: string;
 }
 

@@ -43,16 +43,16 @@ export async function withOwnershipCheck<T>(
     expectedUserId: string
 ): Promise<T> {
     const result = await fn();
-    
+
     if (!result) {
         throw new NotFoundError("Resource not found");
     }
-    
+
     const resourceUserId = getUserId(result);
     if (resourceUserId !== expectedUserId) {
         throw new NotFoundError("Resource not found");
     }
-    
+
     return result;
 }
 
@@ -103,6 +103,6 @@ export function createOwnershipAndIdCondition(
     return and(
         eq(idColumn, id),
         eq(userIdColumn, userId)
-    );
+    ) as SQL;
 }
 

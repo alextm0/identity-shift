@@ -1,7 +1,7 @@
 "use client";
 
 import { usePlanningStore } from "@/hooks/stores/use-planning-store";
-import { LIFE_DIMENSIONS, DIMENSION_LABELS } from "@/lib/validators/yearly-review";
+import { LIFE_DIMENSIONS, DIMENSION_LABELS, type LifeDimension } from "@/lib/validators/yearly-review";
 import { StepHeader } from "../ui/step-header";
 import { StepContainer } from "../ui/step-container";
 import { ItemListInput } from "../ui/item-list-input";
@@ -32,7 +32,7 @@ export function GoalBacklogStep() {
                 renderRightAction={(item) => (
                     <select
                         value={item.category || ""}
-                        onChange={(e) => updateGoalCategory(item.id, e.target.value)}
+                        onChange={(e) => updateGoalCategory(item.id, e.target.value === "" ? undefined : e.target.value as LifeDimension)}
                         className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs font-mono uppercase tracking-wider focus:ring-1 focus:ring-white/20 outline-none mr-2"
                     >
                         <option value="" className="bg-[#1a1a1a]">No Category</option>
