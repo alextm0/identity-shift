@@ -59,7 +59,7 @@ export function WizardNavigation({
                             Back
                         </Button>
                     )}
-                    
+
                     <Button
                         onClick={onNext}
                         disabled={!canGoNext || isSaving}
@@ -82,8 +82,8 @@ export function WizardNavigation({
                 onOpenChange={setShowExitDialog}
                 title="Exit Review?"
                 description="Your progress will be saved as a draft. You can continue later from where you left off."
-                confirmLabel="Exit"
-                cancelLabel="Continue Review"
+                confirmText="Exit"
+                cancelText="Continue Review"
                 onConfirm={onExit}
                 variant="destructive"
             />

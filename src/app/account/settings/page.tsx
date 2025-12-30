@@ -7,6 +7,8 @@ import { ExportDataButton } from "@/components/account/export-data-button";
 import { LogoutButton } from "@/components/account/logout-button";
 import { Download, User, Shield, Database } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AccountSettingsPage() {
     const session = await getRequiredSession();
 

@@ -1,5 +1,5 @@
 import { sanitizeText } from "./sanitize";
-import type { PlanningFormData, SimplifiedGoal, AnnualGoal, AntiGoal, PlanningGoal } from "@/lib/validators";
+import type { PlanningFormData, SimplifiedGoal, AnnualGoal, AntiGoal, PlanningGoal, DraftAnnualGoal } from "@/lib/validators";
 
 /**
  * Sanitizes planning form data to prevent XSS and ensure data integrity.
@@ -35,19 +35,19 @@ export function sanitizePlanningData(validated: Partial<PlanningFormData>): Part
 
     // Sanitize goals if present
     if (validated.goals) {
-        updateData.goals = validated.goals.map((goal: SimplifiedGoal) => ({
+        updateData.goals = validated.goals.map((goal): SimplifiedGoal => ({
             ...goal,
-            text: goal.text ? sanitizeText(goal.text, 500) : goal.text,
+            text: sanitizeText(goal.text, 500),
         }));
     }
 
     if (validated.annualGoals) {
-        updateData.annualGoals = validated.annualGoals.map((goal: AnnualGoal) => ({
+        updateData.annualGoals = validated.annualGoals.map((goal): DraftAnnualGoal => ({
             ...goal,
-            text: goal.text ? sanitizeText(goal.text, 500) : goal.text,
-            definitionOfDone: goal.definitionOfDone ? sanitizeText(goal.definitionOfDone, 1000) : goal.definitionOfDone,
-            progressSignal: goal.progressSignal ? sanitizeText(goal.progressSignal, 500) : goal.progressSignal,
-            whyMatters: goal.whyMatters ? sanitizeText(goal.whyMatters, 1000) : goal.whyMatters,
+            text: sanitizeText(goal.text, 500),
+            definitionOfDone: goal.definitionOfDone ? sanitizeText(goal.definitionOfDone, 1000) : undefined,
+            progressSignal: goal.progressSignal ? sanitizeText(goal.progressSignal, 500) : undefined,
+            whyMatters: goal.whyMatters ? sanitizeText(goal.whyMatters, 1000) : undefined,
         }));
     }
 
@@ -56,9 +56,9 @@ export function sanitizePlanningData(validated: Partial<PlanningFormData>): Part
         updateData.antiVision = sanitizeText(validated.antiVision, 2000);
     }
     if (validated.antiGoals) {
-        updateData.antiGoals = validated.antiGoals.map((antiGoal: AntiGoal) => ({
+        updateData.antiGoals = validated.antiGoals.map((antiGoal): AntiGoal => ({
             ...antiGoal,
-            text: antiGoal.text ? sanitizeText(antiGoal.text, 500) : antiGoal.text,
+            text: sanitizeText(antiGoal.text, 500),
         }));
     }
 
@@ -81,9 +81,9 @@ export function sanitizePlanningData(validated: Partial<PlanningFormData>): Part
 
     // Legacy support: sanitize activeGoals if present (for backward compatibility)
     if (validated.activeGoals) {
-        updateData.activeGoals = validated.activeGoals.map((goal: PlanningGoal) => ({
+        updateData.activeGoals = validated.activeGoals.map((goal): SimplifiedGoal => ({
             ...goal,
-            text: goal.text ? sanitizeText(goal.text, 500) : goal.text,
+            text: sanitizeText(goal.text, 500),
         }));
     }
 

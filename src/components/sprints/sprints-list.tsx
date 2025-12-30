@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sprint } from "@/lib/types";
+import { SprintWithPriorities } from "@/lib/types";
 import { SprintCard } from "@/components/sprints/sprint-card";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 
 interface SprintsListProps {
-  sprints: Sprint[];
+  sprints: SprintWithPriorities[];
   activeSprintId?: string;
 }
 
@@ -29,10 +29,10 @@ export function SprintsList({ sprints, activeSprintId }: SprintsListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {sprints.map((sprint) => (
-        <SprintCard 
-          key={sprint.id} 
-          sprint={sprint} 
-          isActive={sprint.id === activeSprintId} 
+        <SprintCard
+          key={sprint.id}
+          sprint={sprint}
+          isActive={sprint.id === activeSprintId}
           onUpdate={handleUpdate}
         />
       ))}

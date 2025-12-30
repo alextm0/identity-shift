@@ -16,7 +16,7 @@ import { LIFE_DIMENSIONS, DIMENSION_LABELS } from "@/lib/validators/yearly-revie
 import type { LifeDimension } from "@/lib/validators/yearly-review";
 import { savePlanningProgressAction } from "@/actions/planning";
 import { Loader2 } from "lucide-react";
-import type { PlanningGoal } from "@/lib/validators";
+import { PlanningStatus, type PlanningGoal } from "@/lib/validators";
 import type { PlanningWithTypedFields } from "@/lib/types";
 
 interface GoalEditModalProps {
@@ -32,17 +32,17 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
     const [isSaving, setIsSaving] = useState(false);
     
     // Local state to prevent text erasure
-    const [specific, setSpecific] = useState(goal.goal?.specific || "");
-    const [emotionalWhy, setEmotionalWhy] = useState(goal.goal?.emotionalWhy || "");
-    const [antiGoal, setAntiGoal] = useState(goal.goal?.antiGoal || "");
+    const [specific, setSpecific] = useState(goal.specific || "");
+    const [emotionalWhy, setEmotionalWhy] = useState(goal.emotionalWhy || "");
+    const [antiGoal, setAntiGoal] = useState(goal.antiGoal || "");
     const [category, setCategory] = useState(goal.category);
     
     // Sync local state when goal changes
     useEffect(() => {
         if (goal) {
-            setSpecific(goal.goal?.specific || "");
-            setEmotionalWhy(goal.goal?.emotionalWhy || "");
-            setAntiGoal(goal.goal?.antiGoal || "");
+            setSpecific(goal.specific || "");
+            setEmotionalWhy(goal.emotionalWhy || "");
+            setAntiGoal(goal.antiGoal || "");
             setCategory(goal.category);
         }
     }, [goal.id]);
@@ -54,22 +54,25 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
             const updatedActiveGoals = [...(planning.activeGoals || [])];
             updatedActiveGoals[goalIndex] = {
                 ...updatedActiveGoals[goalIndex],
-                category: category as any,
-                goal: {
-                    ...updatedActiveGoals[goalIndex].goal,
-                    specific,
-                    emotionalWhy,
-                    antiGoal: antiGoal || undefined,
-                },
+                category: category,
+                specific,
+                emotionalWhy,
+                antiGoal: antiGoal || undefined,
             };
             
+            // Ensure planning.status is a valid PlanningStatus or undefined
+            const statusToSave: PlanningStatus | undefined = 
+                Object.values(PlanningStatus).includes(planning.status as PlanningStatus)
+                    ? (planning.status as PlanningStatus)
+                    : undefined;
+
             // Save to server
             const result = await savePlanningProgressAction(planning.id, {
                 activeGoals: updatedActiveGoals,
-                currentModule: planning.currentModule,
+                currentModule: planning.currentModule ?? undefined,
                 currentStep: planning.currentStep,
                 currentGoalIndex: planning.currentGoalIndex,
-                status: planning.status,
+                status: statusToSave, // Use the converted status
             });
             
             if (result.success) {
@@ -103,7 +106,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                         <div className="relative">
                             <select
                                 value={category}
-                                onChange={(e) => setCategory(e.target.value)}
+                                onChange={(e) => setCategory(e.target.value === "" ? undefined : e.target.value as LifeDimension)}
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white appearance-none cursor-pointer hover:bg-white/[0.07] hover:border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-focus-violet/50 focus:border-focus-violet/50 pr-10"
                             >
                                 {LIFE_DIMENSIONS.map((dim) => (
@@ -209,4 +212,3 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
         </Dialog>
     );
 }
-

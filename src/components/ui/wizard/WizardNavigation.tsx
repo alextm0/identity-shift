@@ -100,8 +100,8 @@ export function WizardNavigation({
         onOpenChange={setShowExitDialog}
         title={exitTitle}
         description={exitDescription}
-        confirmLabel="Exit"
-        cancelLabel="Continue"
+        confirmText="Exit"
+        cancelText="Continue"
         onConfirm={onExit}
         variant="destructive"
       />

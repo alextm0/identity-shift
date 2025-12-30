@@ -15,9 +15,9 @@ import {
   CalendarRange,
   Calendar,
   Settings,
-  MoreVertical
+  MoreVertical,
+  Activity
 } from "lucide-react";
-import { BrandLogo } from "./brand-logo";
 import {
   Dialog,
   DialogContent,
@@ -25,17 +25,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const navItems = [
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+}
+
+const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Home", href: "/dashboard" },
   { icon: Sparkles, label: "Planning", href: "/dashboard/planning" },
   { icon: Target, label: "Sprint", href: "/dashboard/sprint" },
   { icon: Calendar, label: "Daily", href: "/dashboard/daily" },
   { icon: CalendarDays, label: "Weekly", href: "/dashboard/weekly" },
-  { icon: User, label: "Identity", href: "/dashboard/identity" },
   { icon: CalendarRange, label: "Monthly", href: "/dashboard/monthly" },
 ];
 
-function MobileMoreMenu({ pathname, navItems }: { pathname: string; navItems: typeof navItems }) {
+function MobileMoreMenu({ pathname, navItems }: { pathname: string; navItems: NavItem[] }) {
   const [open, setOpen] = useState(false);
   
   return (
@@ -106,8 +111,10 @@ export function LiquidSidebar() {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-20 z-50 flex-col items-center py-8 bg-white/5 backdrop-blur-xl border-r border-white/10">
         <div className="mb-12">
-          <Link href="/dashboard" className="h-12 w-12 flex items-center justify-center">
-            <BrandLogo className="h-10 w-10" />
+          <Link href="/dashboard" className="h-12 w-12 flex items-center justify-center group">
+            <div className="w-10 h-10 rounded-lg bg-focus-violet/20 flex items-center justify-center group-hover:bg-focus-violet/30 transition-colors">
+              <Activity className="h-6 w-6 text-focus-violet" />
+            </div>
           </Link>
         </div>
 

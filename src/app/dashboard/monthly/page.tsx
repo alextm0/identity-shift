@@ -39,7 +39,7 @@ export default async function MonthlyReviewPage() {
         activeSprint={activeSprint}
         monthlyLogs={monthlyLogs}
         monthStr={monthStr}
-        latestReview={latestReview}
+        latestReview={latestReview ?? undefined}
       />
     </div>
   );

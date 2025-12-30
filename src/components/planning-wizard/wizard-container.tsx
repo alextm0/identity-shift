@@ -31,6 +31,7 @@ interface StepComponentProps {
     onUpdate: (data: Partial<PlanningWithTypedFields>) => void;
     onNext: () => void;
     onBack: () => void;
+    onComplete?: () => void; // Added for CommitmentStep
 }
 
 const STEP_COMPONENTS: Record<number, React.ComponentType<StepComponentProps>> = {
@@ -144,13 +145,24 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
     const renderStep = useMemo(() => {
         const StepComponent = STEP_COMPONENTS[currentStep];
         if (!StepComponent) return null;
-        
+
         // Special handling for CommitmentStep which needs onComplete
         if (currentStep === 9) {
-            return <StepComponent onComplete={() => complete()} />;
+            return <StepComponent
+                planning={initialPlanning as PlanningWithTypedFields} // Assuming initialPlanning is always available here
+                onUpdate={() => { }} // Placeholder, as CommitmentStep doesn't update planning directly in this context
+                onNext={() => { }} // Placeholder
+                onBack={() => { }} // Placeholder
+                onComplete={() => complete()}
+            />;
         }
-        
-        return <StepComponent />;
+
+        return <StepComponent
+            planning={initialPlanning as PlanningWithTypedFields} // Pass required props
+            onUpdate={() => { }} // Placeholder
+            onNext={() => { }} // Placeholder
+            onBack={() => { }} // Placeholder
+        />;
     }, [currentStep, complete]);
 
     return (
@@ -172,7 +184,7 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
             <div className="flex-1 flex items-center justify-center">
                 <div className="w-full max-w-4xl">
                     <div className="glass-pane p-8 md:p-12">
-                        {renderStep()}
+                        {renderStep}
                     </div>
 
                     {/* Error message */}
@@ -189,8 +201,6 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
             {/* Navigation */}
             <div className="mt-8">
                 <WizardNavigation
-                    currentStep={currentStep}
-                    totalSteps={PLANNING_STEPS.length}
                     isLastStep={isLastStep}
                     onBack={handleBack}
                     onNext={handleNext}

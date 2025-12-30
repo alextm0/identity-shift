@@ -106,19 +106,6 @@ export function QuickActions({ todayStatus, completedYearlyReview, hasCompletedP
             </span>
           </Button>
         </Link>
-
-        {/* 5. Bottom Action: Adjust Plan */}
-        <Link href="/dashboard/identity" className="block">
-          <Button
-            variant="outline"
-            className="w-full h-14 rounded-2xl border-white/5 bg-black/40 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02] hover:border-white/10 font-mono text-[10px] uppercase tracking-widest"
-          >
-            <span className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Adjust Identity Plan
-            </span>
-          </Button>
-        </Link>
       </div>
     </div>
   );

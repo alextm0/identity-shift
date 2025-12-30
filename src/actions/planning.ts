@@ -114,27 +114,4 @@ export const completePlanningAction = createActionWithParam(
     }
 );
 
-/**
- * @deprecated Use savePlanningProgressAction instead.
- * This legacy action is kept for backward compatibility with the identity page form.
- * It redirects users to the new planning wizard flow.
- */
-export async function savePlanningAction(): Promise<ActionResult<{ saved: boolean }>> {
-    // This is a legacy action - redirect to new wizard flow
-    return success(
-        { saved: false },
-        {
-            message: "Please use the planning wizard for a better experience",
-            redirect: "/dashboard/planning"
-        }
-    );
-}
-
-/**
- * @deprecated Use completePlanningAction instead.
- * Alias for savePlanningAction, kept for backward compatibility.
- */
-export async function solidifyPlanAction(formData: unknown): Promise<ActionResult<{ saved: boolean }>> {
-    return savePlanningAction(formData);
-}
 

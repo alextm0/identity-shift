@@ -1,12 +1,19 @@
 
 import { db } from "@/lib/db";
 import { sprint, sprintPriority } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, not, notInArray } from "drizzle-orm";
 import { Sprint, NewSprint, SprintWithPriorities } from "@/lib/types";
 import { SprintPriority, SprintPriorityType } from "@/lib/validators";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { v4 as uuidv4 } from 'uuid';
 import { unstable_cache } from 'next/cache';
+
+/**
+ * Extended NewSprint type that includes priorities for create/update operations
+ */
+type NewSprintWithPriorities = NewSprint & {
+    priorities: SprintPriority[];
+};
 
 /**
  * Data Access Layer for Sprints
@@ -40,7 +47,7 @@ function mapToSprintWithPriorities(row: SprintRow): SprintWithPriorities {
         label: p.label,
         type: p.type as SprintPriorityType,
         weeklyTargetUnits: p.weeklyTargetUnits,
-        unitDefinition: p.unitDefinition
+        unitDefinition: p.unitDefinition ?? undefined // Convert null to undefined
     }));
 
     return {
@@ -108,19 +115,24 @@ export async function getSprintById(id: string, userId: string): Promise<SprintW
     );
 }
 
-export async function createSprint(data: NewSprint): Promise<SprintWithPriorities> {
+export async function createSprint(data: NewSprintWithPriorities): Promise<SprintWithPriorities> {
     return await withDatabaseErrorHandling(
         async () => {
-            return await db.transaction(async (tx) => {
-                // Extract priorities from data (handled separately in relational table)
-                const { priorities: sprintPriorities, ...insertData } = data;
+            // Extract priorities from data (handled separately in relational table)
+            const { priorities: sprintPriorities, ...insertData } = data;
 
-                const [newSprint] = await tx.insert(sprint).values(insertData).returning();
+            // Insert sprint (without transaction - HTTP driver doesn't support it)
+            const [newSprint] = await db.insert(sprint).values(insertData).returning();
 
-                // Insert priorities
-                const prioritiesToInsert = sprintPriorities as SprintPriority[];
-                if (Array.isArray(prioritiesToInsert) && prioritiesToInsert.length > 0) {
-                    await tx.insert(sprintPriority).values(prioritiesToInsert.map(p => ({
+            if (!newSprint) {
+                throw new Error("Failed to create sprint");
+            }
+
+            // Insert priorities sequentially
+            const prioritiesToInsert = sprintPriorities;
+            if (Array.isArray(prioritiesToInsert) && prioritiesToInsert.length > 0) {
+                try {
+                    await db.insert(sprintPriority).values(prioritiesToInsert.map(p => ({
                         id: uuidv4(),
                         sprintId: newSprint.id,
                         priorityKey: p.key,
@@ -131,51 +143,73 @@ export async function createSprint(data: NewSprint): Promise<SprintWithPrioritie
                         createdAt: new Date(),
                         updatedAt: new Date()
                     })));
+                } catch (error) {
+                    // If priorities insert fails, attempt to clean up the sprint
+                    // Note: Without transactions, this isn't atomic, but we try our best
+                    try {
+                        await db.delete(sprint).where(eq(sprint.id, newSprint.id));
+                    } catch (cleanupError) {
+                        // Structured error logging for monitoring
+                        const errorContext = {
+                            operation: 'sprint_creation_cleanup',
+                            sprintId: newSprint.id,
+                            userId: newSprint.userId,
+                            error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+                            originalError: error instanceof Error ? error.message : String(error),
+                            timestamp: new Date().toISOString()
+                        };
+                        console.error('Failed to cleanup sprint after priorities insert failure. Orphaned sprint detected:', JSON.stringify(errorContext));
+                    }
+                    throw error;
                 }
+            }
 
-                // Return complete object
-                const result = await tx.query.sprint.findFirst({
-                    where: eq(sprint.id, newSprint.id),
-                    with: { priorities: true }
-                });
-
-                if (!result) throw new Error("Failed to retrieve created sprint");
-                return mapToSprintWithPriorities(result);
+            // Return complete object
+            const result = await db.query.sprint.findFirst({
+                where: eq(sprint.id, newSprint.id),
+                with: { priorities: true }
             });
+
+            if (!result) throw new Error("Failed to retrieve created sprint");
+            return mapToSprintWithPriorities(result);
         },
         "Failed to create sprint"
     );
 }
 
-export async function updateSprint(id: string, userId: string, data: Partial<NewSprint>): Promise<SprintWithPriorities> {
+export async function updateSprint(id: string, userId: string, data: Partial<NewSprintWithPriorities>): Promise<SprintWithPriorities> {
     return await withDatabaseErrorHandling(
         async () => {
-            return await db.transaction(async (tx) => {
-                const updateData: Partial<NewSprint> = { ...data, updatedAt: new Date() };
+            const updateData: Partial<NewSprint> = { ...data, updatedAt: new Date() };
 
-                // Remove priorities from updateData (handled separately)
-                delete updateData.priorities;
+            // Remove priorities from updateData (handled separately)
+            // Type assertion needed because priorities is not in NewSprint type
+            delete (updateData as any).priorities;
 
-                const [updatedSprint] = await tx.update(sprint)
-                    .set(updateData)
-                    .where(createOwnershipAndIdCondition(sprint.id, id, sprint.userId, userId))
-                    .returning();
+            // Update sprint (without transaction - HTTP driver doesn't support it)
+            const [updatedSprint] = await db.update(sprint)
+                .set(updateData)
+                .where(createOwnershipAndIdCondition(sprint.id, id, sprint.userId, userId))
+                .returning();
 
-                if (!updatedSprint) {
-                    // If update failed (e.g. not found), we should throw or return nothing.
-                    // But Drizzle returns [] if not found.
-                    // createOwnershipAndIdCondition handles the check somewhat, but here we might just get undefined.
-                    throw new Error("Sprint not found or access denied");
-                }
+            if (!updatedSprint) {
+                throw new Error("Sprint not found or access denied");
+            }
 
-                if (data.priorities !== undefined) {
-                    // Update priorities: Delete all and re-insert
-                    await tx.delete(sprintPriority).where(eq(sprintPriority.sprintId, id));
+            if (data.priorities !== undefined) {
+                try {
+                    const priorities = data.priorities;
+                    
+                    // Delete old priorities FIRST to avoid race condition
+                    // This ensures we don't have duplicate priorities during the update window
+                    await db.delete(sprintPriority)
+                        .where(eq(sprintPriority.sprintId, id));
 
-                    const priorities = data.priorities as SprintPriority[];
+                    // Insert new priorities after deletion
+                    // Since all priorities get new UUIDs, this is effectively a full replace operation
                     if (Array.isArray(priorities) && priorities.length > 0) {
-                        await tx.insert(sprintPriority).values(priorities.map(p => ({
-                            id: uuidv4(),
+                        const newPriorityRecords = priorities.map(p => ({
+                            id: uuidv4(), // Generate new UUID for each new priority
                             sprintId: id,
                             priorityKey: p.key,
                             label: p.label,
@@ -184,19 +218,32 @@ export async function updateSprint(id: string, userId: string, data: Partial<New
                             unitDefinition: p.unitDefinition,
                             createdAt: new Date(),
                             updatedAt: new Date()
-                        })));
+                        }));
+                        await db.insert(sprintPriority).values(newPriorityRecords);
                     }
+                } catch (error) {
+                    // If priorities update fails, we can't rollback the sprint update
+                    // Structured error logging for monitoring
+                    const errorContext = {
+                        operation: 'sprint_priority_update',
+                        sprintId: id,
+                        userId: updatedSprint.userId,
+                        error: error instanceof Error ? error.message : String(error),
+                        timestamp: new Date().toISOString()
+                    };
+                    console.error("Failed to update sprint priorities:", JSON.stringify(errorContext));
+                    throw error;
                 }
+            }
 
-                // Return complete object
-                const result = await tx.query.sprint.findFirst({
-                    where: eq(sprint.id, id),
-                    with: { priorities: true }
-                });
-
-                if (!result) throw new Error("Failed to retrieve updated sprint");
-                return mapToSprintWithPriorities(result);
+            // Return complete object
+            const result = await db.query.sprint.findFirst({
+                where: eq(sprint.id, id),
+                with: { priorities: true }
             });
+
+            if (!result) throw new Error("Failed to retrieve updated sprint");
+            return mapToSprintWithPriorities(result);
         },
         "Failed to update sprint"
     );

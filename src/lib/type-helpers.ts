@@ -4,10 +4,42 @@
  * These functions help convert database JSON fields to properly typed objects.
  */
 
-import type { DailyLog, Planning, WeeklyReview, MonthlyReview, YearlyReview } from '@/lib/types';
-import type { DailyPriorityLog, ProofOfWork, Goal, WheelOfLife, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal } from '@/lib/validators';
-import type { DailyLogWithTypedFields, PlanningWithTypedFields, WeeklyReviewWithTypedFields, MonthlyReviewWithTypedFields, YearlyReviewWithTypedFields } from '@/lib/types';
+import type { DailyLog, Planning, WeeklyReview, MonthlyReview, YearlyReview, Sprint } from '@/lib/types';
+import type { DailyPriorityLog, ProofOfWork, Goal, WheelOfLife, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal, SprintPriority } from '@/lib/validators';
+import type { DailyLogWithTypedFields, PlanningWithTypedFields, WeeklyReviewWithTypedFields, MonthlyReviewWithTypedFields, YearlyReviewWithTypedFields, SprintWithPriorities } from '@/lib/types';
 
+
+/**
+ * Safely parses sprint priorities from JSON field.
+ */
+export function parseSprintPriorities(sprint: any): SprintPriority[] {
+    if (!sprint || !sprint.priorities) return [];
+
+    if (Array.isArray(sprint.priorities)) {
+        return sprint.priorities as SprintPriority[];
+    }
+
+    if (typeof sprint.priorities === 'string') {
+        try {
+            return JSON.parse(sprint.priorities) as SprintPriority[];
+        } catch (error) {
+            console.error('[parseSprintPriorities] Failed to parse JSON:', error);
+            return [];
+        }
+    }
+
+    return [];
+}
+
+/**
+ * Converts a Sprint to SprintWithPriorities with typed JSON fields.
+ */
+export function toSprintWithPriorities(sprint: Sprint): SprintWithPriorities {
+    return {
+        ...sprint,
+        priorities: parseSprintPriorities(sprint),
+    };
+}
 
 /**
  * Safely parses daily log priorities from JSON field.
@@ -156,18 +188,14 @@ export function parseArchivedGoals(planning: Planning): unknown[] {
  * Safely parses annual goals from JSON field.
  */
 export function parseAnnualGoals(planning: Planning): AnnualGoal[] {
-    // @ts-expect-error - annualGoals is freshly added to schema
     if (!planning.annualGoals) return [];
 
-    // @ts-expect-error
     if (Array.isArray(planning.annualGoals)) {
         return planning.annualGoals as AnnualGoal[];
     }
 
-    // @ts-expect-error
     if (typeof planning.annualGoals === 'string') {
         try {
-            // @ts-expect-error
             return JSON.parse(planning.annualGoals) as AnnualGoal[];
         } catch (error) {
             console.error('[parseAnnualGoals] Failed to parse JSON:', error);
@@ -204,6 +232,8 @@ export function toPlanningWithTypedFields(planning: Planning): PlanningWithTyped
         signatureImage: planning.signatureImage ?? undefined,
         signedAt: planning.signedAt ?? undefined,
         currentModule: planning.currentModule ?? undefined,
+        currentStep: planning.currentStep ?? undefined,
+        currentGoalIndex: planning.currentGoalIndex ?? undefined,
     };
 }
 
@@ -394,6 +424,28 @@ export function parseWheelGaps(review: YearlyReview): Record<string, string> {
 }
 
 /**
+ * Safely parses yearly review big wins from JSON field.
+ */
+export function parseWins(review: YearlyReview): string[] {
+    if (!review.wins) return [];
+
+    if (Array.isArray(review.wins)) {
+        return review.wins as string[];
+    }
+
+    if (typeof review.wins === 'string') {
+        try {
+            return JSON.parse(review.wins) as string[];
+        } catch (error) {
+            console.error('[parseWins] Failed to parse JSON:', error);
+            return [];
+        }
+    }
+
+    return [];
+}
+
+/**
  * Converts a YearlyReview to YearlyReviewWithTypedFields with typed JSON fields.
  */
 export function toYearlyReviewWithTypedFields(review: YearlyReview): YearlyReviewWithTypedFields {
@@ -402,7 +454,7 @@ export function toYearlyReviewWithTypedFields(review: YearlyReview): YearlyRevie
         wheelRatings: parseWheelRatings(review),
         wheelWins: parseWheelWins(review),
         wheelGaps: parseWheelGaps(review),
-        wins: review.wins ? (Array.isArray(review.wins) ? review.wins : JSON.parse(review.wins as string) as string[]) : undefined,
+        wins: parseWins(review),
         otherDetails: review.otherDetails ?? undefined,
     };
 }

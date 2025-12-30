@@ -5,8 +5,8 @@ import { DesiredIdentityStatus } from "@/lib/enums";
 import { User, CheckCircle2, HelpCircle, XCircle } from "lucide-react";
 
 interface IdentityCheckProps {
-  value: string;
-  onChange: (val: string) => void;
+  value: DesiredIdentityStatus;
+  onChange: (val: DesiredIdentityStatus) => void;
 }
 
 const OPTIONS = [

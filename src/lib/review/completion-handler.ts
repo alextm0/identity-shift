@@ -4,7 +4,7 @@ import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 
 interface HandleReviewCompletionOptions {
   reviewId: string;
-  formData: YearlyReviewFormData;
+  formData: Partial<YearlyReviewFormData>;
   year: number;
   currentStep: number;
   isEditMode: boolean;
@@ -61,7 +61,8 @@ export async function handleReviewCompletion({
         year,
         wheelRatings,
         wins,
-      });
+        otherDetails: formData.otherDetails ?? undefined,
+      } as any);
 
       if (completeResult.success) {
         onSavingChange(false);
@@ -77,7 +78,8 @@ export async function handleReviewCompletion({
         year,
         wheelRatings,
         wins,
-      });
+        otherDetails: formData.otherDetails ?? undefined,
+      } as any);
 
       if (result.success) {
         onSavingChange(false);

@@ -192,8 +192,8 @@ export const getActiveSprintAction = createActionWithoutValidation(
 
 
 function revalidateSprintPaths() {
+    revalidateTag('active-sprint', 'max');
     revalidatePath("/dashboard", "layout");
     revalidatePath("/dashboard/sprint", "layout");
     revalidatePath("/sprints", "layout");
-    revalidateTag("active-sprint");
 }

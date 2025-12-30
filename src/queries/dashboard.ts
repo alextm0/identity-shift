@@ -5,7 +5,7 @@ import { getPlanningByUserId } from "@/data-access/planning";
 import { getWeeklyReviews, getMonthlyReviews } from "@/data-access/reviews";
 import { getCompletedYearlyReview } from "@/data-access/yearly-reviews";
 import { differenceInDays, subDays, isSameDay } from "date-fns";
-import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
+import { toDailyLogWithTypedFields } from "@/lib/type-helpers"; // Import toDailyLogWithTypedFields
 
 /**
  * Get comprehensive dashboard data for the authenticated user.
@@ -41,8 +41,8 @@ export async function getDashboardData() {
     // Fetch all dashboard data in parallel for better performance
     const [
         planning,
-        activeSprint,
-        recentSprints,
+        rawActiveSprint, // Renamed to rawActiveSprint to differentiate
+        rawRecentSprints, // Renamed
         todayLog,
         recentLogs,
         weeklyReviews,
@@ -58,6 +58,9 @@ export async function getDashboardData() {
         getMonthlyReviews(userId).then(reviews => reviews.slice(0, 1)), // Latest monthly review
         getCompletedYearlyReview(userId, CURRENT_YEAR).catch(() => undefined), // Check for completed review (don't fail if table doesn't exist yet)
     ]);
+
+    const activeSprint = rawActiveSprint || null;
+    const recentSprints = rawRecentSprints;
 
     // Calculate days left for active sprint
     let daysLeft: number | null = null;
@@ -123,8 +126,8 @@ export async function getDashboardData() {
         todayLog,
         recentLogs,
         latestWeeklyReview: weeklyReviews[0] || null,
-        latestMonthlyReview: monthlyReviews[0] || null,
-        completedYearlyReview,
+        latestMonthlyReview: monthlyReviews[0] || null, // Ensure latestMonthlyReview is also returned here
+        completedYearlyReview: completedYearlyReview ? { year: completedYearlyReview.year } : null,
         daysLeft,
         todayStatus,
         sprintDuration,
