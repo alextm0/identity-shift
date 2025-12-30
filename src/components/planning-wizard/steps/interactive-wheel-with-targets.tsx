@@ -345,22 +345,47 @@ export function InteractiveWheelOfLifeWithTargets({
               : "middle";
           const isActive = activeDimension === spoke.dimension;
 
+          const ratingText = spoke.targetValue !== spoke.currentValue
+            ? `${spoke.currentValue} → ${spoke.targetValue}`
+            : `${spoke.currentValue}`;
+
+          // Calculate a centered label position further out to avoid wheel overlap
+          const angle = spoke.angle;
+          const labelRadius = radius + 75;
+          const labelX = adjustedCenter + labelRadius * Math.cos(angle);
+          const labelY = adjustedCenter + labelRadius * Math.sin(angle);
+
           return (
-            <text
-              key={`label-${i}`}
-              x={spoke.labelX}
-              y={spoke.labelY}
-              textAnchor={textAnchor}
-              dominantBaseline="middle"
-              className={cn(
-                "font-mono text-[10px] uppercase tracking-widest transition-all duration-300 pointer-events-none",
-                isActive
-                  ? "fill-focus-violet font-semibold"
-                  : "fill-white/40"
-              )}
-            >
-              {DIMENSION_LABELS[spoke.dimension as keyof typeof DIMENSION_LABELS] || spoke.dimension}
-            </text>
+            <g key={`label-${i}`} className="pointer-events-none transition-all duration-300">
+              <text
+                x={labelX}
+                y={labelY - 6}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className={cn(
+                  "font-mono text-[10px] uppercase tracking-widest transition-all duration-300",
+                  isActive
+                    ? "fill-focus-violet font-bold"
+                    : "fill-white/60"
+                )}
+              >
+                {DIMENSION_LABELS[spoke.dimension as keyof typeof DIMENSION_LABELS] || spoke.dimension}
+              </text>
+              <text
+                x={labelX}
+                y={labelY + 8}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className={cn(
+                  "font-mono text-[9px] font-bold tracking-tighter transition-all duration-300",
+                  isActive
+                    ? "fill-white"
+                    : "fill-white/30"
+                )}
+              >
+                {ratingText}
+              </text>
+            </g>
           );
         })}
       </svg>

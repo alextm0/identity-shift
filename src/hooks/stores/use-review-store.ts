@@ -15,14 +15,14 @@ interface ReviewStore {
     reviewId: string | null;
     isDirty: boolean;
     isSaving: boolean;
-    
+
     // Step data
     wheelRatings: Record<string, number>;
     wheelWins: Record<string, string>;
     wheelGaps: Record<string, string>;
     wins: string[];
     otherDetails: string;
-    
+
     // Actions
     setStep: (step: number) => void;
     setWheelRating: (dimension: string, value: number) => void;
@@ -31,6 +31,8 @@ interface ReviewStore {
     addWin: () => void;
     removeWin: (index: number) => void;
     updateWin: (index: number, text: string) => void;
+    setWins: (wins: string[]) => void;
+    resetWins: (wins: string[]) => void;
     setOtherDetails: (text: string) => void;
     loadFromServer: (data: YearlyReviewWithTypedFields) => void;
     reset: () => void;
@@ -53,15 +55,15 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
     reviewId: null,
     isDirty: false,
     isSaving: false,
-    
+
     wheelRatings: { ...initialWheelRatings },
     wheelWins: { ...initialWheelAudit },
     wheelGaps: { ...initialWheelAudit },
     wins: [""], // Start with one empty win
     otherDetails: "",
-    
+
     setStep: (step) => set({ currentStep: step, isDirty: true }),
-    
+
     setWheelRating: (dimension, value) => {
         const currentState = get();
         // Only update if value actually changed to prevent unnecessary re-renders
@@ -71,25 +73,25 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
             set({ wheelRatings: ratings, isDirty: true });
         }
     },
-    
+
     setWheelWin: (dimension, text) => {
         const wins = { ...get().wheelWins };
         wins[dimension] = text;
         set({ wheelWins: wins, isDirty: true });
     },
-    
+
     setWheelGap: (dimension, text) => {
         const gaps = { ...get().wheelGaps };
         gaps[dimension] = text;
         set({ wheelGaps: gaps, isDirty: true });
     },
-    
+
     addWin: () => {
         const wins = [...get().wins];
         wins.push("");
         set({ wins, isDirty: true });
     },
-    
+
     removeWin: (index) => {
         const wins = [...get().wins];
         wins.splice(index, 1);
@@ -99,22 +101,26 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
         }
         set({ wins, isDirty: true });
     },
-    
+
     updateWin: (index, text) => {
         const wins = [...get().wins];
         wins[index] = text;
-        set({ wins, isDirty: true });
+        set({ wins: wins, isDirty: true });
     },
-    
+
+    setWins: (wins) => set({ wins: [...wins], isDirty: true }),
+
+    resetWins: (wins) => set({ wins: [...wins], isDirty: false }),
+
     setOtherDetails: (text) => set({ otherDetails: text, isDirty: true }),
-    
+
     loadFromServer: (data) => {
         // Use new fields
         const wins = data.wins && Array.isArray(data.wins) && data.wins.length > 0
             ? data.wins.filter(w => w && w.trim())
             : [""];
         const otherDetails = data.otherDetails || "";
-        
+
         set({
             reviewId: data.id,
             currentStep: data.currentStep,
@@ -126,7 +132,7 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
             isDirty: false,
         });
     },
-    
+
     reset: () => {
         set({
             currentStep: 1,
@@ -140,45 +146,45 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
             otherDetails: "",
         });
     },
-    
+
     getFormData: () => {
         const state = get();
         // Only include fields that have actual data (not just defaults)
         const formData: Partial<YearlyReviewFormData> = {
             currentStep: state.currentStep,
         };
-        
+
         // Include wheelRatings if any are set (not just defaults)
-        const hasCustomRatings = Object.entries(state.wheelRatings).some(([key, value]) => 
+        const hasCustomRatings = Object.entries(state.wheelRatings).some(([key, value]) =>
             value !== initialWheelRatings[key]
         );
         if (hasCustomRatings || Object.keys(state.wheelRatings).length > 0) {
             formData.wheelRatings = state.wheelRatings;
         }
-        
+
         // Include wheelWins if any have content
         if (Object.values(state.wheelWins).some(v => v.trim())) {
             formData.wheelWins = state.wheelWins;
         }
-        
+
         // Include wheelGaps if any have content
         if (Object.values(state.wheelGaps).some(v => v.trim())) {
             formData.wheelGaps = state.wheelGaps;
         }
-        
+
         // Include wins if any have content (filter empty strings)
         const nonEmptyWins = state.wins.filter(w => w && w.trim());
         if (nonEmptyWins.length > 0) {
             formData.wins = nonEmptyWins;
         }
-        
+
         if (state.otherDetails.trim()) {
             formData.otherDetails = state.otherDetails;
         }
-        
+
         return formData;
     },
-    
+
     markSaving: (saving) => set({ isSaving: saving }),
 }));
 

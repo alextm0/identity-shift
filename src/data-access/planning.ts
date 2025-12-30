@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { planning } from "@/lib/db/schema";
+import { planning, yearlyReview } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { NewPlanning, Planning } from "@/lib/types";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
@@ -71,7 +71,48 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
         async () => {
             const existing = await getPlanningByUserIdAndYear(userId, planningYear);
 
+            // Determine previous year relative to the planning year
+            const previousYear = planningYear - 1;
+
+            // Try to find completed review for the previous year
+            const previousReview = await db.select()
+                .from(yearlyReview)
+                .where(and(
+                    eq(yearlyReview.userId, userId),
+                    eq(yearlyReview.year, previousYear),
+                    eq(yearlyReview.status, 'completed')
+                ))
+                .limit(1)
+                .then(res => res[0]);
+
+            const defaultWheel = {
+                health: 5,
+                training: 5,
+                mental: 5,
+                learning: 5,
+                technical: 5,
+                creativity: 5,
+                relationships: 5,
+                income: 5
+            };
+
+            const seedWheel = previousReview?.wheelRatings || defaultWheel;
+
             if (existing) {
+                // If existing planning has no wheelOfLife yet, but we found a review, update it
+                // We check if it's strictly null or an empty object (serialized as such in some cases)
+                const isWheelEmpty = !existing.wheelOfLife || Object.keys(existing.wheelOfLife as object).length === 0;
+
+                if (isWheelEmpty && previousReview) {
+                    const result = await db.update(planning)
+                        .set({
+                            wheelOfLife: seedWheel,
+                            updatedAt: new Date()
+                        })
+                        .where(eq(planning.id, existing.id))
+                        .returning();
+                    return result[0];
+                }
                 return existing;
             }
 
@@ -88,7 +129,7 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
                 currentGoalIndex: 0,
                 status: 'draft',
                 previousIdentity: null,
-                wheelOfLife: null,
+                wheelOfLife: seedWheel,
                 lastArchiveReviewDate: null,
                 completedAt: null,
                 createdAt: new Date(),

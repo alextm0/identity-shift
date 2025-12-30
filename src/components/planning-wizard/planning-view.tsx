@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Target, Sparkles, ChevronDown, ChevronUp, ScrollText, ShieldAlert, ListTodo, Clock, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, Edit, Target, Sparkles, ChevronDown, ChevronUp, ScrollText, ShieldAlert, ListTodo, Clock, LayoutDashboard, Maximize2, X } from "lucide-react";
 import Link from "next/link";
 import type { PlanningWithTypedFields } from "@/lib/types";
 import { format } from "date-fns";
@@ -13,6 +13,7 @@ import { WheelOfLife } from "@/components/planning/wheel-of-life";
 import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog";
 
 interface PlanningViewProps {
     planning: PlanningWithTypedFields;
@@ -29,6 +30,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
     });
 
     const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
+    const [isWheelModalOpen, setIsWheelModalOpen] = useState(false);
 
     const toggleSection = (id: string) => {
         setExpandedSections(prev => ({
@@ -161,33 +163,50 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
-                                {annualGoals.map((goal: AnnualGoal, index: number) => {
+                            <div className="space-y-4">
+                                {annualGoals.map((goal, index: number) => {
                                     const isExpanded = expandedGoals[goal.id];
                                     return (
                                         <div
                                             key={`annual-${goal.id}-${index}`}
                                             className={cn(
-                                                "group relative border border-white/5 bg-white/[0.02] rounded-xl transition-all duration-300 overflow-hidden",
-                                                isExpanded ? "bg-white/[0.04] border-white/10" : "hover:bg-white/[0.04] hover:border-white/10"
+                                                "group relative border rounded-xl transition-all duration-300 overflow-hidden",
+                                                "bg-gradient-to-br from-white/[0.02] to-white/[0.01]",
+                                                "shadow-[0_1px_2px_rgba(0,0,0,0.3)]",
+                                                isExpanded 
+                                                    ? "border-white/15 bg-white/[0.05] shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]" 
+                                                    : "border-white/5 hover:border-white/12 hover:bg-white/[0.04] hover:shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
                                             )}
                                         >
                                             <button
                                                 onClick={() => toggleGoal(goal.id)}
-                                                className="w-full text-left p-6 flex items-start sm:items-center justify-between gap-6"
+                                                className="w-full text-left p-6 flex items-start sm:items-center justify-between gap-6 relative z-10"
                                             >
-                                                <div className="flex items-start sm:items-center gap-6 flex-1 min-w-0">
-                                                    <span className="text-xs font-mono text-white/20 shrink-0 pt-1 sm:pt-0">
-                                                        {String(index + 1).padStart(2, '0')}
-                                                    </span>
-                                                    <div className="flex flex-col gap-1 min-w-0">
-                                                        <h4 className="text-lg font-medium text-white/90 leading-tight group-hover:text-white transition-colors">
-                                                            {goal.text || goal.originalText}
+                                                <div className="flex items-start sm:items-center gap-5 flex-1 min-w-0">
+                                                    <div className={cn(
+                                                        "flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-300 shrink-0",
+                                                        isExpanded
+                                                            ? "bg-white/10 border-white/20"
+                                                            : "bg-white/5 border-white/10 group-hover:bg-white/10 group-hover:border-white/15"
+                                                    )}>
+                                                        <span className={cn(
+                                                            "text-xs font-mono font-bold transition-colors duration-300",
+                                                            isExpanded ? "text-white/80" : "text-white/50 group-hover:text-white/70"
+                                                        )}>
+                                                            {String(index + 1).padStart(2, '0')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2 min-w-0 flex-1">
+                                                        <h4 className={cn(
+                                                            "text-lg font-semibold leading-tight transition-colors duration-300",
+                                                            isExpanded ? "text-white" : "text-white/95 group-hover:text-white"
+                                                        )}>
+                                                            {goal.text}
                                                         </h4>
                                                         {goal.category && !isExpanded && (
                                                             <div className="flex items-center gap-2">
-                                                                <div className="h-1 w-1 rounded-full bg-emerald-500/40" />
-                                                                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
+                                                                <div className="h-1.5 w-1.5 rounded-full bg-white/30 group-hover:bg-white/40 transition-colors duration-300" />
+                                                                <span className="text-[10px] font-mono text-white/50 group-hover:text-white/60 uppercase tracking-wider transition-colors duration-300">
                                                                     {DIMENSION_LABELS[goal.category as LifeDimension]}
                                                                 </span>
                                                             </div>
@@ -195,37 +214,50 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4 shrink-0 pt-1 sm:pt-0">
-                                                    {isExpanded ? (
-                                                        <ChevronUp className="h-4 w-4 text-white/40" />
-                                                    ) : (
-                                                        <ChevronDown className="h-4 w-4 text-white/20 group-hover:text-white/40 transition-colors" />
-                                                    )}
+                                                    <div className={cn(
+                                                        "p-1.5 rounded-lg transition-all duration-300",
+                                                        isExpanded 
+                                                            ? "bg-white/10 rotate-180" 
+                                                            : "bg-white/5 group-hover:bg-white/10"
+                                                    )}>
+                                                        {isExpanded ? (
+                                                            <ChevronUp className="h-4 w-4 text-white/60" />
+                                                        ) : (
+                                                            <ChevronDown className="h-4 w-4 text-white/30 group-hover:text-white/50 transition-colors" />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </button>
 
                                             {isExpanded && (
-                                                <div className="px-6 pb-8 pt-2 space-y-8 animate-in fade-in slide-in-from-top-2 duration-300 border-t border-white/5 mt-2">
-                                                    <div className="space-y-3">
-                                                        <p className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2">
-                                                            <span className="h-px w-4 bg-emerald-500/20" />
-                                                            Success Criteria
-                                                        </p>
-                                                        <p className="text-sm text-white/70 font-light leading-relaxed">
-                                                            {goal.definitionOfDone || "No definition provided."}
-                                                        </p>
-                                                    </div>
-
-                                                    {goal.whyMatters && (
-                                                        <div className="p-4 rounded-lg bg-white/[0.02] border border-emerald-500/10 flex items-start gap-4">
-                                                            <div className="h-full w-0.5 bg-emerald-500/30 rounded-full shrink-0" />
-                                                            <div className="space-y-1">
-                                                                <p className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Why This Matters</p>
-                                                                <p className="text-sm text-white/60 italic font-light leading-relaxed">
-                                                                    &quot;{goal.whyMatters}&quot;
+                                                <div className="px-6 pb-8 pt-4 space-y-6 animate-in fade-in slide-in-from-top-3 duration-500 border-t border-white/10 mt-2 relative z-10">
+                                                    {('definitionOfDone' in goal) ? (
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="h-px w-6 bg-gradient-to-r from-emerald-500/60 to-transparent" />
+                                                                <p className="text-[10px] font-mono text-emerald-500/70 uppercase tracking-widest font-semibold">
+                                                                    Success Criteria
+                                                                </p>
+                                                            </div>
+                                                            <div className="pl-2">
+                                                                <p className="text-sm text-white/75 font-sans leading-relaxed">
+                                                                    {(goal as AnnualGoal).definitionOfDone || "No definition provided."}
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                    )}
+                                                    ) : null}
+
+                                                    {('whyMatters' in goal) && (goal as AnnualGoal).whyMatters ? (
+                                                        <div className="relative p-5 rounded-xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-emerald-500/15 shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)] flex items-start gap-4 group/why">
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500/40 via-emerald-500/30 to-emerald-500/40 rounded-l-xl" />
+                                                            <div className="space-y-2 pl-3">
+                                                                <p className="text-[9px] font-mono text-emerald-500/60 uppercase tracking-widest font-semibold">Why This Matters</p>
+                                                                <p className="text-sm text-white/70 font-sans leading-relaxed">
+                                                                    &quot;{(goal as AnnualGoal).whyMatters}&quot;
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
                                                 </div>
                                             )}
                                         </div>
@@ -233,6 +265,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                 })}
                             </div>
                         </div>
+
 
                         {/* --- SURVIVAL GUARDS (Collapsible) --- */}
                         <div className="pt-8 border-t border-white/5">
@@ -295,35 +328,99 @@ export function PlanningView({ planning }: PlanningViewProps) {
                             )}
                         </div>
 
-                        {/* Vision Wheel Reference - Always Visible */}
-                        <div className="space-y-6 p-1 bg-white/[0.01] border border-white/5 rounded-[2.5rem]">
-                            <div className="p-8 pb-0 space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <LayoutDashboard className="h-4 w-4 text-emerald-500/50" />
-                                    <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Strategic Blueprint</h3>
-                                </div>
-                                <p className="text-[9px] font-mono text-white/20 uppercase tracking-widest">Radar of Current vs Target Archetype</p>
-                            </div>
+                        {/* Letter from the Future */}
+                        {futureYouLetter && (
+                            <div className="pt-8 border-t border-white/5">
+                                <button
+                                    onClick={() => toggleSection('future_letter')}
+                                    className="w-full group"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-white/5 border border-white/5 group-hover:border-white/10 transition-colors">
+                                                <Sparkles className="h-4 w-4 text-violet-500/60 group-hover:text-violet-500/80 transition-colors" />
+                                            </div>
+                                            <div className="text-left">
+                                                <h3 className="text-sm font-bold uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">Letter from the Future</h3>
+                                                <p className="text-[10px] font-mono text-white/30 uppercase tracking-widest mt-1">Expose High-Level Vision</p>
+                                            </div>
+                                        </div>
+                                        <ChevronDown className={cn("h-4 w-4 text-white/20 transition-transform duration-300", expandedSections.future_letter ? "rotate-180" : "")} />
+                                    </div>
+                                </button>
 
-                            <div className="p-8 pt-2 space-y-8">
-                                <div className="flex justify-center">
-                                    <div className="w-full max-w-[280px]">
+                                {expandedSections.future_letter && (
+                                    <div className="mt-6 p-6 rounded-2xl bg-white/[0.04] border border-white/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div className="space-y-6">
+                                            <div className="flex justify-center opacity-10">
+                                                <ScrollText className="h-12 w-12" />
+                                            </div>
+                                            <div className="prose prose-invert max-w-none">
+                                                <p className="text-base text-white/60 font-sans leading-relaxed whitespace-pre-wrap selection:bg-emerald-500/20">
+                                                    {futureYouLetter}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Raw Context / Brain Dump */}
+                        {brainDump && (
+                            <div className="pt-8 border-t border-white/5">
+                                <button
+                                    onClick={() => toggleSection('raw_context')}
+                                    className="w-full group"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-white/5 border border-white/5 group-hover:border-white/10 transition-colors">
+                                                <ScrollText className="h-4 w-4 text-white/40 group-hover:text-white/60 transition-colors" />
+                                            </div>
+                                            <div className="text-left">
+                                                <h3 className="text-sm font-bold uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">Raw Planning Context</h3>
+                                                <p className="text-[10px] font-mono text-white/30 uppercase tracking-widest mt-1">Initial Brain Dump</p>
+                                            </div>
+                                        </div>
+                                        <ChevronDown className={cn("h-4 w-4 text-white/20 transition-transform duration-300", expandedSections.raw_context ? "rotate-180" : "")} />
+                                    </div>
+                                </button>
+
+                                {expandedSections.raw_context && (
+                                    <div className="mt-6 p-6 rounded-2xl bg-white/[0.04] border border-white/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <p className="text-xs text-white/40 font-mono leading-relaxed whitespace-pre-wrap">
+                                            {brainDump}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- SIDEBAR COLUMN: Guards & Context (4/12) --- */}
+                    <div className="lg:col-span-4 space-y-12">
+
+                        {/* Strategic Blueprint - Wheel of Life */}
+                        <div className="space-y-6">
+                            <GlassPanel className="p-8 border-white/5 overflow-hidden group relative rounded-[2rem]">
+                                <button
+                                    onClick={() => setIsWheelModalOpen(true)}
+                                    className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                                    aria-label="View wheel of life in fullscreen"
+                                >
+                                    <Maximize2 className="h-4 w-4 text-white/60 hover:text-white/90 transition-colors" />
+                                </button>
+                                <div className="flex justify-center py-2">
+                                    <div className="w-full max-w-[600px]">
                                         <WheelOfLife
                                             values={currentWheel}
                                             targetValues={targetWheel}
                                         />
                                     </div>
                                 </div>
-
-
-                            </div>
+                            </GlassPanel>
                         </div>
-                    </div>
-
-                    {/* --- SIDEBAR COLUMN: Guards & Context (4/12) --- */}
-                    <div className="lg:col-span-4 space-y-12">
-
-
 
                         {/* Goal Backlog */}
                         {backlogGoals.length > 0 && (
@@ -361,28 +458,21 @@ export function PlanningView({ planning }: PlanningViewProps) {
                             </div>
                         )}
 
-                        {/* Commitment Seal */}
+                        {/* Commitment Seal - Just Signature */}
                         <div className="space-y-6">
-                            <div className="flex items-center gap-3 px-2">
-                                <ScrollText className="h-4 w-4 text-white/40" />
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-white/60">Final Commitment</h3>
-                            </div>
-
                             <GlassPanel className="p-8 border-white/5 overflow-hidden group relative rounded-[2rem]">
                                 <div className="absolute -top-10 -right-10 opacity-[0.02]">
                                     <ScrollText className="h-48 w-48" />
                                 </div>
 
-                                <div className="relative z-10 space-y-8">
-                                    <div className="space-y-2">
-                                        {commitmentStatement ? (
-                                            <p className="text-xs text-white/50 italic leading-relaxed text-center">
+                                <div className="relative z-10">
+                                    {commitmentStatement && (
+                                        <div className="space-y-2 mb-8">
+                                            <p className="text-xs text-white/50 leading-relaxed text-center">
                                                 &quot;{commitmentStatement}&quot;
                                             </p>
-                                        ) : (
-                                            <p className="text-xs text-white/30 italic text-center">No formal statement, sealed by signature.</p>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
 
                                     <div className="flex flex-col items-center pt-8 border-t border-white/5">
                                         {signatureImage ? (
@@ -406,79 +496,9 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                 </div>
                             </GlassPanel>
                         </div>
+
                     </div>
                 </div>
-
-                {/* Final Reflection: Future Letter */}
-                {futureYouLetter && (
-                    <div className="pt-24 border-t border-white/5">
-                        <div className="space-y-12 max-w-4xl mx-auto">
-                            <div className="flex flex-col items-center gap-6 text-center">
-                                <div className="p-4 rounded-full bg-violet-500/5 border border-violet-500/10">
-                                    <Sparkles className="h-8 w-8 text-violet-500/50" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-sm font-bold uppercase tracking-[0.5em] text-white/40">Letter from the Future</h3>
-                                    <button
-                                        onClick={() => toggleSection('future_letter')}
-                                        className="text-[10px] font-mono text-violet-500/60 uppercase tracking-widest hover:text-violet-400 transition-colors"
-                                    >
-                                        {expandedSections.future_letter ? "Conceal Revelation" : "Expose High-Level Vision"}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {expandedSections.future_letter && (
-                                <GlassPanel className="p-16 md:p-24 border-white/5 bg-white/[0.01] animate-in fade-in slide-in-from-bottom-10 duration-1000 rounded-[3rem]">
-                                    <div className="max-w-3xl mx-auto space-y-12">
-                                        <div className="flex justify-center opacity-10">
-                                            <ScrollText className="h-16 w-16" />
-                                        </div>
-                                        <div className="prose prose-invert max-w-none">
-                                            <p className="text-xl md:text-2xl text-white/60 font-medium leading-relaxed whitespace-pre-wrap text-center selection:bg-emerald-500/20">
-                                                {futureYouLetter}
-                                            </p>
-                                        </div>
-                                        <div className="flex justify-center pt-12">
-                                            <div className="h-px w-32 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                                        </div>
-                                    </div>
-                                </GlassPanel>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Raw Context / Brain Dump */}
-                {brainDump && (
-                    <div className="pt-12 border-t border-white/5 pb-12">
-                        <div className="space-y-4">
-                            <button
-                                onClick={() => toggleSection('raw_context')}
-                                className="w-full flex items-center justify-between group opacity-50 hover:opacity-100 transition-opacity"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="h-px flex-1 bg-white/10" />
-                                    <p className="text-[10px] font-mono uppercase tracking-widest text-white/30">Raw Planning Context</p>
-                                    <div className="h-px flex-1 bg-white/10" />
-                                </div>
-                            </button>
-
-                            {expandedSections.raw_context && (
-                                <div className="max-w-2xl mx-auto pt-8 animate-in fade-in slide-in-from-top-2">
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest text-center">Initial Brain Dump</p>
-                                        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5">
-                                            <p className="text-xs text-white/40 font-mono leading-relaxed whitespace-pre-wrap">
-                                                {brainDump}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* Empty State */}
                 {!futureIdentity && annualGoals.length === 0 && (
@@ -500,6 +520,43 @@ export function PlanningView({ planning }: PlanningViewProps) {
                 )}
             </div>
 
+            {/* Wheel of Life Modal */}
+            <Dialog open={isWheelModalOpen} onOpenChange={setIsWheelModalOpen}>
+                <DialogOverlay className="bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:duration-500 data-[state=closed]:duration-300" />
+                <DialogContent className="max-w-4xl w-full !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] !mx-0 !my-0 p-0 border border-white/20 bg-[#050505]/60 backdrop-blur-2xl shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-90 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-4 data-[state=open]:slide-in-from-top-4 data-[state=open]:duration-500 data-[state=closed]:duration-300 rounded-3xl overflow-hidden [&>button]:hidden max-h-[85vh]">
+                    <DialogTitle className="sr-only">Strategic Blueprint - Wheel of Life</DialogTitle>
+                    <div className="relative w-full flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-white/20 bg-white/[0.03] shrink-0">
+                            <div>
+                                <h2 className="text-xl font-bold text-white uppercase tracking-widest mb-1">
+                                    Strategic Blueprint
+                                </h2>
+                                <p className="text-xs font-mono text-white/50 uppercase tracking-widest">
+                                    Wheel of Life
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setIsWheelModalOpen(false)}
+                                className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 group"
+                                aria-label="Close modal"
+                            >
+                                <X className="h-4 w-4 text-white/60 group-hover:text-white/90 transition-colors" />
+                            </button>
+                        </div>
+
+                        {/* Wheel Container */}
+                        <div className="flex-1 flex items-center justify-center bg-white/[0.02] px-8 py-8 w-full">
+                            <div className="w-full max-w-[550px] aspect-square mx-auto">
+                                <WheelOfLife
+                                    values={currentWheel}
+                                    targetValues={targetWheel}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
         </div>
     );

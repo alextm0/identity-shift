@@ -14,7 +14,6 @@ export const REDIRECT_PATHS = {
     weekly: "/dashboard/weekly",
     monthly: "/dashboard/monthly",
     sprint: "/dashboard/sprint",
-    identity: "/dashboard/identity",
     planning: "/planning",
     sprints: "/sprints",
 } as const;

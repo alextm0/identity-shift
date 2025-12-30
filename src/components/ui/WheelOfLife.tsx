@@ -25,12 +25,12 @@ export function WheelOfLife({
   useDimensionLabels = false,
 }: WheelOfLifeProps) {
   const dimensions = Object.keys(values);
-  const size = 400;
+  const size = 600;
   const center = size / 2;
   const radius = size * 0.4;
   const angleStep = (Math.PI * 2) / dimensions.length;
-  const viewBoxPadding = interactive ? 50 : 0;
-  
+  const viewBoxPadding = 120;
+
   const [activeDimension, setActiveDimension] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -47,36 +47,36 @@ export function WheelOfLife({
   // Calculate value from mouse position projected onto spoke (for interactive mode)
   const getValueFromMouse = useCallback((dimensionIndex: number, clientX: number, clientY: number): number => {
     if (!svgRef.current || !interactive) return (WHEEL_MIN_VALUE + WHEEL_MAX_VALUE) / 2;
-    
+
     const svg = svgRef.current;
     const rect = svg.getBoundingClientRect();
     const viewBoxSize = size + viewBoxPadding * 2;
-    
+
     // Convert to SVG coordinates
     const svgX = (clientX - rect.left) / rect.width * viewBoxSize;
     const svgY = (clientY - rect.top) / rect.height * viewBoxSize;
-    
+
     // Adjusted center (accounting for viewBox padding)
     const adjustedCenter = center + viewBoxPadding;
-    
+
     // Vector from center to mouse
     const dx = svgX - adjustedCenter;
     const dy = svgY - adjustedCenter;
-    
+
     // The spoke's angle
     const spokeAngle = dimensionIndex * angleStep - Math.PI / 2;
-    
+
     // Unit vector along the spoke
     const spokeX = Math.cos(spokeAngle);
     const spokeY = Math.sin(spokeAngle);
-    
+
     // Project mouse vector onto spoke (dot product)
     const projection = dx * spokeX + dy * spokeY;
-    
+
     // Convert projection distance to value
     const clampedProjection = Math.max(0, Math.min(radius, projection));
     const value = Math.round((clampedProjection / radius) * (WHEEL_MAX_VALUE - WHEEL_MIN_VALUE) + WHEEL_MIN_VALUE);
-    
+
     return Math.max(WHEEL_MIN_VALUE, Math.min(WHEEL_MAX_VALUE, value));
   }, [interactive, angleStep, radius, size, center, viewBoxPadding]);
 
@@ -87,7 +87,7 @@ export function WheelOfLife({
     (e.target as Element).setPointerCapture(e.pointerId);
     setActiveDimension(dimension);
     setIsDragging(true);
-    
+
     const dimIndex = dimensions.indexOf(dimension);
     const value = getValueFromMouse(dimIndex, e.clientX, e.clientY);
     onChange(dimension, value);
@@ -95,7 +95,7 @@ export function WheelOfLife({
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!interactive || !isDragging || !activeDimension || !onChange) return;
-    
+
     const dimIndex = dimensions.indexOf(activeDimension);
     const value = getValueFromMouse(dimIndex, e.clientX, e.clientY);
     onChange(activeDimension, value);
@@ -109,17 +109,15 @@ export function WheelOfLife({
 
   // Compute points for rendering
   const adjustedCenter = center + viewBoxPadding;
-  
+
   const currentPoints = useMemo(() => {
     return dimensions.map((key, i) => {
-      const val = values[key];
+      const val = values[key] || 0;
       const angle = i * angleStep - Math.PI / 2;
       const r = (val / WHEEL_MAX_VALUE) * radius;
       return {
         x: adjustedCenter + r * Math.cos(angle),
         y: adjustedCenter + r * Math.sin(angle),
-        labelX: adjustedCenter + (radius + 50) * Math.cos(angle),
-        labelY: adjustedCenter + (radius + 50) * Math.sin(angle),
         angle,
         dimension: key,
         value: val,
@@ -145,12 +143,11 @@ export function WheelOfLife({
   const currentPolygonPoints = currentPoints.map(p => `${p.x},${p.y}`).join(" ");
   const targetPolygonPoints = targetPoints ? targetPoints.map(p => `${p.x},${p.y}`).join(" ") : null;
 
-  const viewBox = interactive 
-    ? `0 0 ${size + viewBoxPadding * 2} ${size + viewBoxPadding * 2}`
-    : `-50 -50 ${size + 100} ${size + 100}`;
+  const viewBoxSize = size + viewBoxPadding * 2;
+  const viewBox = `0 0 ${viewBoxSize} ${viewBoxSize}`;
 
   return (
-    <div className="relative w-full max-w-[500px] aspect-square mx-auto overflow-visible">
+    <div className="relative w-full max-w-[800px] aspect-square mx-auto overflow-visible">
       <svg
         ref={svgRef}
         viewBox={viewBox}
@@ -178,7 +175,7 @@ export function WheelOfLife({
           const status = getDimensionStatus(dimension);
           const endX = adjustedCenter + radius * Math.cos(angle);
           const endY = adjustedCenter + radius * Math.sin(angle);
-          
+
           return (
             <g key={`spoke-${i}`}>
               {/* Invisible hit area for interactive mode */}
@@ -196,7 +193,7 @@ export function WheelOfLife({
                   onPointerLeave={() => !isDragging && setActiveDimension(null)}
                 />
               )}
-              
+
               {/* Visible spoke line */}
               <line
                 x1={adjustedCenter}
@@ -206,12 +203,8 @@ export function WheelOfLife({
                 className={cn(
                   "stroke-1 transition-all duration-300",
                   interactive && "pointer-events-none",
-                  isHighlighted 
-                    ? "stroke-focus-violet/40" 
-                    : status === 'weak'
-                    ? "stroke-bullshit-crimson/30"
-                    : status === 'strong'
-                    ? "stroke-action-emerald/30"
+                  isHighlighted
+                    ? "stroke-focus-violet/40"
                     : "stroke-white/5"
                 )}
               />
@@ -243,7 +236,7 @@ export function WheelOfLife({
         {currentPoints.map((p, i) => {
           const isHighlighted = highlightedArea === p.dimension || (interactive && activeDimension === p.dimension);
           const status = getDimensionStatus(p.dimension);
-          
+
           return (
             <g key={`current-${i}`}>
               {/* Hit area for interactive mode */}
@@ -259,7 +252,7 @@ export function WheelOfLife({
                   onPointerLeave={() => !isDragging && setActiveDimension(null)}
                 />
               )}
-              
+
               {/* Visible data point */}
               <circle
                 cx={p.x}
@@ -268,19 +261,19 @@ export function WheelOfLife({
                 className={cn(
                   "shadow-lg transition-all duration-500 ease-in-out",
                   interactive && "pointer-events-none",
-                  isHighlighted 
-                    ? "fill-focus-violet"
+                  isHighlighted
+                    ? (status === 'weak' ? "fill-bullshit-crimson" : status === 'strong' ? "fill-action-emerald" : "fill-focus-violet")
                     : status === 'weak'
-                    ? "fill-bullshit-crimson/60"
-                    : status === 'strong'
-                    ? "fill-action-emerald/60"
-                    : "fill-white/40"
+                      ? "fill-bullshit-crimson/60"
+                      : status === 'strong'
+                        ? "fill-action-emerald/60"
+                        : "fill-white/40"
                 )}
                 style={isHighlighted && interactive ? {
-                  filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.8))",
+                  filter: `drop-shadow(0 0 8px ${status === 'weak' ? 'rgba(239, 68, 68, 0.8)' : status === 'strong' ? 'rgba(16, 185, 129, 0.8)' : 'rgba(139, 92, 246, 0.8)'})`,
                 } : undefined}
               />
-              
+
               {/* Value label when active (interactive mode) */}
               {interactive && isHighlighted && (
                 <text
@@ -322,38 +315,60 @@ export function WheelOfLife({
 
         {/* Labels */}
         {currentPoints.map((p, i) => {
-          const label = useDimensionLabels 
+          const label = useDimensionLabels
             ? (DIMENSION_LABELS[dimensions[i] as keyof typeof DIMENSION_LABELS] || dimensions[i])
             : dimensions[i];
-          const textAnchor = Math.cos(p.angle) > 0.1 ? "start" : Math.cos(p.angle) < -0.1 ? "end" : "middle";
           const isHighlighted = highlightedArea === p.dimension || (interactive && activeDimension === p.dimension);
-          const status = getDimensionStatus(p.dimension);
-          
+
+          const currentVal = values[p.dimension];
+          const targetVal = targetValues ? (targetValues[p.dimension] ?? currentVal) : null;
+          const ratingText = targetVal !== null && targetVal !== currentVal
+            ? `${currentVal} → ${targetVal}`
+            : `${currentVal}`;
+
+          // Calculate a centered label position further out to avoid wheel overlap
+          const angle = p.angle;
+          const labelRadius = radius + 75;
+          const labelX = adjustedCenter + labelRadius * Math.cos(angle);
+          const labelY = adjustedCenter + labelRadius * Math.sin(angle);
+
           return (
-            <text
-              key={i}
-              x={p.labelX}
-              y={p.labelY}
-              textAnchor={textAnchor}
-              dominantBaseline="middle"
-              className={cn(
-                "font-mono text-[10px] uppercase tracking-widest transition-all duration-300",
-                interactive && "pointer-events-none",
-                isHighlighted 
-                  ? "fill-focus-violet font-semibold"
-                  : status === 'weak'
-                  ? "fill-bullshit-crimson/80 font-semibold"
-                  : status === 'strong'
-                  ? "fill-action-emerald/80 font-semibold"
-                  : "fill-white/40"
-              )}
-            >
-              {label}
-            </text>
+            <g key={i} className="pointer-events-none transition-all duration-300">
+              {/* Main Label */}
+              <text
+                x={labelX}
+                y={labelY - 6}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className={cn(
+                  "font-mono text-[10px] uppercase tracking-widest transition-all duration-300",
+                  isHighlighted
+                    ? "fill-focus-violet font-semibold"
+                    : "fill-white/60"
+                )}
+              >
+                {label}
+              </text>
+              {/* Rating Value */}
+              <text
+                x={labelX}
+                y={labelY + 8}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className={cn(
+                  "font-mono text-[9px] font-bold tracking-tighter transition-all duration-300",
+                  isHighlighted
+                    ? "fill-white"
+                    : "fill-white/30"
+                )}
+              >
+                {ratingText}
+              </text>
+            </g>
           );
         })}
       </svg>
-      
+
       {/* Instructions for interactive mode */}
       {interactive && (
         <div className="mt-6 text-center">

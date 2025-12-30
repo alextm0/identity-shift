@@ -34,7 +34,7 @@ export function AnnualGoalsStep() {
     }, {} as Record<string, number>);
 
     return (
-        <StepContainer size="lg">
+        <StepContainer size="xl">
             <StepHeader
                 title="Annual Goals"
                 subtitle="Select which goals will represent the year."
@@ -46,7 +46,7 @@ export function AnnualGoalsStep() {
             </StepHeader>
 
             {/* Two-Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] gap-8 items-start">
 
                 {/* Left Column: Goal Selection */}
                 <div className="space-y-6">
@@ -108,8 +108,8 @@ export function AnnualGoalsStep() {
                 {/* Right Column: Wheel Visualization - Sticky on desktop */}
                 <div className="hidden lg:block sticky top-8">
                     {Object.keys(targetWheelOfLife).length > 0 && (
-                        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
-                            <div className="space-y-6">
+                        <div className="p-8 bg-white/5 border border-white/10 rounded-3xl">
+                            <div className="space-y-8">
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-white uppercase tracking-widest mb-1">
                                         Vision Reference
@@ -119,10 +119,11 @@ export function AnnualGoalsStep() {
                                     </p>
                                 </div>
                                 <div className="flex justify-center">
-                                    <div className="w-[300px]">
+                                    <div className="w-full max-w-[450px]">
                                         <WheelOfLife
                                             values={currentWheel}
                                             targetValues={targetWheel}
+                                            useDimensionLabels={true}
                                         />
                                     </div>
                                 </div>
@@ -154,6 +155,7 @@ export function AnnualGoalsStep() {
                                 <WheelOfLife
                                     values={currentWheel}
                                     targetValues={targetWheel}
+                                    useDimensionLabels={true}
                                 />
                             </div>
                         </div>

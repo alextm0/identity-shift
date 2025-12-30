@@ -13,9 +13,9 @@ interface WheelOfLifeProps {
 
 export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStrong = false }: WheelOfLifeProps) {
   const dimensions = Object.keys(values);
-  const size = 400;
+  const size = 500; // Increased size for bigger wheel
   const center = size / 2;
-  const radius = size * 0.4;
+  const radius = size * 0.42; // Larger radius for bigger wheel
   const angleStep = (Math.PI * 2) / dimensions.length;
 
   // Determine if a dimension is weak or strong
@@ -32,11 +32,12 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
       const val = values[key];
       const angle = i * angleStep - Math.PI / 2;
       const r = (val / WHEEL_MAX_VALUE) * radius;
+      const labelDistance = radius + 35; // Closer to the wheel
       return {
         x: center + r * Math.cos(angle),
         y: center + r * Math.sin(angle),
-        labelX: center + (radius + 50) * Math.cos(angle),
-        labelY: center + (radius + 50) * Math.sin(angle),
+        labelX: center + labelDistance * Math.cos(angle),
+        labelY: center + labelDistance * Math.sin(angle),
         angle,
         dimension: key,
       };
@@ -62,10 +63,10 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
   const targetPolygonPoints = targetPoints ? targetPoints.map(p => `${p.x},${p.y}`).join(" ") : null;
 
   return (
-    <div className="relative w-full max-w-[500px] aspect-square mx-auto overflow-visible">
+    <div className="relative w-full h-full aspect-square overflow-visible">
       <svg
-        viewBox={`-50 -50 ${size + 100} ${size + 100}`}
-        className="w-full h-full drop-shadow-[0_0_20px_rgba(139,92,246,0.2)]"
+        viewBox={`-80 -80 ${size + 160} ${size + 160}`}
+        className="w-full h-full drop-shadow-[0_0_40px_rgba(139,92,246,0.3)]"
         style={{ overflow: 'visible' }}
       >
         {/* Background Circles */}
@@ -75,7 +76,8 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
             cx={center}
             cy={center}
             r={(level / WHEEL_MAX_VALUE) * radius}
-            className="fill-none stroke-white/5 stroke-1"
+            className="fill-none stroke-white/6 stroke-[0.5]"
+            style={{ filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.1))' }}
           />
         ))}
 
@@ -108,16 +110,17 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
         {/* Current Status Polygon - Solid Fill */}
         <polygon
           points={currentPolygonPoints}
-          className="fill-white/10 stroke-white/20 stroke-1 transition-all duration-500 ease-in-out"
+          className="fill-white/12 stroke-white/25 stroke-[1.5] transition-all duration-500 ease-in-out"
+          style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.1))' }}
         />
 
         {/* Target Status Polygon - Bright Stroke Overlay */}
         {targetPolygonPoints && (
           <polygon
             points={targetPolygonPoints}
-            className="fill-none stroke-focus-violet stroke-2 transition-all duration-500 ease-in-out"
+            className="fill-none stroke-focus-violet stroke-[2.5] transition-all duration-500 ease-in-out"
             style={{
-              filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.6))",
+              filter: "drop-shadow(0 0 12px rgba(139, 92, 246, 0.7)) drop-shadow(0 0 4px rgba(139, 92, 246, 0.4))",
             }}
           />
         )}
@@ -131,17 +134,24 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
               key={`current-${i}`}
               cx={p.x}
               cy={p.y}
-              r="4"
+              r="5"
               className={cn(
-                "shadow-lg transition-all duration-500 ease-in-out",
+                "transition-all duration-500 ease-in-out",
                 isHighlighted 
                   ? "fill-focus-violet"
                   : status === 'weak'
-                  ? "fill-bullshit-crimson/60"
+                  ? "fill-bullshit-crimson/70"
                   : status === 'strong'
-                  ? "fill-action-emerald/60"
-                  : "fill-white/40"
+                  ? "fill-action-emerald/70"
+                  : "fill-white/50"
               )}
+              style={{
+                filter: isHighlighted 
+                  ? "drop-shadow(0 0 6px rgba(139, 92, 246, 0.8))"
+                  : status === 'strong'
+                  ? "drop-shadow(0 0 4px rgba(16, 185, 129, 0.5))"
+                  : "drop-shadow(0 0 3px rgba(255, 255, 255, 0.2))"
+              }}
             />
           );
         })}
@@ -154,13 +164,14 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
               key={`target-${i}`}
               cx={p.x}
               cy={p.y}
-              r="5"
+              r="6"
               className={cn(
-                "fill-focus-violet shadow-lg transition-all duration-500 ease-in-out",
-                isHighlighted && "fill-focus-violet scale-125"
+                "fill-focus-violet transition-all duration-500 ease-in-out",
+                isHighlighted && "fill-focus-violet"
               )}
               style={{
-                filter: "drop-shadow(0 0 6px rgba(139, 92, 246, 0.8))",
+                filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.9)) drop-shadow(0 0 3px rgba(139, 92, 246, 0.6))",
+                transform: isHighlighted ? "scale(1.2)" : "scale(1)",
               }}
             />
           );
@@ -169,29 +180,59 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
         {/* Labels */}
         {currentPoints.map((p, i) => {
           const label = dimensions[i];
+          const currentValue = values[p.dimension];
+          const targetValue = targetValues?.[p.dimension];
           const textAnchor = Math.cos(p.angle) > 0.1 ? "start" : Math.cos(p.angle) < -0.1 ? "end" : "middle";
           const isHighlighted = highlightedArea === p.dimension;
           const status = getDimensionStatus(p.dimension);
+          
           return (
-            <text
-              key={i}
-              x={p.labelX}
-              y={p.labelY}
-              textAnchor={textAnchor}
-              dominantBaseline="middle"
-              className={cn(
-                "font-mono text-[10px] uppercase tracking-widest transition-all duration-300",
-                isHighlighted 
-                  ? "fill-focus-violet font-semibold"
-                  : status === 'weak'
-                  ? "fill-bullshit-crimson/80 font-semibold"
-                  : status === 'strong'
-                  ? "fill-action-emerald/80 font-semibold"
-                  : "fill-white/40"
-              )}
-            >
-              {label}
-            </text>
+            <g key={i}>
+              <text
+                x={p.labelX}
+                y={p.labelY - 4}
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                className={cn(
+                  "font-mono text-[12px] uppercase tracking-widest transition-all duration-300 font-bold",
+                  isHighlighted 
+                    ? "fill-focus-violet"
+                    : status === 'weak'
+                    ? "fill-bullshit-crimson/95"
+                    : status === 'strong'
+                    ? "fill-action-emerald/95"
+                    : "fill-white/85"
+                )}
+                style={{
+                  textShadow: "0 0 8px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.8), 0 0 12px rgba(255,255,255,0.3)",
+                  filter: "drop-shadow(0 0 2px rgba(0,0,0,0.8))",
+                }}
+              >
+                {label}
+              </text>
+              {/* Value Labels */}
+              <text
+                x={p.labelX}
+                y={p.labelY + 12}
+                textAnchor={textAnchor}
+                dominantBaseline="middle"
+                className={cn(
+                  "font-mono text-[11px] font-bold transition-all duration-300",
+                  isHighlighted 
+                    ? "fill-focus-violet/95"
+                    : "fill-white/75"
+                )}
+                style={{
+                  textShadow: "0 0 6px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.25)",
+                  filter: "drop-shadow(0 0 2px rgba(0,0,0,0.8))",
+                }}
+              >
+                {currentValue}
+                {targetValue && targetValue !== currentValue && (
+                  <tspan className="fill-focus-violet/90"> / {targetValue}</tspan>
+                )}
+              </text>
+            </g>
           );
         })}
       </svg>

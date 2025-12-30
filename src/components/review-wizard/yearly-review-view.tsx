@@ -1,6 +1,5 @@
 "use client";
 
-import { WheelOfLife } from "@/components/ui/WheelOfLife";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -9,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { YearlyReviewWithTypedFields } from "@/lib/types";
 import { format } from "date-fns";
-import { analyzeDimensions, convertRatingsToWheelFormat } from "@/lib/utils/dimension-analysis";
+import { analyzeDimensions } from "@/lib/utils/dimension-analysis";
 import { EditableWheelSection } from "./editable-wheel-section";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
@@ -40,9 +39,6 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
             setIsDeleting(false);
         }
     };
-
-    // Convert wheelRatings to format expected by WheelOfLife component
-    const wheelValues = convertRatingsToWheelFormat(review.wheelRatings);
 
     // Analyze dimensions using utility function
     const { weakDimensions, strongDimensions } = analyzeDimensions(review.wheelRatings);
@@ -88,51 +84,14 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
 
                 {/* Wheel Visualization */}
                 <div className="space-y-4">
-                    <EditableWheelSection reviewId={review.id} initialRatings={review.wheelRatings} />
-                    <div className="glass-pane p-8">
-                        <div className="flex justify-center mb-8">
-                            <WheelOfLife 
-                                values={wheelValues}
-                                highlightedArea={weakDimensions[0]?.key || null}
-                                showWeakStrong={true}
-                            />
-                        </div>
-
-                        {/* Weak/Strong Highlights */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {weakDimensions.length > 0 && (
-                                <div className="space-y-2">
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">
-                                        Weakest Areas
-                                    </h3>
-                                    <div className="space-y-1">
-                                        {weakDimensions.map((dim) => (
-                                            <div key={dim.key} className="text-sm text-white/80">
-                                                <span className="font-semibold">{dim.label}</span>
-                                                <span className="text-white/40 ml-2">({dim.score}/10)</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {strongDimensions.length > 0 && (
-                                <div className="space-y-2">
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">
-                                        Strongest Areas
-                                    </h3>
-                                    <div className="space-y-1">
-                                        {strongDimensions.map((dim) => (
-                                            <div key={dim.key} className="text-sm text-white/80">
-                                                <span className="font-semibold">{dim.label}</span>
-                                                <span className="text-white/40 ml-2">({dim.score}/10)</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <EditableWheelSection
+                        reviewId={review.id}
+                        initialRatings={review.wheelRatings}
+                        showWeakStrong={true}
+                        highlightedArea={weakDimensions[0]?.key || null}
+                        weakDimensions={weakDimensions}
+                        strongDimensions={strongDimensions}
+                    />
                 </div>
 
                 {/* Wins - New format */}

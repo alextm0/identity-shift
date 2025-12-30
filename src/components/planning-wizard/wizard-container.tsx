@@ -144,12 +144,12 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
     const renderStep = useMemo(() => {
         const StepComponent = STEP_COMPONENTS[currentStep];
         if (!StepComponent) return null;
-        
+
         // Special handling for CommitmentStep which needs onComplete
         if (currentStep === 9) {
             return <StepComponent onComplete={() => complete()} />;
         }
-        
+
         return <StepComponent />;
     }, [currentStep, complete]);
 
@@ -172,7 +172,7 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
             <div className="flex-1 flex items-center justify-center">
                 <div className="w-full max-w-4xl">
                     <div className="glass-pane p-8 md:p-12">
-                        {renderStep()}
+                        {renderStep}
                     </div>
 
                     {/* Error message */}

@@ -97,7 +97,7 @@ export function withValidation<TInput, TOutput>(
     return async (data: unknown): Promise<TOutput> => {
         // Validate and parse input
         const validated = validateAndParse(schema, data);
-        
+
         // Execute action with validated data
         return await action(validated);
     };
@@ -130,11 +130,11 @@ export function withErrorHandling<TArgs extends unknown[], TReturn>(
             if (error instanceof AppError) {
                 throw error;
             }
-            
+
             // Wrap unknown errors
             const message = getErrorMessage(error);
             const code = getErrorCode(error) || "UNKNOWN_ERROR";
-            
+
             throw new AppError(message, code);
         }
     };
@@ -245,37 +245,43 @@ export function createActionWithoutValidation<TOutput, TArgs extends unknown[] =
 
 /**
  * Creates an action factory for actions that take additional parameters before formData
- * Returns a function that accepts the additional params and returns the action
  * 
  * @param schema - Zod schema for validation
  * @param action - The action function (userId, param, validatedData) => Promise<ActionResult<T>>
  * @param options - Optional configuration
- * @returns Factory function that accepts param and returns the action
- * 
- * @example
- * ```typescript
- * export const updateItemAction = createActionWithParam(
- *   ItemSchema.partial(),
- *   async (userId, itemId: string, validated) => {
- *     await updateItem(itemId, userId, validated);
- *     return success({ id: itemId });
- *   },
- *   { errorMessage: "Failed to update item" }
- * );
- * // Usage: updateItemAction(itemId)(formData)
- * ```
+ * @returns Curried server action: (param) => (data) => Promise<ActionResult<T>>
+ *          Can also be called directly: (param, data) => Promise<ActionResult<T>>
  */
 export function createActionWithParam<TParam, TInput, TOutput>(
     schema: ZodSchema<TInput>,
     action: (userId: string, param: TParam, data: TInput) => Promise<ActionResult<TOutput>>,
     options?: CreateActionOptions
 ) {
-    return (param: TParam) => {
-        return createAction(
-            schema,
-            async (userId, data) => action(userId, param, data),
-            options
-        );
-    };
+    function curriedAction(param: TParam): (data: TInput) => Promise<ActionResult<TOutput>>;
+    function curriedAction(param: TParam, data: TInput): Promise<ActionResult<TOutput>>;
+    function curriedAction(param: TParam, data?: TInput): (data: TInput) => Promise<ActionResult<TOutput>> | Promise<ActionResult<TOutput>> {
+        const execute = async (formData: TInput): Promise<ActionResult<TOutput>> => {
+            return withErrorHandling(
+                withValidation(
+                    schema,
+                    withAuth(
+                        async (userId, validatedData) => action(userId, param, validatedData),
+                        options
+                    )
+                ),
+                options?.errorMessage || "Action failed"
+            )(formData);
+        };
+
+        // If data is provided, execute immediately (direct call)
+        if (data !== undefined) {
+            return execute(data);
+        }
+
+        // Otherwise, return the curried function
+        return execute;
+    }
+
+    return curriedAction;
 }
 
