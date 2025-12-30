@@ -151,4 +151,5 @@ export {
     type AntiGoal,
     type Commitment,
     type WheelOfLifeCategory,
+    type DraftAnnualGoal,
 } from "./validators/planning";

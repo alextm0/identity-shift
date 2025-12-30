@@ -144,10 +144,10 @@ export const PlanningFormSchema = z.object({
 
     // Legacy fields (for backward compatibility)
     activeGoals: z.array(SimplifiedGoalSchema).optional(),
-    backlogGoals: z.array(z.any()).optional(),
-    archivedGoals: z.array(z.any()).optional(),
+    backlogGoals: z.array(z.unknown()).optional(),
+    archivedGoals: z.array(z.unknown()).optional(),
     quarterlyGoalIds: z.array(z.string().uuid()).optional(),
-    crystalBallFailures: z.any().optional(),
+    crystalBallFailures: z.unknown().optional(),
     currentModule: z.number().int().min(1).max(8).optional(),
     currentGoalIndex: z.number().int().min(0).optional(),
 });

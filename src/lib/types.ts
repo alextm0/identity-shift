@@ -68,7 +68,7 @@ export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 
     signatureImage?: string;
     signedAt?: Date | string;
     // Legacy fields
-    crystalBallFailures?: any;
+    crystalBallFailures?: unknown;
     // Progress tracking
     currentStep?: number;
     currentModule?: number | null; // Legacy - can be null from DB

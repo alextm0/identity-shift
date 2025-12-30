@@ -424,6 +424,28 @@ export function parseWheelGaps(review: YearlyReview): Record<string, string> {
 }
 
 /**
+ * Safely parses yearly review big wins from JSON field.
+ */
+export function parseWins(review: YearlyReview): string[] {
+    if (!review.wins) return [];
+
+    if (Array.isArray(review.wins)) {
+        return review.wins as string[];
+    }
+
+    if (typeof review.wins === 'string') {
+        try {
+            return JSON.parse(review.wins) as string[];
+        } catch (error) {
+            console.error('[parseWins] Failed to parse JSON:', error);
+            return [];
+        }
+    }
+
+    return [];
+}
+
+/**
  * Converts a YearlyReview to YearlyReviewWithTypedFields with typed JSON fields.
  */
 export function toYearlyReviewWithTypedFields(review: YearlyReview): YearlyReviewWithTypedFields {
@@ -432,7 +454,7 @@ export function toYearlyReviewWithTypedFields(review: YearlyReview): YearlyRevie
         wheelRatings: parseWheelRatings(review),
         wheelWins: parseWheelWins(review),
         wheelGaps: parseWheelGaps(review),
-        wins: review.wins ? (Array.isArray(review.wins) ? review.wins : JSON.parse(review.wins as string) as string[]) : [],
+        wins: parseWins(review),
         otherDetails: review.otherDetails ?? undefined,
     };
 }
