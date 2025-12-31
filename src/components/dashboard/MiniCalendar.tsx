@@ -1,5 +1,5 @@
 import { GlassPanel } from '@/components/dashboard/glass-panel';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays, getWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays } from 'date-fns';
 import { Calendar as CalendarIcon, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -38,9 +38,8 @@ export function MiniCalendar({ highlightedDates = [], className }: MiniCalendarP
 
   // Calculate stats
   const daysWithLogs = daysInMonth.filter(day => isHighlighted(day)).length;
-  const completionRate = Math.round((daysWithLogs / daysInMonth.length) * 100);
   const daysPassed = daysInMonth.filter(day => day <= today).length;
-  const targetRate = Math.round((daysWithLogs / daysPassed) * 100);
+  const targetRate = daysPassed > 0 ? Math.round((daysWithLogs / daysPassed) * 100) : 0;
 
   return (
     <GlassPanel className={cn("group p-6 border-white/5 shadow-none hover:bg-white/[0.02] hover:border-white/10 transition-all duration-500", className)}>
@@ -73,8 +72,8 @@ export function MiniCalendar({ highlightedDates = [], className }: MiniCalendarP
                 className={cn(
                   "h-full rounded-full transition-all duration-1000",
                   targetRate >= 80 ? "bg-gradient-to-r from-action-emerald/60 to-action-emerald" :
-                  targetRate >= 50 ? "bg-gradient-to-r from-motion-amber/60 to-motion-amber" :
-                  "bg-gradient-to-r from-white/20 to-white/40"
+                    targetRate >= 50 ? "bg-gradient-to-r from-motion-amber/60 to-motion-amber" :
+                      "bg-gradient-to-r from-white/20 to-white/40"
                 )}
                 style={{ width: `${targetRate}%` }}
               />

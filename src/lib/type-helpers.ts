@@ -5,7 +5,7 @@
  */
 
 import type { DailyLog, Planning, WeeklyReview, MonthlyReview, YearlyReview, Sprint } from '@/lib/types';
-import type { DailyPriorityLog, ProofOfWork, WheelOfLife, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal, SprintPriority } from '@/lib/validators';
+import type { DailyPriorityLog, ProofOfWork, WheelOfLife, PlanningGoal, AnnualGoal, SprintPriority, AntiGoal } from '@/lib/validators';
 import type { DailyLogWithTypedFields, PlanningWithTypedFields, WeeklyReviewWithTypedFields, MonthlyReviewWithTypedFields, YearlyReviewWithTypedFields, SprintWithPriorities } from '@/lib/types';
 
 
@@ -34,7 +34,7 @@ export function parseSprintPriorities(sprint: { priorities?: unknown } | null | 
 /**
  * Converts a Sprint to SprintWithPriorities with typed JSON fields.
  */
-export function toSprintWithPriorities(sprint: Sprint): SprintWithPriorities {
+export function toSprintWithPriorities(sprint: Sprint & { priorities?: unknown }): SprintWithPriorities {
     return {
         ...sprint,
         priorities: parseSprintPriorities(sprint),
@@ -187,8 +187,8 @@ export function parseArchivedGoals(planning: Planning): unknown[] {
 /**
  * Safely parses annual goals from JSON field.
  */
-export function parseAnnualGoals(planning: Planning): AnnualGoal[] {
-    if (!planning.annualGoals) return [];
+export function parseAnnualGoals(planning: { annualGoals?: unknown } | null | undefined): AnnualGoal[] {
+    if (!planning || !planning.annualGoals) return [];
 
     if (Array.isArray(planning.annualGoals)) {
         return planning.annualGoals as AnnualGoal[];
@@ -207,6 +207,28 @@ export function parseAnnualGoals(planning: Planning): AnnualGoal[] {
 }
 
 /**
+ * Safely parses target wheel of life from JSON field.
+ */
+export function parseTargetWheelOfLife(planning: Planning): WheelOfLife | null {
+    if (!planning.targetWheelOfLife) return null;
+
+    if (typeof planning.targetWheelOfLife === 'object' && !Array.isArray(planning.targetWheelOfLife)) {
+        return planning.targetWheelOfLife as WheelOfLife;
+    }
+
+    if (typeof planning.targetWheelOfLife === 'string') {
+        try {
+            return JSON.parse(planning.targetWheelOfLife) as WheelOfLife;
+        } catch (error) {
+            console.error('[parseTargetWheelOfLife] Failed to parse JSON:', error);
+            return null;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Converts a Planning to PlanningWithTypedFields with typed JSON fields.
  */
 export function toPlanningWithTypedFields(planning: Planning): PlanningWithTypedFields {
@@ -216,23 +238,12 @@ export function toPlanningWithTypedFields(planning: Planning): PlanningWithTyped
         activeGoals: parseActiveGoals(planning),
         backlogGoals: parseBacklogGoals(planning),
         archivedGoals: parseArchivedGoals(planning),
-        // Convert null to undefined for new fields
-        brainDump: planning.brainDump ?? undefined,
-        futureIdentity: planning.futureIdentity ?? undefined,
-        targetWheelOfLife: planning.targetWheelOfLife ? (planning.targetWheelOfLife as Record<string, number>) : undefined,
-        wheelVisionStatements: planning.wheelVisionStatements ? (planning.wheelVisionStatements as Record<string, string>) : undefined,
-        futureYouLetter: planning.futureYouLetter ?? undefined,
-        goals: planning.goals ? (planning.goals as SimplifiedGoal[]) : undefined,
-        annualGoalIds: planning.annualGoalIds ? (planning.annualGoalIds as string[]) : undefined,
         annualGoals: parseAnnualGoals(planning),
-        antiVision: planning.antiVision ?? undefined,
-        antiGoals: planning.antiGoals ? (planning.antiGoals as AntiGoal[]) : undefined,
-        commitmentStatement: planning.commitmentStatement ?? undefined,
-        signatureImage: planning.signatureImage ?? undefined,
-        signedAt: planning.signedAt ?? undefined,
-        currentModule: planning.currentModule ?? undefined,
-        currentStep: planning.currentStep ?? undefined,
-        currentGoalIndex: planning.currentGoalIndex ?? undefined,
+        targetWheelOfLife: parseTargetWheelOfLife(planning),
+        wheelVisionStatements: planning.wheelVisionStatements as Record<string, string> | null,
+        goals: planning.goals as PlanningGoal[] | null,
+        annualGoalIds: planning.annualGoalIds as string[] | null,
+        antiGoals: planning.antiGoals as AntiGoal[] | null,
     };
 }
 

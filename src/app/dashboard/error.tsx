@@ -26,12 +26,12 @@ export default function DashboardError({
 
     useEffect(() => {
         // If unauthorized, redirect to sign-in after a brief delay
-        if (isUnauthorized) {
-            const timer = setTimeout(() => {
-                router.push('/auth/sign-in');
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
+        if (!isUnauthorized) return;
+
+        const timer = setTimeout(() => {
+            router.push('/auth/sign-in');
+        }, 2000);
+        return () => clearTimeout(timer);
     }, [isUnauthorized, router]);
 
     if (isUnauthorized) {

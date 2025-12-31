@@ -22,7 +22,7 @@ export const StyledTextarea = forwardRef<HTMLTextAreaElement, StyledTextareaProp
         textarea.style.height = "auto";
         textarea.style.height = `${textarea.scrollHeight}px`;
       }
-    }, [autoResize, props.value]);
+    }, [autoResize, props.value, textareaRef]);
 
     const variantStyles = {
       default: "bg-white/[0.02] border-white/10 focus:border-white/20 text-white/70",

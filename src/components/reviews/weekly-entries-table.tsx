@@ -4,7 +4,7 @@ import { useState } from "react";
 import { format, startOfWeek } from "date-fns";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
-import { Edit2, Calendar, Zap, Trophy, Flame } from "lucide-react";
+import { Edit2, Calendar, Zap, Trophy } from "lucide-react";
 import { DailyLog, SprintWithDetails, PromiseLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getTotalUnits } from "@/lib/type-helpers";

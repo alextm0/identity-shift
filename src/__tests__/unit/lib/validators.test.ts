@@ -158,8 +158,8 @@ describe('SprintFormSchema', () => {
   it('should validate a valid sprint', () => {
     const sprint = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
       goals: [
         {
           goalId: '550e8400-e29b-41d4-a716-446655440000',
@@ -180,8 +180,8 @@ describe('SprintFormSchema', () => {
   it('should require at least one goal', () => {
     const sprint = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
       goals: [],
     };
     expect(() => SprintFormSchema.parse(sprint)).toThrow();
@@ -190,8 +190,8 @@ describe('SprintFormSchema', () => {
   it('should limit to maximum 3 goals', () => {
     const sprint = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
       goals: Array(4).fill({
         goalId: '550e8400-e29b-41d4-a716-446655440000',
         goalText: 'Goal',
@@ -204,8 +204,8 @@ describe('SprintFormSchema', () => {
   it('should require name to be at least 3 characters', () => {
     const sprint = {
       name: 'Te',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
       goals: [
         {
           goalId: '550e8400-e29b-41d4-a716-446655440000',

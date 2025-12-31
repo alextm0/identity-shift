@@ -12,7 +12,7 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { createWeeklyReview, createMonthlyReview, getWeeklyReviewById, getMonthlyReviewById, updateWeeklyReview, updateMonthlyReview } from "@/data-access/reviews";
 import { sanitizeText } from "@/lib/sanitize";
 import { randomUUID } from "crypto";
@@ -42,12 +42,14 @@ export const createWeeklyReviewAction = createAction(
             createdAt: new Date(),
         });
 
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/weekly");
-        
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Weekly review saved successfully",
                 redirect: "weekly"
             }
@@ -70,13 +72,14 @@ export const updateWeeklyReviewAction = createActionWithParam(
 
         await updateWeeklyReview(reviewId, userId, validated);
 
-        revalidatePath("/dashboard");
-        revalidatePath("/reviews");
-        revalidatePath("/reviews/weekly");
-        
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Weekly review updated successfully",
                 redirect: "weekly"
             }
@@ -114,9 +117,10 @@ export const createMonthlyReviewAction = createAction(
             createdAt: new Date(),
         });
 
-        revalidatePath("/dashboard");
-        revalidatePath("/reviews");
-        revalidatePath("/reviews/monthly");
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
 
         return success(
             { id: reviewId },
@@ -143,13 +147,14 @@ export const updateMonthlyReviewAction = createActionWithParam(
 
         await updateMonthlyReview(reviewId, userId, validated);
 
-        revalidatePath("/dashboard");
-        revalidatePath("/reviews");
-        revalidatePath("/reviews/monthly");
-        
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Monthly review updated successfully",
                 redirect: "monthly"
             }

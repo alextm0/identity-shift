@@ -22,6 +22,19 @@ export interface GoalSummary {
   ratio: number;
 }
 
+export interface WeeklySummary {
+  prioritySummary: Record<string, PromiseSummary>;
+  goalSummaries: GoalSummary[];
+  avgEnergy: number;
+  totalActualUnits: number;
+  actionUnits: number;
+  motionUnits: number;
+  logsCount: number;
+  totalPromisesKept: number;
+  totalPromisesTarget: number;
+  promisesAtRisk: number;
+}
+
 function calculatePromiseStatus(
   actual: number,
   target: number,

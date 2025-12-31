@@ -19,7 +19,7 @@ export function SignaturePad({
   penColor = "white",
   className,
 }: SignaturePadProps) {
-  const sigCanvas = useRef<any>(null);
+  const sigCanvas = useRef<SignatureCanvas>(null);
   const [internalIsSigned, setInternalIsSigned] = useState(false);
 
   const finalIsSigned = isSigned !== undefined ? isSigned : internalIsSigned;

@@ -1,22 +1,51 @@
 import { db } from "@/lib/db";
-import { sprintGoal, promise } from "@/lib/db/schema";
-import { eq, asc, and } from "drizzle-orm";
+import { sprintGoal, promise, sprint } from "@/lib/db/schema";
+import { eq, asc, and, inArray } from "drizzle-orm";
 import { PromiseType, CreateSprintGoalData, PromiseData } from "@/lib/validators";
 import { deleteTodayPromiseLog } from "./promises";
 import { randomUUID } from "crypto";
+import { NotFoundError } from "@/lib/errors";
+import { unstable_cache } from "next/cache";
+import type { SprintGoal, SprintPromise } from "@/lib/types";
 
-export async function getSprintGoals(sprintId: string) {
-    return await db.query.sprintGoal.findMany({
-        where: eq(sprintGoal.sprintId, sprintId),
-        with: {
-            promises: {
-                orderBy: asc(promise.sortOrder),
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DbInstance = any; // Can be PgTransaction or typeof db
+
+/**
+ * Data Access for Sprint Goals and Promises
+ */
+
+
+export const getSprintGoals = unstable_cache(
+    async (sprintId: string) => {
+        return await db.query.sprintGoal.findMany({
+            where: eq(sprintGoal.sprintId, sprintId),
+            with: {
+                promises: {
+                    orderBy: asc(promise.sortOrder),
+                },
             },
-        },
-        orderBy: asc(sprintGoal.sortOrder),
-    });
-}
+            orderBy: asc(sprintGoal.sortOrder),
+        });
+    },
+    ['sprint-goals-list'],
+    { tags: ['active-sprint'] }
+);
 
+/**
+ * Creates a new sprint goal and its associated promises.
+ *
+ * IMPORTANT: This function performs multiple sequential database operations
+ * and MUST be called within a transaction to ensure atomicity. If an error
+ * occurs during promise creation, the entire operation will be rolled back.
+ *
+ * @param sprintId The ID of the sprint
+ * @param goalId The ID of the parent goal
+ * @param goalText The text description of the goal
+ * @param sortOrder The display order for the goal
+ * @param promisesData List of promises to create for this goal
+ * @param tx Drizzle transaction object (required for atomicity)
+ */
 export async function createSprintGoalWithPromises(
     sprintId: string,
     goalId: string,
@@ -24,17 +53,16 @@ export async function createSprintGoalWithPromises(
     sortOrder: number,
     promisesData: {
         text: string;
-        type: PromiseType; // Use the enum type
+        type: PromiseType;
         scheduleDays?: number[];
         weeklyTarget?: number;
-    }[]
+    }[],
+    tx: DbInstance // Required transaction object
 ) {
-    // Neon HTTP driver doesn't support transactions. 
-    // We'll perform sequential inserts. Since this is only called during sprint creation, 
-    // partial failure is unlikely but the overall action will handle the error.
+    const database = tx;
 
     // 1. Create Sprint Goal
-    const [newGoal] = await db.insert(sprintGoal).values({
+    const [newGoal] = await database.insert(sprintGoal).values({
         id: randomUUID(),
         sprintId,
         goalId,
@@ -44,7 +72,7 @@ export async function createSprintGoalWithPromises(
 
     // 2. Create Promises
     if (promisesData.length > 0) {
-        await db.insert(promise).values(
+        await database.insert(promise).values(
             promisesData.map((p, index) => ({
                 id: randomUUID(),
                 sprintId,
@@ -61,23 +89,57 @@ export async function createSprintGoalWithPromises(
     return newGoal;
 }
 
+/**
+ * Synchronizes sprint goals and their associated promises with the database.
+ *
+ * IMPORTANT: This function performs multiple sequential database operations
+ * and MUST be called within a transaction to ensure atomicity. If an error
+ * occurs mid-sync, all changes will be rolled back.
+ *
+ * SECURITY: Validates that the sprint belongs to the user to prevent IDOR attacks.
+ *
+ * @param sprintId The ID of the sprint to sync goals for
+ * @param userId The ID of the user owning the sprint
+ * @param goals The list of goals and promises to synchronize
+ * @param tx Drizzle transaction object (required for atomicity)
+ */
 export async function syncSprintGoalsWithPromises(
     sprintId: string,
-    goals: CreateSprintGoalData[]
+    userId: string,
+    goals: CreateSprintGoalData[],
+    tx: DbInstance // Required transaction object
 ) {
+    const database = tx;
+
+    // CRITICAL: Validate sprint ownership to prevent IDOR vulnerability
+    const sprintRecord = await database.query.sprint.findFirst({
+        where: and(
+            eq(sprint.id, sprintId),
+            eq(sprint.userId, userId)
+        ),
+        columns: { id: true }
+    });
+
+    if (!sprintRecord) {
+        throw new NotFoundError("Sprint not found or access denied");
+    }
+
     // 1. Fetch current state
-    const currentGoals = await db.query.sprintGoal.findMany({
+    const currentGoals = await database.query.sprintGoal.findMany({
         where: eq(sprintGoal.sprintId, sprintId),
         with: { promises: true }
     });
 
     const incomingGoalIds = goals.map(g => g.id).filter(Boolean) as string[];
 
-    // 2. Delete goals not in incoming
-    for (const cg of currentGoals) {
-        if (!incomingGoalIds.includes(cg.id)) {
-            await db.delete(sprintGoal).where(eq(sprintGoal.id, cg.id));
-        }
+    // 2. Delete goals not in incoming (batched for performance)
+    const goalsToDelete = currentGoals
+        .filter((cg: SprintGoal) => !incomingGoalIds.includes(cg.id))
+        .map((cg: SprintGoal) => cg.id);
+
+    if (goalsToDelete.length > 0) {
+        await database.delete(sprintGoal)
+            .where(inArray(sprintGoal.id, goalsToDelete));
     }
 
     // 3. Update or Create goals
@@ -87,7 +149,7 @@ export async function syncSprintGoalsWithPromises(
 
         if (dbGoalId) {
             // Update goal
-            await db.update(sprintGoal)
+            await database.update(sprintGoal)
                 .set({
                     goalId: g.goalId,
                     goalText: g.goalText,
@@ -96,7 +158,7 @@ export async function syncSprintGoalsWithPromises(
                 .where(eq(sprintGoal.id, dbGoalId));
         } else {
             // Create goal
-            const [newGoal] = await db.insert(sprintGoal)
+            const [newGoal] = await database.insert(sprintGoal)
                 .values({
                     id: randomUUID(),
                     sprintId,
@@ -109,18 +171,23 @@ export async function syncSprintGoalsWithPromises(
         }
 
         // Sync promises for this goal
-        const currentGoal = currentGoals.find(cg => cg.id === dbGoalId);
+        const currentGoal = currentGoals.find((cg: SprintGoal & { promises: SprintPromise[] }) => cg.id === dbGoalId);
         const currentPromises = currentGoal?.promises || [];
         const incomingPromiseIds = g.promises.map((p: PromiseData) => p.id).filter(Boolean) as string[];
 
-        // Delete promises not in incoming
-        for (const cp of currentPromises) {
-            if (!incomingPromiseIds.includes(cp.id)) {
-                await db.delete(promise).where(eq(promise.id, cp.id));
-            }
+        // Delete promises not in incoming (batched for performance)
+        const promisesToDelete = currentPromises
+            .filter((cp: SprintPromise) => !incomingPromiseIds.includes(cp.id))
+            .map((cp: SprintPromise) => cp.id);
+
+        if (promisesToDelete.length > 0) {
+            await database.delete(promise)
+                .where(inArray(promise.id, promisesToDelete));
         }
 
-        // Update or Create promises
+        // Update or Create promises (batch inserts for performance)
+        const promisesToInsert = [];
+
         for (let j = 0; j < g.promises.length; j++) {
             const p = g.promises[j];
 
@@ -142,8 +209,8 @@ export async function syncSprintGoalsWithPromises(
             };
 
             if (p.id) {
-                // Check if changed
-                const cp = currentPromises.find(currP => currP.id === p.id);
+                // Update existing promise
+                const cp = currentPromises.find((currP: SprintPromise) => currP.id === p.id);
                 const changed = cp && (
                     cp.text !== p.text ||
                     cp.type !== p.type ||
@@ -152,22 +219,27 @@ export async function syncSprintGoalsWithPromises(
                 );
 
                 if (changed) {
-                    await deleteTodayPromiseLog(p.id);
+                    await deleteTodayPromiseLog(p.id, userId, database);
                 }
 
-                await db.update(promise)
+                await database.update(promise)
                     .set(pData)
                     .where(eq(promise.id, p.id));
             } else {
-                // Create new promise
-                await db.insert(promise)
-                    .values({
-                        id: randomUUID(),
-                        sprintId,
-                        sprintGoalId: dbGoalId,
-                        ...pData
-                    });
+                // Collect new promise for batch insert
+                promisesToInsert.push({
+                    id: randomUUID(),
+                    sprintId,
+                    sprintGoalId: dbGoalId,
+                    ...pData
+                });
             }
+        }
+
+        // Batch insert all new promises for this goal
+        if (promisesToInsert.length > 0) {
+            await database.insert(promise).values(promisesToInsert);
         }
     }
 }
+

@@ -8,10 +8,9 @@ import { format, getDay } from "date-fns";
 
 interface MonthlyCalendarHeatmapProps {
   calendarData: CalendarDayData[];
-  monthStr: string;
 }
 
-export function MonthlyCalendarHeatmap({ calendarData, monthStr }: MonthlyCalendarHeatmapProps) {
+export function MonthlyCalendarHeatmap({ calendarData }: MonthlyCalendarHeatmapProps) {
   // Group days into weeks (Mon-Sun)
   const weeks: CalendarDayData[][] = [];
   let currentWeek: CalendarDayData[] = [];

@@ -6,8 +6,13 @@ if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is not defined');
 }
 
-// Using Pool instead of neon(url) to support transactions in serverless environment
+/**
+ * Neon serverless client with WebSocket support.
+ * This supports transactions which are required for certain operations.
+ * The Pool handles connection management efficiently for serverless environments.
+ */
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
 export * from './schema';
+

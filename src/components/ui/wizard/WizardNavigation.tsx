@@ -25,8 +25,6 @@ interface WizardNavigationProps {
 }
 
 export function WizardNavigation({
-  currentStep: _currentStep,
-  totalSteps: _totalSteps,
   isLastStep,
   onBack,
   onNext,

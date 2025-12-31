@@ -105,7 +105,7 @@ export function WeeklyTrendChart({ weeklyLogs, promiseLogs }: WeeklyTrendChartPr
             }}
             itemStyle={{ color: '#fff', fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase' }}
             labelStyle={{ color: 'rgba(255,255,255,0.4)', fontSize: '8px', marginBottom: '4px' }}
-            formatter={(value: any, name?: string) => {
+            formatter={(value: number | string | undefined, name?: string) => {
               if (name === 'energy') return [`${value}/5`, 'Energy'];
               if (name === 'totalUnits') return [value, 'Total Units'];
               return [value, name || ''];

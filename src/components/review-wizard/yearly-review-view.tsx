@@ -34,7 +34,7 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                 toast.error(result.error || "Failed to delete review");
                 setIsDeleting(false);
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete review");
             setIsDeleting(false);
         }

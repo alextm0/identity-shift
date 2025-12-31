@@ -157,12 +157,8 @@ export type CreateSprintGoalData = z.infer<typeof CreateSprintGoalSchema>;
 // Sprint Form
 export const SprintFormSchema = z.object({
     name: z.string().min(3, "Sprint name is required"),
-    startDate: z.coerce.date({
-        message: "Start date must be a valid date",
-    }),
-    endDate: z.coerce.date({
-        message: "End date must be a valid date",
-    }),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().min(1, "End date is required"),
     goals: z.array(CreateSprintGoalSchema)
         .min(1, "At least one goal is required")
         .max(3, "Focus on no more than 3 goals per sprint"),
@@ -189,10 +185,7 @@ export const DailyLogFormSchema = z.object({
     blockerTag: z.nativeEnum(BlockerTag).nullish(),
     note: z.string().optional(),
     promiseCompletions: z.record(z.string(), z.boolean()), // {promiseId: boolean}
-    proofOfWork: z.array(ProofOfWorkSchema).optional(), // Keep for migration/compatibility if needed, but simplified form uses promiseCompletions
-    // Legacy fields optional/removed from form but maybe keep for type compatibility for now?
-    // Plan says "Simplified daily audit" with Main Goal, Today's promises, Energy, Blocker, Note.
-    // So I should align schema with that.
+    proofOfWork: z.array(ProofOfWorkSchema).optional(), // Kept for legacy compatibility
 });
 export type DailyLogFormData = z.infer<typeof DailyLogFormSchema>;
 

@@ -46,12 +46,11 @@ export function PlanningView({ planning }: PlanningViewProps) {
         }));
     };
 
-    // Extract data
-    const goals = planning.goals || planning.activeGoals || [];
-    const annualGoalIds = planning.annualGoalIds || [];
-    const richAnnualGoals = planning.annualGoals || [];
-
     const annualGoals = useMemo(() => {
+        const goals: SimplifiedGoal[] = (planning.goals as SimplifiedGoal[] | undefined) || planning.activeGoals || [];
+        const annualGoalIds: string[] = (planning.annualGoalIds as string[] | undefined) || [];
+        const richAnnualGoals = planning.annualGoals || [];
+
         // If we have rich annual goals data, use it (it contains definitionOfDone, etc.)
         if (richAnnualGoals.length > 0) {
             return richAnnualGoals;
@@ -61,13 +60,17 @@ export function PlanningView({ planning }: PlanningViewProps) {
         return goals.filter((g: SimplifiedGoal) =>
             annualGoalIds.includes(g.id) || (g as SimplifiedGoal & { isAnnualGoal?: boolean }).isAnnualGoal
         );
-    }, [goals, annualGoalIds, richAnnualGoals]);
+    }, [planning.goals, planning.activeGoals, planning.annualGoalIds, planning.annualGoals]);
 
-    const backlogGoals = useMemo(() => goals.filter((g: SimplifiedGoal) =>
-        !annualGoalIds.includes(g.id) && !(g as SimplifiedGoal & { isAnnualGoal?: boolean }).isAnnualGoal
-    ), [goals, annualGoalIds]);
+    const backlogGoals = useMemo(() => {
+        const goals: SimplifiedGoal[] = (planning.goals as SimplifiedGoal[] | undefined) || planning.activeGoals || [];
+        const annualGoalIds: string[] = (planning.annualGoalIds as string[] | undefined) || [];
+        return goals.filter((g: SimplifiedGoal) =>
+            !annualGoalIds.includes(g.id) && !(g as SimplifiedGoal & { isAnnualGoal?: boolean }).isAnnualGoal
+        );
+    }, [planning.goals, planning.activeGoals, planning.annualGoalIds]);
 
-    const targetWheelOfLife = planning.targetWheelOfLife || {};
+    const targetWheelOfLife = useMemo(() => planning.targetWheelOfLife || {}, [planning.targetWheelOfLife]);
     const antiVision = planning.antiVision;
     const antiGoals = planning.antiGoals || [];
     const futureIdentity = planning.futureIdentity;
@@ -76,7 +79,6 @@ export function PlanningView({ planning }: PlanningViewProps) {
     const signedAt = planning.signedAt;
     const futureYouLetter = planning.futureYouLetter;
     const brainDump = planning.brainDump;
-    const driftResponse = planning.driftResponse;
 
     // Prepare wheel data
     const currentWheel = useMemo(() => LIFE_DIMENSIONS.reduce((acc, dim) => {
@@ -294,17 +296,6 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                                                 <p className="text-sm text-white/70 leading-relaxed font-sans">
                                                     {antiVision}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {driftResponse && (
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest pl-1">Recovery Protocol</p>
-                                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                                                <p className="text-sm text-white/70 leading-relaxed font-sans">
-                                                    {driftResponse}
                                                 </p>
                                             </div>
                                         </div>

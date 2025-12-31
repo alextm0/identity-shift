@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Save, Loader2, Sparkles, Target, User, Calendar } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { DailyLog, SprintWithPriorities, MonthlyReviewWithTypedFields, MonthlyReview } from "@/lib/types";
 import { DesiredIdentityStatus } from "@/lib/enums";
 import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
@@ -34,10 +33,15 @@ export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latest
   const [desiredIdentity, setDesiredIdentity] = useState(DesiredIdentityStatus.PARTIALLY);
   const [oneChange, setOneChange] = useState("");
 
-  const priorities = activeSprint?.priorities || [];
-  const [perceivedProgress, setPerceivedProgress] = useState<Record<string, number>>(
-    priorities.reduce((acc, p) => ({ ...acc, [p.key]: 5 }), {})
-  );
+  const priorities = useMemo(() => activeSprint?.priorities || [], [activeSprint]);
+  const [perceivedProgress, setPerceivedProgress] = useState<Record<string, number>>({});
+
+  // Initialize perceivedProgress when priorities are loaded
+  useEffect(() => {
+    if (Object.keys(perceivedProgress).length === 0 && priorities.length > 0) {
+      setPerceivedProgress(priorities.reduce((acc, p) => ({ ...acc, [p.key]: 5 }), {}));
+    }
+  }, [priorities, perceivedProgress]);
 
   // Load existing review data when latestReview changes
   useEffect(() => {

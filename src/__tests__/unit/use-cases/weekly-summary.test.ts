@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculateWeeklySummary } from '@/use-cases/weekly-summary';
 import { createMockDailyLog, createMockSprint } from '@/__tests__/mocks/db';
+import type { SprintWithDetails, PromiseLog } from '@/lib/types';
 
 describe('calculateWeeklySummary', () => {
   it('should calculate priority summary correctly', () => {
@@ -30,15 +31,15 @@ describe('calculateWeeklySummary', () => {
           ],
         },
       ],
-    } as any;
+    } as Partial<SprintWithDetails> as SprintWithDetails;
 
-    const promiseLogs = [
+    const promiseLogs: PromiseLog[] = [
       { id: 'pl-1', promiseId: 'promise-1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
       { id: 'pl-2', promiseId: 'promise-1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
       { id: 'pl-3', promiseId: 'promise-1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
       { id: 'pl-4', promiseId: 'promise-2', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
       { id: 'pl-5', promiseId: 'promise-2', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
-    ] as any;
+    ];
 
     const logs = [
       createMockDailyLog({ energy: 3 }),
@@ -63,7 +64,7 @@ describe('calculateWeeklySummary', () => {
   });
 
   it('should calculate average energy correctly', () => {
-    const sprint = { ...createMockSprint(), goals: [] } as any;
+    const sprint = { ...createMockSprint(), goals: [] } as Partial<SprintWithDetails> as SprintWithDetails;
     const logs = [
       createMockDailyLog({ energy: 3 }),
       createMockDailyLog({ energy: 4 }),
@@ -75,12 +76,12 @@ describe('calculateWeeklySummary', () => {
   });
 
   it('should calculate total actual units', () => {
-    const sprint = { ...createMockSprint(), goals: [] } as any;
-    const promiseLogs = [
+    const sprint = { ...createMockSprint(), goals: [] } as Partial<SprintWithDetails> as SprintWithDetails;
+    const promiseLogs: PromiseLog[] = [
       { id: 'pl-1', promiseId: 'p1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
       { id: 'pl-2', promiseId: 'p2', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
       { id: 'pl-3', promiseId: 'p3', completed: false, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
-    ] as any;
+    ];
     const logs = [createMockDailyLog()];
 
     const summary = calculateWeeklySummary(logs, sprint, promiseLogs);
@@ -88,7 +89,7 @@ describe('calculateWeeklySummary', () => {
   });
 
   it('should return correct logs count', () => {
-    const sprint = { ...createMockSprint(), goals: [] } as any;
+    const sprint = { ...createMockSprint(), goals: [] } as Partial<SprintWithDetails> as SprintWithDetails;
     const logs = Array(5).fill(null).map(() => createMockDailyLog());
 
     const summary = calculateWeeklySummary(logs, sprint, []);

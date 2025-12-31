@@ -19,7 +19,7 @@ interface WeeklyReviewPanelProps {
   allReviews?: WeeklyReview[];
 }
 
-export function WeeklyReviewPanel({ activeSprint, weeklyLogs, promiseLogs, latestReview, allReviews = [] }: WeeklyReviewPanelProps) {
+export function WeeklyReviewPanel({ activeSprint, weeklyLogs, promiseLogs }: WeeklyReviewPanelProps) {
   const summary = useMemo(() => activeSprint ? calculateWeeklySummary(weeklyLogs, activeSprint, promiseLogs) : {
     prioritySummary: {},
     goalSummaries: [],

@@ -8,7 +8,7 @@ import { getRequiredSession } from '@/lib/auth/server';
 import { createSprint, deactivateAllSprints, getSprintById, closeSprintById } from '@/data-access/sprints';
 import { createMockSprint, createMockSprintWithPriorities } from '@/__tests__/mocks/db';
 import { NotFoundError } from '@/lib/errors';
-import { SprintWithDetails, SprintWithPriorities } from '@/lib/types';
+import { SprintWithDetails } from '@/lib/types';
 
 // Mock dependencies
 vi.mock('@/lib/auth/server', async () => {
@@ -25,6 +25,7 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
@@ -33,7 +34,7 @@ describe('startSprintAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should create a new sprint successfully', async () => {
@@ -43,8 +44,8 @@ describe('startSprintAction', () => {
 
     const formData = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
       goals: [
         {
           goalId: '550e8400-e29b-41d4-a716-446655440000',
@@ -74,8 +75,8 @@ describe('startSprintAction', () => {
 
     const formData = {
       name: 'New Sprint',
-      startDate: new Date('2024-01-15'),
-      endDate: new Date('2024-01-28'),
+      startDate: '2024-01-15',
+      endDate: '2024-01-28',
       goals: [
         {
           goalId: '550e8400-e29b-41d4-a716-446655440000',
@@ -103,7 +104,7 @@ describe('closeSprintAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should close a sprint successfully', async () => {

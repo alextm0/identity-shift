@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/server";
 import { getCompletedYearlyReview } from "@/data-access/yearly-reviews";
@@ -6,6 +7,20 @@ import { YearlyReviewView } from "@/components/review-wizard/yearly-review-view"
 
 interface ReviewYearPageProps {
     params: Promise<{ year: string }>;
+}
+
+export async function generateMetadata(
+  { params }: ReviewYearPageProps
+): Promise<Metadata> {
+  const { year } = await params;
+  return {
+    title: `${year} Year Review`,
+    description: `Review your progress and achievements for ${year}`,
+    robots: {
+      index: false,
+      follow: false,
+    },
+  };
 }
 
 export default async function ReviewYearPage({ params }: ReviewYearPageProps) {

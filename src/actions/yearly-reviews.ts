@@ -12,7 +12,7 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { getOrCreateYearlyReview, getYearlyReviewById, updateYearlyReview, getCompletedYearlyReview, deleteYearlyReview } from "@/data-access/yearly-reviews";
 import { YearlyReviewFormSchema, CompleteYearlyReviewSchema, WheelRatingsSchema } from "@/lib/validators/yearly-review";
 import { NotFoundError } from "@/lib/errors";
@@ -71,7 +71,8 @@ export const saveYearlyReviewProgressAction = createActionWithParam(
 
         await updateYearlyReview(reviewId, userId, updateData);
 
-        revalidatePath("/review");
+        revalidateTag("yearly-reviews", "max");
+        updateTag("yearly-reviews");
 
         return success(
             { reviewId },
@@ -109,8 +110,12 @@ export const completeYearlyReviewAction = createActionWithParam(
 
         await updateYearlyReview(reviewId, userId, updateData);
 
-        revalidatePath("/review");
-        revalidatePath("/dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
+        revalidateTag("planning", "max"); // Yearly review affects planning wheel seed
+        updateTag("yearly-reviews");
+        updateTag("dashboard");
+        updateTag("planning");
 
         return success(
             { reviewId },
@@ -161,8 +166,10 @@ export const editYearlyReviewAction = createActionWithoutValidation(
             updatedAt: new Date(),
         });
 
-        revalidatePath("/review");
-        revalidatePath("/dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("yearly-reviews");
+        updateTag("dashboard");
 
         return success(
             { reviewId },
@@ -191,8 +198,10 @@ export const updateWheelRatingsAction = createActionWithParam(
             updatedAt: new Date(),
         });
 
-        revalidatePath(`/review/${review.year}`);
-        revalidatePath("/dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("yearly-reviews");
+        updateTag("dashboard");
 
         return success(
             { reviewId },
@@ -218,8 +227,10 @@ export const deleteYearlyReviewAction = createActionWithoutValidation(
 
         await deleteYearlyReview(reviewId, userId);
 
-        revalidatePath("/review");
-        revalidatePath("/dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("yearly-reviews");
+        updateTag("dashboard");
 
         return success(
             undefined,

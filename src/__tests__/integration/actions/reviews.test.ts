@@ -3,15 +3,15 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { 
-  createWeeklyReviewAction, 
+import {
+  createWeeklyReviewAction,
   updateWeeklyReviewAction,
   createMonthlyReviewAction,
-  updateMonthlyReviewAction 
+  updateMonthlyReviewAction
 } from '@/actions/reviews';
 import { getRequiredSession } from '@/lib/auth/server';
-import { 
-  createWeeklyReview, 
+import {
+  createWeeklyReview,
   getWeeklyReviewById,
   updateWeeklyReview,
   createMonthlyReview,
@@ -43,6 +43,7 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
@@ -51,7 +52,7 @@ describe('createWeeklyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: TEST_USER_ID },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should create a weekly review successfully', async () => {
@@ -106,7 +107,7 @@ describe('updateWeeklyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should update a weekly review successfully', async () => {
@@ -131,7 +132,7 @@ describe('updateWeeklyReviewAction', () => {
     vi.mocked(getWeeklyReviewById).mockResolvedValue(undefined);
 
     const updateAction = updateWeeklyReviewAction('non-existent');
-    
+
     await expect(updateAction({
       oneChange: OneChangeOption.KEEP_SAME,
     })).rejects.toThrow(NotFoundError);
@@ -143,7 +144,7 @@ describe('createMonthlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: TEST_USER_ID },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should create a monthly review successfully', async () => {
@@ -176,7 +177,7 @@ describe('updateMonthlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should update a monthly review successfully', async () => {
@@ -200,7 +201,7 @@ describe('updateMonthlyReviewAction', () => {
     vi.mocked(getMonthlyReviewById).mockResolvedValue(undefined);
 
     const updateAction = updateMonthlyReviewAction('non-existent');
-    
+
     await expect(updateAction({
       oneChange: 'Test change',
     })).rejects.toThrow(NotFoundError);

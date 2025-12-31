@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { SprintWithPriorities } from "@/lib/types";
+import { SprintWithDetails } from "@/lib/types";
 import { SprintCard } from "@/components/sprints/sprint-card";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 
 interface SprintsListProps {
-  sprints: SprintWithPriorities[];
+  sprints: SprintWithDetails[];
   activeSprintId?: string;
 }
 

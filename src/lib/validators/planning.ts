@@ -100,7 +100,6 @@ export const PlanningFormSchema = z.object({
 
     // Step 2: Wheel of Life Vision
     targetWheelOfLife: z.record(z.string(), z.number().min(1).max(10)).optional(),
-    focusAreas: z.array(z.string()).max(3).optional(),
     wheelVisionStatements: z.record(z.string(), z.string().max(500)).optional().transform(val => {
         if (!val) return val;
         const sanitized: Record<string, string> = {};
@@ -121,7 +120,6 @@ export const PlanningFormSchema = z.object({
     // Step 7: Anti-Vision + Anti-Goals
     antiVision: z.string().max(2000).optional().transform(val => val ? sanitizeText(val, 2000) : val), // Failure narrative
     antiGoals: z.array(AntiGoalSchema).optional(), // Unlimited list
-    driftResponse: z.string().max(140).optional().transform(val => val ? sanitizeText(val, 140) : val), // Optional if/then response
 
     // Step 8: Commitment
     commitmentStatement: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),

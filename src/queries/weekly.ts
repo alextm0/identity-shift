@@ -1,5 +1,5 @@
 import { getRequiredSession } from "@/lib/auth/server";
-import { getActiveSprint } from "@/data-access/sprints";
+import { getActiveSprintCached } from "@/data-access/sprints";
 import { getCurrentWeekLogs } from "@/data-access/daily-logs";
 import { getWeeklyReviews } from "@/data-access/reviews";
 import { db } from "@/lib/db";
@@ -20,7 +20,7 @@ export async function getWeeklyData() {
     const weekEnd = normalizeDate(weekEndDate);
 
     const results = await Promise.allSettled([
-        getActiveSprint(userId),
+        getActiveSprintCached(userId),
         getWeeklyReviews(userId),
         getCurrentWeekLogs(userId),
         db.query.promiseLog.findMany({

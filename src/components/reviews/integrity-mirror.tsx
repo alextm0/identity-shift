@@ -14,7 +14,6 @@ interface IntegrityMirrorProps {
 export function IntegrityMirror({ selfRating, realityRating, onSelfRatingChange }: IntegrityMirrorProps) {
   const [showFormula, setShowFormula] = useState(false);
   const calibrationGap = selfRating - realityRating;
-  const gapPercent = Math.abs(calibrationGap) * 10; // Convert to percentage
 
   const getGapStatus = () => {
     if (Math.abs(calibrationGap) <= 1) return { label: 'Calibrated', color: 'text-action-emerald', icon: Minus };

@@ -12,12 +12,11 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidatePath } from "next/cache";
-import { getOrCreatePlanning, updatePlanning, getPlanningById } from "@/data-access/planning";
+import { revalidateTag, updateTag } from "next/cache";
+import { getOrCreatePlanning, updatePlanning } from "@/data-access/planning";
 import { PlanningFormSchema, CompletePlanningSchema, type PlanningFormData, type CompletePlanningData, PlanningStatus } from "@/lib/validators";
 import { success } from "@/lib/actions/result";
 import { createActionWithParam, createActionWithoutValidation } from "@/lib/actions/middleware";
-import { NotFoundError } from "@/lib/errors";
 
 /**
  * Get or create planning for current user
@@ -48,12 +47,6 @@ export const getOrCreatePlanningAction = createActionWithoutValidation(
 export const savePlanningProgressAction = createActionWithParam(
     PlanningFormSchema.partial(),
     async (userId, planningId: string, validated: Partial<PlanningFormData>) => {
-        // Verify ownership
-        const existing = await getPlanningById(planningId, userId);
-        if (!existing) {
-            throw new NotFoundError("Planning not found");
-        }
-
         // Data is already sanitized by Zod schema transforms
         const updateData = {
             ...validated,
@@ -62,7 +55,9 @@ export const savePlanningProgressAction = createActionWithParam(
 
         await updatePlanning(planningId, userId, updateData);
 
-        revalidatePath("/dashboard/planning");
+        // Tags-based revalidation for Next.js 16
+        revalidateTag("planning", "max");
+        updateTag("planning"); // Immediate consistency
 
         return success(
             { planningId },
@@ -81,12 +76,6 @@ export const savePlanningProgressAction = createActionWithParam(
 export const completePlanningAction = createActionWithParam(
     CompletePlanningSchema,
     async (userId, planningId: string, validated: CompletePlanningData) => {
-        // Verify ownership
-        const existing = await getPlanningById(planningId, userId);
-        if (!existing) {
-            throw new NotFoundError("Planning not found");
-        }
-
         // Data is already sanitized by Zod schema transforms
         const updateData = {
             ...validated,
@@ -97,8 +86,12 @@ export const completePlanningAction = createActionWithParam(
 
         await updatePlanning(planningId, userId, updateData);
 
-        revalidatePath("/dashboard/planning");
-        revalidatePath("/dashboard");
+        // Tags-based revalidation for Next.js 16
+        revalidateTag("planning", "max");
+        updateTag("planning"); // Immediate consistency
+
+        // Also revalidate dashboard if needed
+        revalidateTag("dashboard", "max");
 
         return success(
             { planningId },

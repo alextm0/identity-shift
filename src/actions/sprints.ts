@@ -42,8 +42,8 @@ export const startSprintAction = createAction(
             id: sprintId,
             userId,
             name: sanitizeText(validated.name.trim(), 200),
-            startDate: validated.startDate,
-            endDate: validated.endDate,
+            startDate: new Date(validated.startDate),
+            endDate: new Date(validated.endDate),
             active: true,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -83,14 +83,22 @@ export const updateSprintAction = createActionWithParam(
         }
 
         // If updating dates, validate them
-        if (validated.endDate && validated.startDate && validated.endDate <= validated.startDate) {
+        if (validated.endDate && validated.startDate && new Date(validated.endDate) <= new Date(validated.startDate)) {
             throw new BusinessRuleError("End date must be after start date");
         }
 
         // Clean up and sanitize data
-        const updateData: Partial<typeof validated> = { ...validated };
+        const updateData: Record<string, unknown> = {};
         if (validated.name) {
             updateData.name = sanitizeText(validated.name.trim(), 200);
+        }
+
+        if (validated.startDate) {
+            updateData.startDate = new Date(validated.startDate);
+        }
+
+        if (validated.endDate) {
+            updateData.endDate = new Date(validated.endDate);
         }
 
         if (validated.goals) {

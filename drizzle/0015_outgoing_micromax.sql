@@ -41,6 +41,8 @@ ALTER TABLE "promiseLog" ADD CONSTRAINT "promiseLog_userId_user_id_fk" FOREIGN K
 ALTER TABLE "promiseLog" ADD CONSTRAINT "promiseLog_promiseId_promise_id_fk" FOREIGN KEY ("promiseId") REFERENCES "public"."promise"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "promiseLog" ADD CONSTRAINT "promiseLog_dailyLogId_dailyLog_id_fk" FOREIGN KEY ("dailyLogId") REFERENCES "public"."dailyLog"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sprintGoal" ADD CONSTRAINT "sprintGoal_sprintId_sprint_id_fk" FOREIGN KEY ("sprintId") REFERENCES "public"."sprint"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sprintGoal" ADD CONSTRAINT "sprintGoal_goalId_goal_id_fk" FOREIGN KEY ("goalId") REFERENCES "public"."goal"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+
 CREATE UNIQUE INDEX "promiseLog_promiseId_date_unique" ON "promiseLog" USING btree ("promiseId","date");--> statement-breakpoint
 CREATE INDEX "promiseLog_userId_date_idx" ON "promiseLog" USING btree ("userId","date");--> statement-breakpoint
 CREATE INDEX "promiseLog_promiseId_date_idx" ON "promiseLog" USING btree ("promiseId","date");

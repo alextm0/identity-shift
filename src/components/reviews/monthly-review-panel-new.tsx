@@ -95,12 +95,12 @@ export function MonthlyReviewPanelNew({
   const summary = useMemo(() => {
     if (!activeSprint) return null;
 
-    const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
+    const parsedDate = parse(monthStr, "yyyy-MM", new Date());
+    const monthStart = startOfMonth(parsedDate);
+    const monthEnd = endOfMonth(parsedDate);
 
     return calculateMonthlySummary(monthlyLogs, activeSprint, promiseLogs, monthStart, monthEnd);
-  }, [monthlyLogs, activeSprint, promiseLogs]);
+  }, [monthlyLogs, activeSprint, promiseLogs, monthStr]);
 
   // Calculate reality rating from data
   const realityRating = useMemo(() => {
@@ -241,7 +241,7 @@ export function MonthlyReviewPanelNew({
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         <MonthlyWeeklyTrend weeklySummaries={summary.weeklySummaries} />
-        <MonthlyCalendarHeatmap calendarData={summary.calendarData} monthStr={monthStr} />
+        <MonthlyCalendarHeatmap calendarData={summary.calendarData} />
       </div>
 
       {/* Main Content: Identity Audit + Integrity Mirror */}

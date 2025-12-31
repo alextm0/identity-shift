@@ -54,7 +54,7 @@ function calculateWeeklySummaries(
     { weekStartsOn: 1 }
   );
 
-  const totalPromisesPerDay = (sprint.goals?.flatMap(g => g.promises || []) || []).length;
+  const allPromises = sprint.goals?.flatMap(g => g.promises || []) || [];
 
   return weeks.map((weekStart, index) => {
     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -64,7 +64,27 @@ function calculateWeeklySummaries(
     });
 
     const keptThisWeek = weekPromiseLogs.filter(p => p.completed).length;
-    const committedThisWeek = totalPromisesPerDay * 7; // Assume all promises scheduled daily for simplicity
+
+    const committedThisWeek = allPromises.reduce((sum, p) => {
+      if (p.type === 'weekly') {
+        return sum + (p.weeklyTarget || 3);
+      }
+
+      // Daily promise: count days in the week window that match the schedule
+      let dailyCount = 0;
+      if (!p.scheduleDays || p.scheduleDays.length === 0) {
+        dailyCount = 7;
+      } else {
+        const current = new Date(weekStart);
+        while (current <= weekEnd) {
+          if (p.scheduleDays.includes(current.getDay())) {
+            dailyCount++;
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      }
+      return sum + dailyCount;
+    }, 0);
 
     return {
       weekNumber: index + 1,
@@ -164,16 +184,17 @@ export function calculateMonthlySummary(
   monthEnd: Date
 ) {
   const totalPromisesKept = promiseLogs.filter(p => p.completed).length;
-  const totalPromisesTarget = (sprint.goals?.flatMap(g => g.promises || []) || []).length *
-    differenceInCalendarDays(monthEnd, monthStart) + 1;
+  const daysLogged = logs.length;
+  const totalDaysInMonth = differenceInCalendarDays(monthEnd, monthStart) + 1;
+
+  const promisesCount = (sprint.goals?.flatMap(g => g.promises || []) || []).length;
+  const totalPromisesTarget = promisesCount * totalDaysInMonth;
 
   const weeklySummaries = calculateWeeklySummaries(promiseLogs, sprint, monthStart, monthEnd);
   const calendarData = calculateCalendarData(logs, promiseLogs, sprint, monthStart, monthEnd);
   const goalSummaries = calculateGoalSummaries(promiseLogs, sprint);
 
   const longestStreak = calculateLongestStreak(logs);
-  const daysLogged = logs.length;
-  const totalDaysInMonth = differenceInCalendarDays(monthEnd, monthStart) + 1;
 
   const avgEnergy = logs.length > 0
     ? logs.reduce((sum, log) => sum + log.energy, 0) / logs.length

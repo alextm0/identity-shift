@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { DesiredIdentityStatus } from "@/lib/enums";
-import { User, CheckCircle2, HelpCircle, XCircle } from "lucide-react";
+import { CheckCircle2, HelpCircle, XCircle } from "lucide-react";
 
 interface IdentityCheckProps {
   value: DesiredIdentityStatus;

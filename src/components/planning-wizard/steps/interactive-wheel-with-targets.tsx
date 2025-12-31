@@ -336,11 +336,6 @@ export function InteractiveWheelOfLifeWithTargets({
 
         {/* Labels */}
         {spokeData.map((spoke, i) => {
-          const textAnchor = Math.cos(spoke.angle) > 0.1
-            ? "start"
-            : Math.cos(spoke.angle) < -0.1
-              ? "end"
-              : "middle";
           const isActive = activeDimension === spoke.dimension;
 
           const ratingText = spoke.targetValue !== spoke.currentValue

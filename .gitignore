@@ -81,3 +81,4 @@ Desktop.ini
 # /drizzle
 
 .cursor
+.claude/settings.local.json

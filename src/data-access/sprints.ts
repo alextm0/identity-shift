@@ -104,160 +104,78 @@ export const getActiveSprintCached = unstable_cache(
     }
 );
 
-export async function getSprints(userId: string): Promise<SprintWithDetails[]> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            const results = await db.query.sprint.findMany({
-                where: createOwnershipCondition(sprint.userId, userId),
-                orderBy: desc(sprint.startDate),
-                with: {
-                    priorities: true,
-                    goals: {
-                        orderBy: asc(sprintGoal.sortOrder),
-                        with: {
-                            promises: {
-                                orderBy: asc(promise.sortOrder)
+export const getSprints = unstable_cache(
+    async (userId: string): Promise<SprintWithDetails[]> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                const results = await db.query.sprint.findMany({
+                    where: createOwnershipCondition(sprint.userId, userId),
+                    orderBy: desc(sprint.startDate),
+                    with: {
+                        priorities: true,
+                        goals: {
+                            orderBy: asc(sprintGoal.sortOrder),
+                            with: {
+                                promises: {
+                                    orderBy: asc(promise.sortOrder)
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
 
-            return results.map(mapToSprintWithDetails);
-        },
-        "Failed to fetch sprints"
-    );
-}
-
-export async function getSprintById(id: string, userId: string): Promise<SprintWithDetails | undefined> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            const result = await db.query.sprint.findFirst({
-                where: createOwnershipAndIdCondition(sprint.id, id, sprint.userId, userId),
-                with: {
-                    priorities: true,
-                    goals: {
-                        orderBy: asc(sprintGoal.sortOrder),
-                        with: {
-                            promises: {
-                                orderBy: asc(promise.sortOrder)
-                            }
-                        }
-                    }
-                }
-            });
-            return result ? mapToSprintWithDetails(result) : undefined;
-        },
-        "Failed to fetch sprint by ID"
-    );
-}
-
-/**
- * Internal helper to cleanup sprint and its related data on failure
- * Explicitly deletes related records in correct order for HTTP driver compatibility
- */
-async function cleanupSprint(sprintId: string, userId: string, originalError: unknown) {
-    const errorContext = {
-        operation: 'sprint_creation_cleanup',
-        sprintId,
-        userId,
-        originalError: originalError instanceof Error ? originalError.message : String(originalError),
-        originalStack: originalError instanceof Error ? originalError.stack : undefined,
-        timestamp: new Date().toISOString()
-    };
-
-    const cleanupErrors: string[] = [];
-    let retries = 2;
-
-    while (retries >= 0) {
-        try {
-            // Delete in reverse dependency order for HTTP driver
-            // Promises first (deepest dependency)
-            try {
-                await db.delete(promise).where(eq(promise.sprintId, sprintId));
-            } catch (error) {
-                const msg = error instanceof Error ? error.message : String(error);
-                cleanupErrors.push(`Failed to delete promises: ${msg}`);
-                console.error(`Cleanup error (promises):`, error);
-            }
-
-            // Then sprint goals
-            try {
-                await db.delete(sprintGoal).where(eq(sprintGoal.sprintId, sprintId));
-            } catch (error) {
-                const msg = error instanceof Error ? error.message : String(error);
-                cleanupErrors.push(`Failed to delete sprint goals: ${msg}`);
-                console.error(`Cleanup error (sprint goals):`, error);
-            }
-
-            // Then sprint priorities
-            try {
-                await db.delete(sprintPriority).where(eq(sprintPriority.sprintId, sprintId));
-            } catch (error) {
-                const msg = error instanceof Error ? error.message : String(error);
-                cleanupErrors.push(`Failed to delete sprint priorities: ${msg}`);
-                console.error(`Cleanup error (sprint priorities):`, error);
-            }
-
-            // Finally the sprint itself
-            try {
-                await db.delete(sprint).where(and(
-                    eq(sprint.id, sprintId),
-                    eq(sprint.userId, userId)
-                ));
-            } catch (error) {
-                const msg = error instanceof Error ? error.message : String(error);
-                cleanupErrors.push(`Failed to delete sprint: ${msg}`);
-                console.error(`Cleanup error (sprint):`, error);
-            }
-
-            // If we got here without exceptions, break the retry loop
-            break;
-        } catch (cleanupAttemptError) {
-            if (retries === 0) {
-                console.error('All cleanup retries exhausted', cleanupAttemptError);
-                break;
-            }
-            retries--;
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-    }
-
-    // Log comprehensive cleanup result
-    if (cleanupErrors.length > 0) {
-        console.error('Sprint cleanup completed with errors:', JSON.stringify({
-            ...errorContext,
-            cleanupErrors,
-            partialCleanup: true
-        }));
-
-        throw new Error(
-            `Sprint creation failed: ${errorContext.originalError}. ` +
-            `Cleanup encountered ${cleanupErrors.length} error(s). ` +
-            `Manual database inspection may be required for sprint ${sprintId}.`
+                return results.map(mapToSprintWithDetails);
+            },
+            "Failed to fetch sprints"
         );
-    } else {
-        console.info('Sprint cleanup completed successfully after creation failure', { sprintId, originalError: errorContext.originalError });
-    }
-}
+    },
+    ['sprints-list'],
+    { tags: ['active-sprint'] }
+);
 
-export async function createSprint(data: NewSprintWithPriorities): Promise<SprintWithPriorities> {
+export const getSprintById = unstable_cache(
+    async (id: string, userId: string): Promise<SprintWithDetails | undefined> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                const result = await db.query.sprint.findFirst({
+                    where: createOwnershipAndIdCondition(sprint.id, id, sprint.userId, userId),
+                    with: {
+                        priorities: true,
+                        goals: {
+                            orderBy: asc(sprintGoal.sortOrder),
+                            with: {
+                                promises: {
+                                    orderBy: asc(promise.sortOrder)
+                                }
+                            }
+                        }
+                    }
+                });
+                return result ? mapToSprintWithDetails(result) : undefined;
+            },
+            "Failed to fetch sprint by ID"
+        );
+    },
+    ['sprint-by-id'],
+    { tags: ['active-sprint'] }
+);
+
+export async function createSprint(data: NewSprintWithPriorities): Promise<SprintWithDetails> {
     return await withDatabaseErrorHandling(
         async () => {
-            // Extract priorities from data (handled separately in relational table)
             const { priorities: sprintPriorities, ...insertData } = data;
 
-            // Insert sprint (without transaction - HTTP driver doesn't support it)
-            const [newSprint] = await db.insert(sprint).values(insertData).returning();
+            return await db.transaction(async (tx) => {
+                // Insert sprint
+                const [newSprint] = await tx.insert(sprint).values(insertData).returning();
 
-            if (!newSprint) {
-                throw new Error("Failed to create sprint");
-            }
+                if (!newSprint) {
+                    throw new Error("Failed to create sprint");
+                }
 
-            // Insert priorities sequentially
-            if (Array.isArray(sprintPriorities) && sprintPriorities.length > 0) {
-                try {
-                    await db.insert(sprintPriority).values(sprintPriorities.map(p => ({
+                // Insert priorities
+                if (Array.isArray(sprintPriorities) && sprintPriorities.length > 0) {
+                    await tx.insert(sprintPriority).values(sprintPriorities.map(p => ({
                         id: randomUUID(),
                         sprintId: newSprint.id,
                         priorityKey: p.key,
@@ -268,15 +186,10 @@ export async function createSprint(data: NewSprintWithPriorities): Promise<Sprin
                         createdAt: new Date(),
                         updatedAt: new Date()
                     })));
-                } catch (error) {
-                    await cleanupSprint(newSprint.id, newSprint.userId, error);
-                    throw error;
                 }
-            }
 
-            // Insert goals (if provided)
-            if (Array.isArray(data.goals) && data.goals.length > 0) {
-                try {
+                // Insert goals (if provided)
+                if (Array.isArray(data.goals) && data.goals.length > 0) {
                     let sortOrder = 0;
                     for (const goal of data.goals) {
                         await createSprintGoalWithPromises(
@@ -289,23 +202,31 @@ export async function createSprint(data: NewSprintWithPriorities): Promise<Sprin
                                 type: p.type,
                                 scheduleDays: p.scheduleDays,
                                 weeklyTarget: p.weeklyTarget,
-                            }))
+                            })),
+                            tx
                         );
                     }
-                } catch (error) {
-                    await cleanupSprint(newSprint.id, newSprint.userId, error);
-                    throw error;
                 }
-            }
 
-            // Return complete object
-            const result = await db.query.sprint.findFirst({
-                where: eq(sprint.id, newSprint.id),
-                with: { priorities: true }
+                // Return complete object
+                const result = await tx.query.sprint.findFirst({
+                    where: eq(sprint.id, newSprint.id),
+                    with: {
+                        priorities: true,
+                        goals: {
+                            orderBy: asc(sprintGoal.sortOrder),
+                            with: {
+                                promises: {
+                                    orderBy: asc(promise.sortOrder)
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if (!result) throw new Error("Failed to retrieve created sprint");
+                return mapToSprintWithDetails(result);
             });
-
-            if (!result) throw new Error("Failed to retrieve created sprint");
-            return mapToSprintWithPriorities(result);
         },
         "Failed to create sprint"
     );
@@ -314,35 +235,34 @@ export async function createSprint(data: NewSprintWithPriorities): Promise<Sprin
 export async function updateSprint(id: string, userId: string, data: Partial<NewSprintWithPriorities>): Promise<SprintWithDetails> {
     return await withDatabaseErrorHandling(
         async () => {
-            const { priorities: _priorities, goals: _goals, ...sprintData } = data;
+            const { ...sprintData } = data;
             const updateData: Partial<NewSprint> = { ...sprintData, updatedAt: new Date() };
 
-            // Update sprint (without transaction - HTTP driver doesn't support it)
-            const [updatedSprint] = await db.update(sprint)
-                .set(updateData)
-                .where(createOwnershipAndIdCondition(sprint.id, id, sprint.userId, userId))
-                .returning();
+            return await db.transaction(async (tx) => {
+                // Update sprint
+                const [updatedSprint] = await tx.update(sprint)
+                    .set(updateData)
+                    .where(createOwnershipAndIdCondition(sprint.id, id, sprint.userId, userId))
+                    .returning();
 
-            if (!updatedSprint) {
-                throw new Error("Sprint not found or access denied");
-            }
+                if (!updatedSprint) {
+                    throw new Error("Sprint not found or access denied");
+                }
 
-            if (data.priorities !== undefined) {
-                // Fetch existing priorities
-                const existingPriorities = await db.select().from(sprintPriority).where(eq(sprintPriority.sprintId, id));
-
-                try {
+                if (data.priorities !== undefined) {
+                    // Fetch existing priorities
+                    const existingPriorities = await tx.select().from(sprintPriority).where(eq(sprintPriority.sprintId, id));
                     const newPriorities = data.priorities;
 
                     // Use diff approach to minimize downtime window
                     const existingByKey = new Map(existingPriorities.map(p => [p.priorityKey, p]));
                     const newByKey = new Map((newPriorities || []).map(p => [p.key, p]));
 
-                    // 1. Update existing priorities (no downtime)
+                    // 1. Update existing priorities
                     for (const newP of (newPriorities || [])) {
                         const existing = existingByKey.get(newP.key);
                         if (existing) {
-                            await db.update(sprintPriority)
+                            await tx.update(sprintPriority)
                                 .set({
                                     label: newP.label,
                                     type: newP.type,
@@ -357,7 +277,7 @@ export async function updateSprint(id: string, userId: string, data: Partial<New
                     // 2. Insert new priorities
                     const toInsert = (newPriorities || []).filter(p => !existingByKey.has(p.key));
                     if (toInsert.length > 0) {
-                        await db.insert(sprintPriority).values(toInsert.map(p => ({
+                        await tx.insert(sprintPriority).values(toInsert.map(p => ({
                             id: randomUUID(),
                             sprintId: id,
                             priorityKey: p.key,
@@ -370,61 +290,46 @@ export async function updateSprint(id: string, userId: string, data: Partial<New
                         })));
                     }
 
-                    // 3. Delete removed priorities (last, to minimize downtime)
+                    // 3. Delete removed priorities
                     const toDelete = existingPriorities.filter(p => !newByKey.has(p.priorityKey));
                     if (toDelete.length > 0) {
                         const toDeleteIds = toDelete.map(p => p.id);
-                        await db.delete(sprintPriority)
+                        await tx.delete(sprintPriority)
                             .where(and(
                                 eq(sprintPriority.sprintId, id),
                                 inArray(sprintPriority.id, toDeleteIds)
                             ));
                     }
-                } catch (error) {
-                    // Structured error logging for monitoring
-                    const errorContext = {
-                        operation: 'sprint_priority_update',
-                        sprintId: id,
-                        userId: updatedSprint.userId,
-                        error: error instanceof Error ? error.message : String(error),
-                        timestamp: new Date().toISOString()
-                    };
-                    console.error("Failed to update sprint priorities:", JSON.stringify(errorContext));
-                    throw error;
                 }
-            }
 
-            if (data.goals !== undefined) {
-                try {
-                    await syncSprintGoalsWithPromises(id, data.goals);
-                } catch (error) {
-                    console.error("Failed to sync sprint goals:", error);
-                    throw error;
+                if (data.goals !== undefined) {
+                    await syncSprintGoalsWithPromises(id, userId, data.goals, tx);
                 }
-            }
 
-            // Return complete object
-            const result = await db.query.sprint.findFirst({
-                where: eq(sprint.id, id),
-                with: {
-                    priorities: true,
-                    goals: {
-                        orderBy: asc(sprintGoal.sortOrder),
-                        with: {
-                            promises: {
-                                orderBy: asc(promise.sortOrder)
+                // Return complete object
+                const result = await tx.query.sprint.findFirst({
+                    where: eq(sprint.id, id),
+                    with: {
+                        priorities: true,
+                        goals: {
+                            orderBy: asc(sprintGoal.sortOrder),
+                            with: {
+                                promises: {
+                                    orderBy: asc(promise.sortOrder)
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
 
-            if (!result) throw new Error("Failed to retrieve updated sprint");
-            return mapToSprintWithDetails(result);
+                if (!result) throw new Error("Failed to retrieve updated sprint");
+                return mapToSprintWithDetails(result);
+            });
         },
         "Failed to update sprint"
     );
 }
+
 
 export async function deactivateAllSprints(userId: string) {
     return await withDatabaseErrorHandling(

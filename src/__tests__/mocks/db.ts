@@ -79,7 +79,7 @@ export function createMockSprint(overrides?: Partial<SprintWithDetails>): Sprint
             sprintId: 'sprint-1',
             sprintGoalId: 'goal-1',
             text: 'Test Promise',
-            type: 'daily' as any,
+            type: 'daily' as const,
             scheduleDays: [1, 2, 3, 4, 5],
             weeklyTarget: null,
             sortOrder: 0,

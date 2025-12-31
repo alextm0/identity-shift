@@ -1,5 +1,5 @@
 import { GlassPanel } from '@/components/dashboard/glass-panel';
-import { Calendar, Timer, Clock, Zap } from 'lucide-react';
+import { Timer, Clock, Zap } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface TimeMetric {
@@ -50,8 +50,8 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                     <Zap className={cn(
                       "h-3 w-3 transition-all duration-300",
                       isLow ? "text-bullshit-crimson/60 animate-pulse" :
-                      isMedium ? "text-motion-amber/60" :
-                      "text-action-emerald/60"
+                        isMedium ? "text-motion-amber/60" :
+                          "text-action-emerald/60"
                     )} />
                     <span className="label text-white/60 group-hover/metric:text-white/80 transition-colors">
                       {metric.label}
@@ -61,8 +61,8 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                     <span className={cn(
                       "body-sm font-bold transition-all duration-300",
                       isLow ? "text-bullshit-crimson" :
-                      isMedium ? "text-motion-amber" :
-                      "text-white"
+                        isMedium ? "text-motion-amber" :
+                          "text-white"
                     )}>
                       {Math.round(metric.percentage)}%
                     </span>
@@ -77,8 +77,8 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                     className={cn(
                       "absolute inset-0 blur-sm opacity-0 group-hover/metric:opacity-100 transition-opacity duration-300",
                       metric.percentage > 50 ? "bg-action-emerald/30" :
-                      metric.percentage > 25 ? "bg-motion-amber/30" :
-                      "bg-bullshit-crimson/30"
+                        metric.percentage > 25 ? "bg-motion-amber/30" :
+                          "bg-bullshit-crimson/30"
                     )}
                     style={{ width: `${metric.percentage}%` }}
                   />

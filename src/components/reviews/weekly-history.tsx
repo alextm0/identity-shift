@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { ChevronDown, ChevronUp, History, ShieldAlert } from "lucide-react";
 import { WeeklyReview } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 interface WeeklyHistoryProps {
   reviews: WeeklyReview[];
@@ -48,7 +47,6 @@ export function WeeklyHistory({ reviews }: WeeklyHistoryProps) {
 
       <div className="space-y-3">
         {displayReviews.map((review) => {
-          const progressRatios = review.progressRatios as Record<string, number>;
           const alerts = review.alerts as string[];
           const oneChange = review.oneChange;
 

@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { generateAlerts } from '@/use-cases/alerts';
-import { createMockDailyLog, createMockSprint } from '@/__tests__/mocks/db';
+import { createMockDailyLog } from '@/__tests__/mocks/db';
 
 describe('generateAlerts', () => {
   it('should generate critical energy alert when average energy is below 3', () => {

@@ -34,6 +34,7 @@ vi.mock('@/lib/db', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
@@ -44,7 +45,7 @@ describe('saveDailyAuditAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should save a new daily audit successfully', async () => {
@@ -101,7 +102,7 @@ describe('deleteDailyLogAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should delete a daily log successfully', async () => {

@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { SprintWithPriorities } from "@/lib/types"; // Changed import
+import { SprintWithDetails } from "@/lib/types"; // Changed import
 import { SprintCard } from "@/components/sprints/sprint-card";
 
 interface SprintHistoryProps {
-  sprints: SprintWithPriorities[]; // Changed type
+  sprints: SprintWithDetails[]; // Changed type
   activeSprintId?: string;
 }
 
@@ -29,9 +29,9 @@ export function SprintHistory({ sprints, activeSprintId }: SprintHistoryProps) {
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSprints.map((sprint) => (
-          <SprintCard 
-            key={sprint.id} 
-            sprint={sprint} 
+          <SprintCard
+            key={sprint.id}
+            sprint={sprint}
             isActive={false}
             onUpdate={handleUpdate}
           />

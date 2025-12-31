@@ -38,6 +38,7 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
@@ -65,7 +66,7 @@ describe('getOrCreateYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should return existing yearly review', async () => {
@@ -109,7 +110,7 @@ describe('saveYearlyReviewProgressAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should save yearly review progress successfully', async () => {
@@ -171,7 +172,7 @@ describe('completeYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should complete yearly review successfully', async () => {
@@ -236,7 +237,7 @@ describe('hasCompletedYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should return true when review is completed', async () => {
@@ -268,7 +269,7 @@ describe('editYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should unlock review for editing', async () => {
@@ -301,7 +302,7 @@ describe('deleteYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should delete yearly review successfully', async () => {

@@ -12,7 +12,7 @@ import {
     promise,
     promiseLog
 } from '@/lib/db/schema';
-import type { WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal } from '@/lib/validators';
+import type { WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, AnnualGoal, AntiGoal } from '@/lib/validators';
 
 // --- DB Types ---
 export type User = InferSelectModel<typeof user>;
@@ -52,39 +52,17 @@ export type NewYearlyReview = InferInsertModel<typeof yearlyReview>;
 /**
  * Planning with properly typed JSON fields
  */
-export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'goals' | 'quarterlyGoalIds' | 'annualGoalIds' | 'annualGoals' | 'targetWheelOfLife' | 'focusAreas' | 'wheelVisionStatements' | 'crystalBallFailures' | 'antiGoals' | 'antiVision' | 'driftResponse' | 'brainDump' | 'futureIdentity' | 'futureYouLetter' | 'commitmentStatement' | 'signatureImage' | 'signedAt' | 'currentModule' | 'currentStep' | 'currentGoalIndex'> {
-    wheelOfLife?: WheelOfLife;
-    activeGoals?: PlanningGoal[]; // Legacy - use goals instead
-    backlogGoals?: unknown[]; // Legacy - deprecated
-    archivedGoals?: unknown[]; // Legacy - deprecated
-    // Step 1: Empty Your Head + Future Identity
-    brainDump?: string;
-    futureIdentity?: string;
-    // Step 2: Wheel of Life Vision
-    targetWheelOfLife?: Record<string, number>;
-    focusAreas?: string[];
-    wheelVisionStatements?: Record<string, string>;
-    // Step 3: Letter from Future You
-    futureYouLetter?: string;
-    // Step 4-6: Goals
-    goals?: SimplifiedGoal[];
-    quarterlyGoalIds?: string[]; // Legacy
-    annualGoalIds?: string[];
-    annualGoals?: AnnualGoal[]; // Goals with details (definitionOfDone, progressSignal, etc.)
-    // Step 7: Anti-Vision + Anti-Goals
-    antiVision?: string;
-    antiGoals?: AntiGoal[];
-    driftResponse?: string;
-    // Step 8: Commitment
-    commitmentStatement?: string;
-    signatureImage?: string;
-    signedAt?: Date | string;
-    // Legacy fields
-    crystalBallFailures?: unknown;
-    // Progress tracking
-    currentStep?: number;
-    currentModule?: number; // Legacy - defaults to 1 in DB
-    currentGoalIndex?: number; // Legacy
+export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'annualGoals' | 'targetWheelOfLife' | 'wheelVisionStatements' | 'goals' | 'annualGoalIds' | 'antiGoals'> {
+    wheelOfLife: WheelOfLife;
+    activeGoals: PlanningGoal[];
+    backlogGoals: unknown[];
+    archivedGoals: unknown[];
+    annualGoals: AnnualGoal[];
+    targetWheelOfLife: WheelOfLife | null;
+    wheelVisionStatements: Record<string, string> | null;
+    goals: PlanningGoal[] | null;
+    annualGoalIds: string[] | null;
+    antiGoals: AntiGoal[] | null;
 }
 
 /**

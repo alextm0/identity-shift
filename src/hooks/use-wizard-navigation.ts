@@ -33,17 +33,16 @@ export function useWizardNavigation({
   multiStepIndices = [],
   itemsPerMultiStep = LIFE_DIMENSIONS.length,
 }: UseWizardNavigationOptions): WizardNavigationReturn {
-  const [lastStep, setLastStep] = useState(currentStep);
+  const [prevStep, setPrevStep] = useState(currentStep);
   const [subStepIndex, setSubStepIndex] = useState(0);
 
-  // Reset sub-step index when step changes (WITHOUT effect)
-  if (currentStep !== lastStep) {
+  if (currentStep !== prevStep) {
+    setPrevStep(currentStep);
     setSubStepIndex(0);
-    setLastStep(currentStep);
   }
 
   const isMultiStep = useCallback(
-    (step: number) => multiStepIndices.includes(step as any),
+    (step: number) => (multiStepIndices as number[]).includes(step),
     [multiStepIndices]
   );
 

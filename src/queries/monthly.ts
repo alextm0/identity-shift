@@ -3,7 +3,7 @@ import { getActiveSprint } from "@/data-access/sprints";
 import { getDailyLogs } from "@/data-access/daily-logs";
 import { getMonthlyReviews } from "@/data-access/reviews";
 import { getPromiseLogsForDateRange } from "@/data-access/promises";
-import { startOfMonth, endOfMonth, format, parse } from "date-fns";
+import { startOfMonth, endOfMonth, format, parse, isValid } from "date-fns";
 import { toMonthlyReviewWithTypedFields } from "@/lib/type-helpers";
 
 export async function getMonthlyData(selectedMonth?: string) {
@@ -11,9 +11,13 @@ export async function getMonthlyData(selectedMonth?: string) {
     const userId = session.user.id;
 
     // Use selected month or default to current month
-    const targetDate = selectedMonth
-        ? parse(selectedMonth, "yyyy-MM", new Date())
-        : new Date();
+    let targetDate = new Date();
+    if (selectedMonth) {
+        const parsedDate = parse(selectedMonth, "yyyy-MM", new Date());
+        if (isValid(parsedDate)) {
+            targetDate = parsedDate;
+        }
+    }
 
     const monthStart = startOfMonth(targetDate);
     const monthEnd = endOfMonth(targetDate);

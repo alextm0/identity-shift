@@ -11,7 +11,7 @@ interface Item {
     id: string;
     text: string;
     // Allow extra properties for flexibility (e.g., category)
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 interface ItemListInputProps {

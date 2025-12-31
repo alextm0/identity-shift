@@ -2,11 +2,10 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DailyAuditSchema, type DailyAuditData, BlockerTag, PromiseType } from "@/lib/validators";
+import { DailyAuditSchema, type DailyAuditData, BlockerTag } from "@/lib/validators";
 import { saveDailyAuditAction } from "@/actions/daily-logs";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -17,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isPromiseScheduledForDay } from "@/lib/scoring";
 import { useMemo, useEffect, useState, useRef } from "react";
 import { Controller } from "react-hook-form";
-import { CalendarDays, CheckCircle2, Trophy, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 
 interface DailyLogFormProps {
   activeSprint?: SprintWithDetails;
@@ -33,7 +32,7 @@ export function DailyLogForm({ activeSprint, initialData }: DailyLogFormProps) {
   const today = useMemo(() => initialData?.date ? new Date(initialData.date) : new Date(), [initialData?.date]);
 
   // Filter scheduled promises for today
-  const goals = activeSprint?.goals || [];
+  const goals = useMemo(() => activeSprint?.goals || [], [activeSprint?.goals]);
 
   const scheduledPromises = useMemo(() => goals.flatMap((goal) =>
     goal.promises?.filter((p: SprintPromise) => p.type === 'weekly' || isPromiseScheduledForDay(p.scheduleDays, today)).map((p: SprintPromise) => ({ ...p, goalText: goal.goalText })) || []
@@ -45,9 +44,9 @@ export function DailyLogForm({ activeSprint, initialData }: DailyLogFormProps) {
       date: today,
       mainGoalId: initialData?.mainGoalId || (goals.length > 0 ? goals[0].id : undefined),
       energy: initialData?.energy ?? 3,
-      blockerTag: initialData?.blockerTag,
+      blockerTag: (initialData?.blockerTag as BlockerTag) || null,
       note: initialData?.note || "",
-      promiseCompletions: initialData?.promiseCompletions || (scheduledPromises.reduce((acc, p) => ({ ...acc, [p.id]: false }), {}) as Record<string, boolean>),
+      promiseCompletions: scheduledPromises.reduce((acc, p) => ({ ...acc, [p.id]: false }), {}) as Record<string, boolean>,
     },
   });
 

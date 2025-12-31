@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Loader2, User, Fingerprint, Shield } from 'lucide-react';
+import { Mail, Lock, Loader2, User, Shield } from 'lucide-react';
 import { authClient } from '@/lib/auth/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,7 @@ export function AuthForm({ type }: AuthFormProps) {
                     }
                 });
             }
-        } catch (err) {
+        } catch {
             setError("Unexpected system error.");
         } finally {
             setIsLoading(false);
@@ -79,7 +79,7 @@ export function AuthForm({ type }: AuthFormProps) {
         setError(null);
 
         try {
-            // @ts-ignore
+            // @ts-expect-error magicLink is not in the type definition yet but exists on authClient.signIn
             await authClient.signIn.magicLink({
                 email,
                 callbackURL: '/dashboard',
@@ -87,11 +87,11 @@ export function AuthForm({ type }: AuthFormProps) {
                 onSuccess: () => {
                     setIsEmailSent(true);
                 },
-                onError: (ctx: any) => {
+                onError: (ctx: { error: { message?: string } }) => {
                     setError(ctx.error.message || "Telemetry transmission failed.");
                 }
             });
-        } catch (err) {
+        } catch {
             setError("Unexpected system error.");
         } finally {
             setIsLoading(false);

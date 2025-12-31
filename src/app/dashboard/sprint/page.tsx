@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getSprintsData } from "@/queries/sprints";
 import { getPlanningData } from "@/queries/planning";
 import { SprintForm } from "@/components/sprints/sprint-form";
@@ -7,13 +8,22 @@ import { Button } from "@/components/ui/button";
 import { Target, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { AnnualGoal } from "@/lib/validators";
+import { parseAnnualGoals } from "@/lib/type-helpers";
 import { SprintPromise } from "@/lib/types";
+
+export const metadata: Metadata = {
+  title: 'Sprint Management',
+  description: 'Start, manage, and close your sprints',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function SprintControlPage() {
   const { activeSprint } = await getSprintsData();
   const { planning } = await getPlanningData();
-  const annualGoals = (planning?.annualGoals as AnnualGoal[]) || [];
+  const annualGoals = parseAnnualGoals(planning);
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 md:px-0">

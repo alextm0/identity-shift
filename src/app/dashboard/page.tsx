@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { getDashboardData } from '@/queries/dashboard';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { SprintStatus } from '@/components/dashboard/SprintStatus';
@@ -7,7 +9,16 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TimeMetrics } from '@/components/dashboard/TimeMetrics';
 import { MiniCalendar } from '@/components/dashboard/MiniCalendar';
 
-export default async function DashboardPage() {
+export const metadata: Metadata = {
+  title: 'Dashboard',
+  description: 'Track your daily progress, sprint status, and priorities',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+async function DashboardContent() {
   const {
     activeSprint,
     todayStatus,
@@ -66,5 +77,36 @@ export default async function DashboardPage() {
         />
       </div>
     </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto space-y-12 py-12 md:py-16 animate-pulse">
+      <div className="h-16 w-96 bg-white/5 rounded-lg" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="h-64 bg-white/5 rounded-2xl" />
+            <div className="h-64 bg-white/5 rounded-2xl" />
+          </div>
+          <div className="h-96 bg-white/5 rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="h-64 bg-white/5 rounded-2xl" />
+            <div className="h-64 bg-white/5 rounded-2xl" />
+          </div>
+        </div>
+        <div className="h-96 bg-white/5 rounded-2xl" />
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

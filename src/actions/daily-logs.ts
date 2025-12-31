@@ -12,7 +12,7 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { revalidateDashboard } from "@/lib/revalidate";
 import { getDailyLogById, deleteDailyLog, saveDailyAudit } from "@/data-access/daily-logs";
 import { logPromiseCompletion } from "@/data-access/promises";
@@ -36,9 +36,10 @@ export const deleteDailyLogAction = createActionWithoutValidation(
 
         await deleteDailyLog(logId, userId);
 
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/daily");
-        revalidatePath("/dashboard/weekly");
+        revalidateTag("daily-logs", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("daily-logs");
+        updateTag("dashboard");
 
         return success(
             { deleted: true },
@@ -88,9 +89,10 @@ export const saveDailyAuditAction = createAction(
         );
 
         revalidateDashboard();
-        revalidatePath("/dashboard/daily");
-        // Revalidate sprint paths as well since promise logs affect weekly counters
-        revalidatePath("/dashboard/sprint");
+        revalidateTag("daily-logs", "max");
+        revalidateTag("active-sprint", "max");
+        updateTag("daily-logs");
+        updateTag("active-sprint");
 
         return success(
             { id: logId },
@@ -164,9 +166,10 @@ export const updateDailyLogByIdAction = createAction(
                 eq(dailyLog.userId, userId)
             ));
 
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/daily");
-        revalidatePath("/dashboard/weekly");
+        revalidateTag("daily-logs", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("daily-logs");
+        updateTag("dashboard");
 
         return success(
             { updated: true },

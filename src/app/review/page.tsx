@@ -1,10 +1,20 @@
+import type { Metadata } from 'next';
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/server";
 import { getOrCreateYearlyReview } from "@/data-access/yearly-reviews";
-import { parseWheelRatings, parseWheelWins, parseWheelGaps, toYearlyReviewWithTypedFields } from "@/lib/type-helpers";
+import { toYearlyReviewWithTypedFields } from "@/lib/type-helpers";
 import { ReviewWizardContainer } from "@/components/review-wizard/wizard-container";
 import { EditableWheelSection } from "@/components/review-wizard/editable-wheel-section";
 import { EditableWinsSection } from "@/components/review-wizard/editable-wins-section";
+
+export const metadata: Metadata = {
+  title: 'Yearly Review',
+  description: 'Review your year and plan for the next',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 // Review year: Review the previous year (e.g., in Jan 2026, review 2025)
 // For now, default to 2025 as specified in the requirements

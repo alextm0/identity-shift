@@ -161,7 +161,7 @@ function GoalPromiseSection({ goalIndex, control, register, watch }: GoalPromise
   );
 }
 
-export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuccess }: SprintFormProps) {
+export function SprintForm({ sprintToEdit, annualGoals = [], onSuccess }: SprintFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -170,11 +170,11 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
   const isEditMode = !!sprintToEdit;
 
   const form = useForm<SprintFormData>({
-    resolver: zodResolver(SprintFormSchema) as any,
+    resolver: zodResolver(SprintFormSchema),
     defaultValues: {
       name: sprintToEdit?.name || "",
-      startDate: (sprintToEdit ? format(new Date(sprintToEdit.startDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')) as any,
-      endDate: (sprintToEdit ? format(new Date(sprintToEdit.endDate), 'yyyy-MM-dd') : format(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')) as any, // Default 2 weeks
+      startDate: (sprintToEdit ? format(new Date(sprintToEdit.startDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')),
+      endDate: (sprintToEdit ? format(new Date(sprintToEdit.endDate), 'yyyy-MM-dd') : format(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')), // Default 2 weeks
       goals: sprintToEdit?.goals?.map((g) => ({
         id: g.id,
         goalId: g.goalId,
@@ -194,13 +194,13 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
     if (open && sprintToEdit) {
       form.reset({
         name: sprintToEdit.name || "",
-        startDate: format(new Date(sprintToEdit.startDate), 'yyyy-MM-dd') as any,
-        endDate: format(new Date(sprintToEdit.endDate), 'yyyy-MM-dd') as any,
-        goals: sprintToEdit.goals?.map((g: any) => ({
+        startDate: format(new Date(sprintToEdit.startDate), 'yyyy-MM-dd'),
+        endDate: format(new Date(sprintToEdit.endDate), 'yyyy-MM-dd'),
+        goals: sprintToEdit.goals?.map((g) => ({
           id: g.id,
           goalId: g.goalId,
           goalText: g.goalText,
-          promises: g.promises?.map((p: any) => ({
+          promises: g.promises?.map((p) => ({
             id: p.id,
             text: p.text,
             type: p.type as PromiseType,
@@ -213,14 +213,14 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
     } else if (open && !sprintToEdit) {
       form.reset({
         name: "",
-        startDate: format(new Date(), 'yyyy-MM-dd') as any,
-        endDate: format(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd') as any,
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        endDate: format(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         goals: []
       });
       setStep(1);
     }
   }, [open, sprintToEdit, form]);
-  const { fields: goalFields, append: appendGoal, remove: removeGoal, update: updateGoal } = useFieldArray({
+  const { fields: goalFields, append: appendGoal, remove: removeGoal } = useFieldArray({
     control: form.control,
     name: "goals",
   });
@@ -243,7 +243,6 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
   };
 
   async function onSubmit(data: SprintFormData) {
-    console.log("onSubmit called with data:", JSON.stringify(data, null, 2));
     setIsPending(true);
     try {
       if (isEditMode) {
@@ -257,9 +256,7 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
           toast.error(result.error || "Failed to update sprint");
         }
       } else {
-        console.log("Calling startSprintAction...");
         const result = await startSprintAction(data);
-        console.log("Action result:", result);
 
         if (result.success) {
           toast.success("Sprint started successfully");
@@ -273,7 +270,6 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
         }
       }
     } catch (error) {
-      console.error("Sprint operation caught error:", error);
       toast.error(error instanceof Error ? error.message : "An unexpected error occurred");
     } finally {
       setIsPending(false);
@@ -281,8 +277,6 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
   }
 
   const onInvalid = (errors: FieldErrors<SprintFormData>) => {
-    console.error("FULL VALIDATION ERRORS:", JSON.stringify(errors, null, 2));
-
     // Help the user identify which goal is missing promises
     if (errors.goals) {
       toast.error("Please add at least one promise to every goal.");
@@ -429,7 +423,7 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
                   <h3 className="text-action-emerald font-bold uppercase tracking-widest text-xs mb-2">Manifesto</h3>
                   <p className="text-xl font-bold text-white">"{form.getValues("name")}"</p>
                   <p className="text-sm text-white/60 mt-1">
-                    {form.getValues("startDate").toLocaleDateString()} — {form.getValues("endDate").toLocaleDateString()}
+                    {new Date(form.getValues("startDate")).toLocaleDateString()} — {new Date(form.getValues("endDate")).toLocaleDateString()}
                   </p>
                 </div>
 
@@ -475,11 +469,9 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
                 type="button"
                 onClick={async (e) => {
                   e.preventDefault(); // Prevent accidental form submission
-                  console.log("Next clicked, validating...");
                   const isValid = await form.trigger(["name", "startDate", "endDate"]);
 
                   if (!isValid) {
-                    console.log("Validation failed", form.formState.errors);
                     return;
                   }
 
@@ -501,7 +493,7 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
 
                     // Validate that all promises have non-empty text
                     const allPromisesHaveText = currentGoals.every(g =>
-                      g.promises && g.promises.every((p: any) => p.text && p.text.trim().length > 0)
+                      g.promises && g.promises.every((p) => p.text && p.text.trim().length > 0)
                     );
                     if (!allPromisesHaveText) {
                       toast.error("All promises must have text.");
@@ -509,7 +501,6 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
                     }
                   }
 
-                  console.log("Validation passed, advancing step");
                   setStep((prev) => prev + 1);
                 }}
                 className="bg-white text-black hover:bg-white/90 rounded-xl"
@@ -520,7 +511,6 @@ export function SprintForm({ activeSprint, sprintToEdit, annualGoals = [], onSuc
               <Button
                 type="button"
                 onClick={(e) => {
-                  console.log("Commit button clicked!");
                   form.handleSubmit(onSubmit, onInvalid)(e);
                 }}
                 disabled={isPending}

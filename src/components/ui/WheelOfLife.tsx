@@ -172,7 +172,6 @@ export function WheelOfLife({
         {dimensions.map((dimension, i) => {
           const angle = i * angleStep - Math.PI / 2;
           const isHighlighted = highlightedArea === dimension || (interactive && activeDimension === dimension);
-          const status = getDimensionStatus(dimension);
           const endX = adjustedCenter + radius * Math.cos(angle);
           const endY = adjustedCenter + radius * Math.sin(angle);
 

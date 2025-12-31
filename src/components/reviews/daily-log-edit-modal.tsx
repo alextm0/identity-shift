@@ -21,7 +21,7 @@ import { ProofInput } from "@/components/daily/proof-input";
 import { toast } from "sonner";
 import { Save, Loader2, Trophy, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DailyLog, SprintWithPriorities, DailyLogWithTypedFields } from "@/lib/types";
+import { DailyLog, SprintWithPriorities } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
 

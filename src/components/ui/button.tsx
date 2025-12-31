@@ -48,20 +48,27 @@ type MotionButtonProps = ButtonProps & HTMLMotionProps<"button">
 
 const Button = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
     ({ className, variant, size, asChild = false, ...props }, ref) => {
-        const Comp = asChild ? Slot : motion.button
-        const motionProps = asChild ? {} : {
-            whileTap: { scale: 0.98 },
-            whileHover: { scale: 1.02 },
+        const classes = cn(buttonVariants({ variant, size, className }));
+
+        if (asChild) {
+            return (
+                <Slot
+                    className={classes}
+                    ref={ref}
+                    {...props}
+                />
+            );
         }
 
         return (
-            <Comp
-                className={cn(buttonVariants({ variant, size, className }))}
+            <motion.button
+                className={classes}
                 ref={ref}
-                {...motionProps as any}
+                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.02 }}
                 {...props}
             />
-        )
+        );
     }
 )
 Button.displayName = "Button"
