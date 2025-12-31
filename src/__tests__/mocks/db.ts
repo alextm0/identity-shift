@@ -5,7 +5,7 @@
  */
 
 import { vi } from 'vitest';
-import type { DailyLog, Sprint, SprintWithPriorities, Planning, WeeklyReview, MonthlyReview, YearlyReview } from '@/lib/types';
+import type { DailyLog, Sprint, SprintWithPriorities, SprintWithDetails, Planning, WeeklyReview, MonthlyReview, YearlyReview } from '@/lib/types';
 
 // Mock the database module
 export const mockDb = {
@@ -47,7 +47,7 @@ export function createMockDailyLog(overrides?: Partial<DailyLog>): DailyLog {
   };
 }
 
-export function createMockSprint(overrides?: Partial<SprintWithPriorities>): SprintWithPriorities {
+export function createMockSprint(overrides?: Partial<SprintWithDetails>): SprintWithDetails {
   return {
     id: 'sprint-1',
     userId: 'user-1',
@@ -63,6 +63,31 @@ export function createMockSprint(overrides?: Partial<SprintWithPriorities>): Spr
       },
     ],
     active: true,
+    goals: [
+      {
+        id: 'goal-1',
+        sprintId: 'sprint-1',
+        goalId: 'annual-goal-1',
+        goalText: 'Test Goal',
+        sortOrder: 0,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        promises: [
+          {
+            id: 'promise-1',
+            sprintId: 'sprint-1',
+            sprintGoalId: 'goal-1',
+            text: 'Test Promise',
+            type: 'daily' as any,
+            scheduleDays: [1, 2, 3, 4, 5],
+            weeklyTarget: null,
+            sortOrder: 0,
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          }
+        ]
+      }
+    ],
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     ...overrides,

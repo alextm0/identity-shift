@@ -101,7 +101,7 @@ export const TargetRow = memo(function TargetRow({ index, form, remove, relatedD
             className="overflow-hidden"
           >
             <div className="p-4 pt-0 pl-[3.25rem] md:pl-[4.5rem] pr-6 pb-6">
-              <div className="flex flex-col gap-3 p-4 rounded-xl bg-black/40 border border-white/5 relative group/edit">
+              <div className="flex flex-col gap-3 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] relative group/edit">
                 <div className="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
                   <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Why this matters</span>
                 </div>

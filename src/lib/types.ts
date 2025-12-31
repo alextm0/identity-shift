@@ -1,4 +1,3 @@
-
 import { type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 import {
     user,
@@ -8,9 +7,12 @@ import {
     dailyLog,
     weeklyReview,
     monthlyReview,
-    yearlyReview
+    yearlyReview,
+    sprintGoal,
+    promise,
+    promiseLog
 } from '@/lib/db/schema';
-import type { Goal, WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal } from '@/lib/validators';
+import type { WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal } from '@/lib/validators';
 
 // --- DB Types ---
 export type User = InferSelectModel<typeof user>;
@@ -21,6 +23,17 @@ export type NewPlanning = InferInsertModel<typeof planning>;
 
 export type Sprint = InferSelectModel<typeof sprint>;
 export type NewSprint = InferInsertModel<typeof sprint>;
+
+export type SprintGoal = InferSelectModel<typeof sprintGoal>;
+export type NewSprintGoal = InferInsertModel<typeof sprintGoal>;
+
+export type SprintPromise = InferSelectModel<typeof promise>;
+export type NewSprintPromise = InferInsertModel<typeof promise>;
+
+export type PromiseLog = InferSelectModel<typeof promiseLog>;
+export type NewPromiseLog = InferInsertModel<typeof promiseLog>;
+
+
 
 export type DailyLog = InferSelectModel<typeof dailyLog>;
 export type NewDailyLog = InferInsertModel<typeof dailyLog>;
@@ -39,7 +52,7 @@ export type NewYearlyReview = InferInsertModel<typeof yearlyReview>;
 /**
  * Planning with properly typed JSON fields
  */
-export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'goals' | 'quarterlyGoalIds' | 'annualGoalIds' | 'annualGoals' | 'targetWheelOfLife' | 'focusAreas' | 'wheelVisionStatements' | 'crystalBallFailures' | 'antiGoals' | 'antiVision' | 'driftResponse' | 'brainDump' | 'futureIdentity' | 'futureYouLetter' | 'commitmentStatement' | 'signatureName' | 'signatureImage' | 'signedAt' | 'currentModule' | 'currentStep' | 'currentGoalIndex'> {
+export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 'activeGoals' | 'backlogGoals' | 'archivedGoals' | 'goals' | 'quarterlyGoalIds' | 'annualGoalIds' | 'annualGoals' | 'targetWheelOfLife' | 'focusAreas' | 'wheelVisionStatements' | 'crystalBallFailures' | 'antiGoals' | 'antiVision' | 'driftResponse' | 'brainDump' | 'futureIdentity' | 'futureYouLetter' | 'commitmentStatement' | 'signatureImage' | 'signedAt' | 'currentModule' | 'currentStep' | 'currentGoalIndex'> {
     wheelOfLife?: WheelOfLife;
     activeGoals?: PlanningGoal[]; // Legacy - use goals instead
     backlogGoals?: unknown[]; // Legacy - deprecated
@@ -64,14 +77,13 @@ export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 
     driftResponse?: string;
     // Step 8: Commitment
     commitmentStatement?: string;
-    signatureName?: string;
     signatureImage?: string;
     signedAt?: Date | string;
     // Legacy fields
     crystalBallFailures?: unknown;
     // Progress tracking
     currentStep?: number;
-    currentModule?: number | null; // Legacy - can be null from DB
+    currentModule?: number; // Legacy - defaults to 1 in DB
     currentGoalIndex?: number; // Legacy
 }
 
@@ -80,6 +92,10 @@ export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 
  */
 export interface SprintWithPriorities extends Omit<Sprint, 'priorities'> {
     priorities: SprintPriority[];
+}
+
+export interface SprintWithDetails extends SprintWithPriorities {
+    goals: (SprintGoal & { promises: SprintPromise[] })[];
 }
 
 /**

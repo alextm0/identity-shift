@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { PerceivedVsActual } from "./perceived-vs-actual";
 import { IdentityCheck } from "./identity-check";
@@ -9,21 +10,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Save, Loader2, Sparkles, Target, User } from "lucide-react";
+import { Save, Loader2, Sparkles, Target, User, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DailyLog, SprintWithPriorities, MonthlyReviewWithTypedFields } from "@/lib/types";
+import { DailyLog, SprintWithPriorities, MonthlyReviewWithTypedFields, MonthlyReview } from "@/lib/types";
 import { DesiredIdentityStatus } from "@/lib/enums";
 import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
+import { format, parse } from "date-fns";
 
 interface MonthlyReviewPanelProps {
   activeSprint?: SprintWithPriorities;
   monthlyLogs: DailyLog[];
   monthStr: string;
   latestReview?: MonthlyReviewWithTypedFields;
+  allReviews: MonthlyReview[];
 }
 
-export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latestReview }: MonthlyReviewPanelProps) {
+export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latestReview, allReviews }: MonthlyReviewPanelProps) {
+  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [whoWereYou, setWhoWereYou] = useState("");
   const [desiredIdentity, setDesiredIdentity] = useState(DesiredIdentityStatus.PARTIALLY);
@@ -33,6 +38,52 @@ export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latest
   const [perceivedProgress, setPerceivedProgress] = useState<Record<string, number>>(
     priorities.reduce((acc, p) => ({ ...acc, [p.key]: 5 }), {})
   );
+
+  // Load existing review data when latestReview changes
+  useEffect(() => {
+    if (latestReview) {
+      setWhoWereYou(latestReview.whoWereYou || "");
+      setDesiredIdentity(latestReview.desiredIdentity as DesiredIdentityStatus || DesiredIdentityStatus.PARTIALLY);
+      setOneChange(latestReview.oneChange || "");
+      setPerceivedProgress(latestReview.perceivedProgress || priorities.reduce((acc, p) => ({ ...acc, [p.key]: 5 }), {}));
+    } else {
+      setWhoWereYou("");
+      setDesiredIdentity(DesiredIdentityStatus.PARTIALLY);
+      setOneChange("");
+      setPerceivedProgress(priorities.reduce((acc, p) => ({ ...acc, [p.key]: 5 }), {}));
+    }
+  }, [latestReview, priorities]);
+
+  // Generate list of available months from reviews and current month
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+
+    // Add current month
+    months.add(monthStr);
+
+    // Add all months from existing reviews
+    allReviews.forEach(review => {
+      if (review.month) {
+        months.add(review.month);
+      }
+    });
+
+    // Convert to sorted array (newest first)
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [allReviews, monthStr]);
+
+  const handleMonthChange = (newMonth: string) => {
+    router.push(`/dashboard/monthly?month=${newMonth}`);
+  };
+
+  const getMonthLabel = (monthStr: string) => {
+    try {
+      const date = parse(monthStr, "yyyy-MM", new Date());
+      return format(date, "MMMM yyyy");
+    } catch {
+      return monthStr;
+    }
+  };
 
   const actualData = useMemo(() => {
     if (!activeSprint) return [];
@@ -83,6 +134,35 @@ export function MonthlyReviewPanel({ activeSprint, monthlyLogs, monthStr, latest
 
   return (
     <div className="space-y-12 pb-24">
+      {/* Month Selector */}
+      <GlassPanel className="p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-focus-violet" />
+            <Label className="text-xs font-mono uppercase tracking-widest text-white/60">Select Month</Label>
+          </div>
+          <Select value={monthStr} onValueChange={handleMonthChange}>
+            <SelectTrigger className="w-[200px] bg-white/5 border-white/10 text-white rounded-xl h-12">
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900/95 border-white/10 backdrop-blur-xl">
+              {availableMonths.map((month) => (
+                <SelectItem
+                  key={month}
+                  value={month}
+                  className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer"
+                >
+                  {getMonthLabel(month)}
+                  {allReviews.some(r => r.month === month) && (
+                    <span className="ml-2 text-[10px] text-action-emerald">✓</span>
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </GlassPanel>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-1 space-y-12">
           <div className="space-y-6">

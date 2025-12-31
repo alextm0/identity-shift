@@ -1,11 +1,15 @@
 import { getRequiredSession } from "@/lib/auth/server";
 import { getActiveSprint, getSprints } from "@/data-access/sprints";
-import { getDailyLogByDate, getDailyLogs, getTodayLogForUser } from "@/data-access/daily-logs";
+import { getDailyLogs, getTodayLogForUser } from "@/data-access/daily-logs";
 import { getPlanningByUserId } from "@/data-access/planning";
 import { getWeeklyReviews, getMonthlyReviews } from "@/data-access/reviews";
 import { getCompletedYearlyReview } from "@/data-access/yearly-reviews";
-import { differenceInDays, subDays, isSameDay } from "date-fns";
-import { toDailyLogWithTypedFields } from "@/lib/type-helpers"; // Import toDailyLogWithTypedFields
+import { differenceInDays, subDays, isSameDay, startOfYear, endOfYear, startOfQuarter, endOfQuarter } from "date-fns";
+import { db } from "@/lib/db";
+import { promiseLog } from "@/lib/db/schema";
+import { eq, and, gte } from "drizzle-orm";
+import { SprintWithDetails } from "@/lib/types";
+import { normalizeDate } from "@/lib/data-access/base";
 
 /**
  * Get comprehensive dashboard data for the authenticated user.
@@ -38,26 +42,36 @@ export async function getDashboardData() {
         ? currentDate.getFullYear() - 1
         : currentDate.getFullYear();
 
-    // Fetch all dashboard data in parallel for better performance
-    const [
-        planning,
-        rawActiveSprint, // Renamed to rawActiveSprint to differentiate
-        rawRecentSprints, // Renamed
-        todayLog,
-        recentLogs,
-        weeklyReviews,
-        monthlyReviews,
-        completedYearlyReview,
-    ] = await Promise.all([
+    // Fetch all dashboard data in parallel for better performance with graceful degradation
+    const sevenDaysAgo = normalizeDate(subDays(new Date(), 7));
+
+    const results = await Promise.allSettled([
         getPlanningByUserId(userId),
         activeSprintPromise,
         getSprints(userId).then(sprints => sprints.slice(0, 3)), // Last 3 sprints
         getTodayLogForUser(userId, new Date()),
-        getDailyLogs(userId, 7), // Last 7 days
+        getDailyLogs(userId, 14), // Get more logs for consistency grid (14 days)
         getWeeklyReviews(userId).then(reviews => reviews.slice(0, 1)), // Latest weekly review
         getMonthlyReviews(userId).then(reviews => reviews.slice(0, 1)), // Latest monthly review
-        getCompletedYearlyReview(userId, CURRENT_YEAR).catch(() => undefined), // Check for completed review (don't fail if table doesn't exist yet)
+        getCompletedYearlyReview(userId, CURRENT_YEAR),
+        db.query.promiseLog.findMany({
+            where: and(
+                eq(promiseLog.userId, userId),
+                gte(promiseLog.date, sevenDaysAgo)
+            )
+        })
     ]);
+
+    // Extract results with graceful fallbacks
+    const planning = results[0].status === 'fulfilled' ? results[0].value : null;
+    const rawActiveSprint = results[1].status === 'fulfilled' ? results[1].value : null;
+    const rawRecentSprints = results[2].status === 'fulfilled' ? results[2].value : [];
+    const todayLog = results[3].status === 'fulfilled' ? results[3].value : undefined;
+    const recentLogs = results[4].status === 'fulfilled' ? results[4].value : [];
+    const weeklyReviews = results[5].status === 'fulfilled' ? results[5].value : [];
+    const monthlyReviews = results[6].status === 'fulfilled' ? results[6].value : [];
+    const completedYearlyReview = results[7].status === 'fulfilled' ? results[7].value : undefined;
+    const recentPromiseLogs = results[8].status === 'fulfilled' ? results[8].value : [];
 
     const activeSprint = rawActiveSprint || null;
     const recentSprints = rawRecentSprints;
@@ -98,26 +112,72 @@ export async function getDashboardData() {
         };
     });
 
-    // Calculate priority progress for each priority
-    const prioritiesWithProgress = activeSprint ? (() => {
-        return activeSprint.priorities.map(priority => {
-            const unitsThisWeek = recentLogs.reduce((acc, log) => {
-                const typedLog = toDailyLogWithTypedFields(log);
-                return acc + (typedLog.priorities[priority.key]?.units || 0);
-            }, 0);
-            const weeklyTarget = priority.weeklyTargetUnits || 5;
-            const progress = Math.min(100, (unitsThisWeek / weeklyTarget) * 100);
-            const isComplete = unitsThisWeek >= weeklyTarget;
+    // Calculate progress for each promise (the new Focus Priorities)
+    const prioritiesWithProgress = activeSprint ? (activeSprint as SprintWithDetails).goals?.flatMap((goal) =>
+        goal.promises?.map((p) => ({
+            ...p,
+            goalText: goal.goalText
+        })) || []
+    ).map((promise) => {
+        const completionsThisWeek = recentPromiseLogs.filter(log =>
+            log.promiseId === promise.id && log.completed
+        ).length;
 
-            return {
-                ...priority,
-                unitsThisWeek,
-                weeklyTarget,
-                progress,
-                isComplete,
-            };
+        const weeklyTarget = promise.type === 'weekly'
+            ? (promise.weeklyTarget || 3)
+            : (promise.scheduleDays?.length || 7);
+        const progress = Math.min(100, (completionsThisWeek / weeklyTarget) * 100);
+        const isComplete = completionsThisWeek >= weeklyTarget;
+
+        return {
+            key: promise.id,
+            label: promise.text,
+            type: `${promise.goalText.substring(0, 20)}${promise.goalText.length > 20 ? '...' : ''} // ${promise.type}`,
+            unitsThisWeek: completionsThisWeek,
+            weeklyTarget,
+            progress,
+            isComplete,
+        };
+    }) || [] : [];
+
+    // Calculate time metrics (year, quarter, sprint)
+    const now = new Date();
+    const yearStart = startOfYear(now);
+    const yearEnd = endOfYear(now);
+    const yearTotal = differenceInDays(yearEnd, yearStart) + 1;
+    const yearRemaining = differenceInDays(yearEnd, now);
+    const yearProgress = 100 - ((yearRemaining / yearTotal) * 100);
+
+    const quarterStart = startOfQuarter(now);
+    const quarterEnd = endOfQuarter(now);
+    const quarterTotal = differenceInDays(quarterEnd, quarterStart) + 1;
+    const quarterRemaining = differenceInDays(quarterEnd, now);
+    const quarterProgress = 100 - ((quarterRemaining / quarterTotal) * 100);
+
+    const timeMetrics = [
+        {
+            label: 'Year',
+            percentage: 100 - yearProgress,
+            remaining: `${yearRemaining}d left`,
+        },
+        {
+            label: 'Quarter',
+            percentage: 100 - quarterProgress,
+            remaining: `${quarterRemaining}d left`,
+        },
+    ];
+
+    // Add sprint metric if there's an active sprint
+    if (activeSprint && daysLeft !== null) {
+        timeMetrics.push({
+            label: 'Sprint',
+            percentage: 100 - sprintProgress,
+            remaining: `${daysLeft}d left`,
         });
-    })() : [];
+    }
+
+    // Calculate dates with daily logs for calendar highlighting
+    const datesWithLogs = recentLogs.map(log => new Date(log.date));
 
     return {
         planning,
@@ -135,6 +195,8 @@ export async function getDashboardData() {
         sprintProgress,
         consistencyData,
         prioritiesWithProgress,
+        timeMetrics,
+        datesWithLogs,
         userId,
         user: {
             id: session.user.id,

@@ -132,7 +132,7 @@ export function withErrorHandling<TArgs extends unknown[], TReturn>(
             }
 
             // Wrap unknown errors
-            const message = getErrorMessage(error);
+            const message = getErrorMessage(error) || defaultErrorMessage;
             const code = getErrorCode(error) || "UNKNOWN_ERROR";
 
             throw new AppError(message, code);

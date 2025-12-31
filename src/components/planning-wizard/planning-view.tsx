@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Target, Sparkles, ChevronDown, ChevronUp, ScrollText, ShieldAlert, ListTodo, Clock, LayoutDashboard, Maximize2, X } from "lucide-react";
+import { ArrowLeft, Edit, Target, Sparkles, ChevronDown, ChevronUp, ScrollText, ShieldAlert, ListTodo, Clock, Maximize2, X } from "lucide-react";
 import Link from "next/link";
 import type { PlanningWithTypedFields } from "@/lib/types";
 import { format } from "date-fns";
@@ -72,7 +72,6 @@ export function PlanningView({ planning }: PlanningViewProps) {
     const antiGoals = planning.antiGoals || [];
     const futureIdentity = planning.futureIdentity;
     const commitmentStatement = planning.commitmentStatement;
-    const signatureName = planning.signatureName;
     const signatureImage = planning.signatureImage;
     const signedAt = planning.signedAt;
     const futureYouLetter = planning.futureYouLetter;
@@ -91,7 +90,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
     }, {} as Record<string, number>), [targetWheelOfLife, currentWheel]);
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white selection:bg-violet-500/30">
+        <div className="min-h-screen bg-[#14141F] text-white selection:bg-violet-500/30">
             {/* Background Blooms */}
             <div className="bg-blooms pointer-events-none fixed inset-0 z-[-1]">
                 <div className="bloom-violet opacity-5" />
@@ -173,8 +172,8 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                                 "group relative border rounded-xl transition-all duration-300 overflow-hidden",
                                                 "bg-gradient-to-br from-white/[0.02] to-white/[0.01]",
                                                 "shadow-[0_1px_2px_rgba(0,0,0,0.3)]",
-                                                isExpanded 
-                                                    ? "border-white/15 bg-white/[0.05] shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]" 
+                                                isExpanded
+                                                    ? "border-white/15 bg-white/[0.05] shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_1px_rgba(255,255,255,0.1)]"
                                                     : "border-white/5 hover:border-white/12 hover:bg-white/[0.04] hover:shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
                                             )}
                                         >
@@ -216,8 +215,8 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                                 <div className="flex items-center gap-4 shrink-0 pt-1 sm:pt-0">
                                                     <div className={cn(
                                                         "p-1.5 rounded-lg transition-all duration-300",
-                                                        isExpanded 
-                                                            ? "bg-white/10 rotate-180" 
+                                                        isExpanded
+                                                            ? "bg-white/10 rotate-180"
                                                             : "bg-white/5 group-hover:bg-white/10"
                                                     )}>
                                                         {isExpanded ? (
@@ -338,7 +337,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 rounded-lg bg-white/5 border border-white/5 group-hover:border-white/10 transition-colors">
-                                                <Sparkles className="h-4 w-4 text-violet-500/60 group-hover:text-violet-500/80 transition-colors" />
+                                                <Sparkles className="h-4 w-4 text-white/40 group-hover:text-white/60 transition-colors" />
                                             </div>
                                             <div className="text-left">
                                                 <h3 className="text-sm font-bold uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">Letter from the Future</h3>
@@ -403,16 +402,16 @@ export function PlanningView({ planning }: PlanningViewProps) {
 
                         {/* Strategic Blueprint - Wheel of Life */}
                         <div className="space-y-6">
-                            <GlassPanel className="p-8 border-white/5 overflow-hidden group relative rounded-[2rem]">
+                            <GlassPanel className="p-6 border-white/5 overflow-hidden group relative rounded-2xl">
                                 <button
                                     onClick={() => setIsWheelModalOpen(true)}
-                                    className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                                    className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-white/5 border border-[var(--color-border)] hover:bg-white/10 hover:border-white/20 transition-all duration-300 opacity-0 group-hover:opacity-100"
                                     aria-label="View wheel of life in fullscreen"
                                 >
                                     <Maximize2 className="h-4 w-4 text-white/60 hover:text-white/90 transition-colors" />
                                 </button>
-                                <div className="flex justify-center py-2">
-                                    <div className="w-full max-w-[600px]">
+                                <div className="flex justify-center">
+                                    <div className="w-full">
                                         <WheelOfLife
                                             values={currentWheel}
                                             targetValues={targetWheel}
@@ -475,16 +474,12 @@ export function PlanningView({ planning }: PlanningViewProps) {
                                     )}
 
                                     <div className="flex flex-col items-center pt-8 border-t border-white/5">
-                                        {signatureImage ? (
+                                        {signatureImage && (
                                             <img
                                                 src={signatureImage}
                                                 alt="Signature"
-                                                className="h-20 w-auto opacity-100 invert brightness-200 mb-4"
+                                                className="h-20 w-auto opacity-90 mb-4"
                                             />
-                                        ) : (
-                                            <p className="text-white font-serif italic text-3xl mb-4 opacity-80">
-                                                {signatureName}
-                                            </p>
                                         )}
                                         <div className="text-center space-y-1">
                                             <p className="text-[9px] font-mono text-white/20 uppercase tracking-[0.4em]">AUTHENTICATED</p>
@@ -522,12 +517,12 @@ export function PlanningView({ planning }: PlanningViewProps) {
 
             {/* Wheel of Life Modal */}
             <Dialog open={isWheelModalOpen} onOpenChange={setIsWheelModalOpen}>
-                <DialogOverlay className="bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:duration-500 data-[state=closed]:duration-300" />
-                <DialogContent className="max-w-4xl w-full !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] !mx-0 !my-0 p-0 border border-white/20 bg-[#050505]/60 backdrop-blur-2xl shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-90 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-4 data-[state=open]:slide-in-from-top-4 data-[state=open]:duration-500 data-[state=closed]:duration-300 rounded-3xl overflow-hidden [&>button]:hidden max-h-[85vh]">
+                <DialogOverlay className="bg-[var(--color-background)]/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:duration-500 data-[state=closed]:duration-300" />
+                <DialogContent className="max-w-4xl w-full !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] !mx-0 !my-0 p-0 border border-white/20 bg-[var(--color-background)]/80 backdrop-blur-2xl shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-90 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-4 data-[state=open]:slide-in-from-top-4 data-[state=open]:duration-500 data-[state=closed]:duration-300 rounded-3xl overflow-visible [&>button]:hidden">
                     <DialogTitle className="sr-only">Strategic Blueprint - Wheel of Life</DialogTitle>
                     <div className="relative w-full flex flex-col">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-white/20 bg-white/[0.03] shrink-0">
+                        <div className="flex items-center justify-between p-5 border-b border-white/20 bg-white/[0.03] shrink-0">
                             <div>
                                 <h2 className="text-xl font-bold text-white uppercase tracking-widest mb-1">
                                     Strategic Blueprint
@@ -546,8 +541,8 @@ export function PlanningView({ planning }: PlanningViewProps) {
                         </div>
 
                         {/* Wheel Container */}
-                        <div className="flex-1 flex items-center justify-center bg-white/[0.02] px-8 py-8 w-full">
-                            <div className="w-full max-w-[550px] aspect-square mx-auto">
+                        <div className="flex items-center justify-center bg-white/[0.02] p-8 w-full min-h-[600px]">
+                            <div className="w-full max-w-[580px] mx-auto">
                                 <WheelOfLife
                                     values={currentWheel}
                                     targetValues={targetWheel}

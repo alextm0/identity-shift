@@ -24,7 +24,7 @@ import { ensureUserOwnership, validateResourceOwnership } from "./authorization"
  * ```
  */
 export function withUserOwnership<T extends any[]>(
-    action: (userId: string, ...args: T) => Promise<any>
+    action: (userId: string, ...args: T) => Promise<unknown>
 ) {
     return async (requestedUserId: string, ...args: T) => {
         // Ensure user is authenticated
@@ -52,7 +52,7 @@ export function withUserOwnership<T extends any[]>(
  * ```
  */
 export function withAuthenticatedUser<T extends any[]>(
-    action: (userId: string, ...args: T) => Promise<any>
+    action: (userId: string, ...args: T) => Promise<unknown>
 ) {
     return async (...args: T) => {
         // Ensure user is authenticated and get their ID
@@ -82,7 +82,7 @@ export function withAuthenticatedUser<T extends any[]>(
  * ```
  */
 export function withResourceOwnership<T extends any[]>(
-    action: (...args: T) => Promise<any>,
+    action: (...args: T) => Promise<unknown>,
     getResourceUserId: (...args: T) => Promise<string>
 ) {
     return async (...args: T) => {

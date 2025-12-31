@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, startOfWeek } from "date-fns";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
 import { Edit2, Calendar, Zap, Trophy, Flame } from "lucide-react";
-import { DailyLog, SprintWithPriorities } from "@/lib/types";
+import { DailyLog, SprintWithDetails, PromiseLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getTotalUnits } from "@/lib/type-helpers";
 import { DailyLogEditModal } from "./daily-log-edit-modal";
 
 interface WeeklyEntriesTableProps {
   weeklyLogs: DailyLog[];
-  activeSprint?: SprintWithPriorities;
+  promiseLogs: PromiseLog[];
+  activeSprint?: SprintWithDetails;
 }
 
-export function WeeklyEntriesTable({ weeklyLogs, activeSprint }: WeeklyEntriesTableProps) {
+export function WeeklyEntriesTable({ weeklyLogs, promiseLogs, activeSprint }: WeeklyEntriesTableProps) {
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
 
   // Create a map of logs by date for quick lookup
@@ -25,14 +26,15 @@ export function WeeklyEntriesTable({ weeklyLogs, activeSprint }: WeeklyEntriesTa
     logsByDate.set(dateKey, log);
   });
 
-  // Generate last 7 days
+  // Generate current calendar week (Monday to Sunday)
   const today = new Date();
+  const monday = startOfWeek(today, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
     date.setHours(0, 0, 0, 0);
     return date;
-  }).reverse();
+  });
 
   return (
     <>
@@ -52,7 +54,13 @@ export function WeeklyEntriesTable({ weeklyLogs, activeSprint }: WeeklyEntriesTa
             const dateKey = format(date, "yyyy-MM-dd");
             const log = logsByDate.get(dateKey);
             const isToday = format(date, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
-            const totalUnits = log ? getTotalUnits(log) : 0;
+
+            // Map units from promiseLogs for this day
+            const dayPromiseCompletions = promiseLogs.filter(pl =>
+              format(new Date(pl.date), "yyyy-MM-dd") === dateKey && pl.completed
+            ).length;
+
+            const totalUnits = dayPromiseCompletions || (log ? getTotalUnits(log) : 0);
 
             return (
               <div

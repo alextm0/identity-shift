@@ -44,12 +44,17 @@ describe('startSprintAction', () => {
       name: 'Test Sprint',
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-01-14'),
-      priorities: [
+      goals: [
         {
-          key: 'priority-1',
-          label: 'Exercise',
-          type: 'habit' as const,
-          weeklyTargetUnits: 5,
+          goalId: '550e8400-e29b-41d4-a716-446655440000',
+          goalText: 'Health Goal',
+          promises: [
+            {
+              text: 'Gym',
+              type: 'daily' as const,
+              scheduleDays: [1, 3, 5],
+            },
+          ],
         },
       ],
     };
@@ -70,12 +75,17 @@ describe('startSprintAction', () => {
       name: 'New Sprint',
       startDate: new Date('2024-01-15'),
       endDate: new Date('2024-01-28'),
-      priorities: [
+      goals: [
         {
-          key: 'priority-1',
-          label: 'Exercise',
-          type: 'habit' as const,
-          weeklyTargetUnits: 5,
+          goalId: '550e8400-e29b-41d4-a716-446655440000',
+          goalText: 'Work Goal',
+          promises: [
+            {
+              text: 'Focus session',
+              type: 'daily' as const,
+              scheduleDays: [1, 2, 3, 4, 5],
+            },
+          ],
         },
       ],
     };

@@ -42,22 +42,23 @@ async function ensureUserExists(authUser: { id: string; name?: string | null; em
                     emailVerified: authUser.emailVerified ?? false,
                     image: authUser.image || null,
                 });
-        } catch (insertError: any) {
+        } catch (insertError: unknown) {
+            const error = insertError as { code?: string };
             // Check if this is a legitimate race condition (user created by concurrent request)
             // vs. a constraint violation from invalid data (empty string, etc.)
-            if (insertError?.code === '23505') {
+            if (error.code === '23505') {
                 // Unique constraint violation - could be race condition or invalid data
                 // Verify the user actually exists now (legitimate race condition)
                 const verifyUser = await db.select()
                     .from(user)
                     .where(eq(user.id, authUser.id))
                     .limit(1);
-                
+
                 if (verifyUser.length > 0) {
                     // User exists now - this was a legitimate race condition
                     return;
                 }
-                
+
                 // User doesn't exist - this is likely an invalid data constraint violation
                 // Log and propagate the error so it can be retried or handled appropriately
                 console.error(`Failed to create user ${authUser.id} due to unique constraint violation:`, {
@@ -67,12 +68,12 @@ async function ensureUserExists(authUser: { id: string; name?: string | null; em
                 });
                 throw insertError;
             }
-            
-            if (insertError?.code === '23503') {
+
+            if (error.code === '23503') {
                 // Foreign key violation - user likely exists now (race condition)
                 return;
             }
-            
+
             // Re-throw other errors
             throw insertError;
         }
@@ -133,11 +134,11 @@ export async function getSession() {
  */
 export async function verifySession() {
     const session = await getSession();
-    
+
     if (!session) {
         redirect('/auth/sign-in');
     }
-    
+
     return session;
 }
 

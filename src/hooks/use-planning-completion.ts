@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePlanningStore } from "@/hooks/stores/use-planning-store";
 import { savePlanningProgressAction, completePlanningAction } from "@/actions/planning";
-import { PlanningStatus } from "@/lib/validators/planning";
+import { PlanningStatus, type CompletePlanningData } from "@/lib/validators/planning";
 
 interface UsePlanningCompletionOptions {
   planningId: string | null;
@@ -82,9 +82,9 @@ export function usePlanningCompletion({
       try {
         if (isEditMode) {
           await savePlanningProgressAction(activeId, formData);
-          result = await completePlanningAction(activeId, completeData as any);
+          result = await completePlanningAction(activeId, completeData as CompletePlanningData);
         } else {
-          result = await completePlanningAction(activeId, completeData as any);
+          result = await completePlanningAction(activeId, completeData as CompletePlanningData);
         }
       } catch (actionError: unknown) {
         console.error("Action error:", actionError);

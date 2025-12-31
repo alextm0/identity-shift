@@ -58,7 +58,6 @@ interface PlanningStore {
 
     // Step 8: Commitment
     commitmentStatement: string;
-    signatureName: string;
     signatureImage: string;
     signedAt: Date | null;
 
@@ -106,7 +105,6 @@ interface PlanningStore {
 
     // Actions - Step 8: Commitment
     setCommitmentStatement: (text: string) => void;
-    setSignatureName: (name: string) => void;
     setSignatureImage: (base64: string) => void;
     setSignedAt: (date: Date) => void;
 
@@ -156,7 +154,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
 
     // Step 8
     commitmentStatement: "",
-    signatureName: "",
     signatureImage: "",
     signedAt: null,
 
@@ -350,8 +347,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
 
     // Step 8 Actions
     setCommitmentStatement: (text) => set({ commitmentStatement: text, isDirty: true }),
-
-    setSignatureName: (name) => set({ signatureName: name, isDirty: true }),
     setSignatureImage: (base64) => set({ signatureImage: base64, isDirty: true }),
     setSignedAt: (date) => set({ signedAt: date, isDirty: true }),
 
@@ -403,7 +398,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             antiGoals,
             driftResponse: data.driftResponse || "",
             commitmentStatement: data.commitmentStatement || "",
-            signatureName: data.signatureName || "",
             signatureImage: data.signatureImage || "",
             signedAt: data.signedAt ? new Date(data.signedAt) : null,
             previousIdentity: data.previousIdentity || "",
@@ -433,7 +427,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             antiGoals: [],
             driftResponse: "",
             commitmentStatement: "",
-            signatureName: "",
             signatureImage: "",
             signedAt: null,
             previousIdentity: "",
@@ -458,7 +451,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             antiGoals: state.antiGoals.length > 0 ? state.antiGoals : undefined,
             driftResponse: state.driftResponse || undefined,
             commitmentStatement: state.commitmentStatement || undefined,
-            signatureName: state.signatureName || undefined,
             signatureImage: state.signatureImage || undefined,
             signedAt: state.signedAt || undefined,
             currentStep: state.currentStep,

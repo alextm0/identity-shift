@@ -31,7 +31,7 @@ interface WizardProps {
 export function Wizard({
   steps,
   currentStep,
-  onStepChange,
+  onStepChange: _onStepChange,
   onNext,
   onBack,
   onExit,

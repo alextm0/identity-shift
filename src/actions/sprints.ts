@@ -13,6 +13,7 @@
  */
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidate";
 import { createSprint, deactivateAllSprints, getSprintById, updateSprint, deleteSprint, closeSprintById, getActiveSprint } from "@/data-access/sprints";
 import { SprintFormSchema } from "@/lib/validators";
 import { sanitizeText } from "@/lib/sanitize";
@@ -29,22 +30,15 @@ export const startSprintAction = createAction(
             throw new BusinessRuleError("End date must be after start date");
         }
 
-        // Validate priorities
-        if (!validated.priorities || validated.priorities.length === 0) {
-            throw new BusinessRuleError("At least one priority is required");
+        // Validate goals
+        if (!validated.goals || validated.goals.length === 0) {
+            throw new BusinessRuleError("At least one goal is required");
         }
-
-        // Ensure all priorities have required fields and clean up data
-        const cleanedPriorities = validated.priorities.map(priority => ({
-            ...priority,
-            label: sanitizeText(priority.label.trim(), 200),
-            unitDefinition: priority.unitDefinition ? sanitizeText(priority.unitDefinition.trim(), 200) : undefined,
-        }));
 
         // 1. Deactivate current active sprints
         await deactivateAllSprints(userId);
 
-        // 2. Create new sprint
+        // 2 & 3. Create new sprint with goals and promises
         const sprintId = randomUUID();
         await createSprint({
             id: sprintId,
@@ -52,10 +46,17 @@ export const startSprintAction = createAction(
             name: sanitizeText(validated.name.trim(), 200),
             startDate: validated.startDate,
             endDate: validated.endDate,
-            priorities: cleanedPriorities,
             active: true,
             createdAt: new Date(),
             updatedAt: new Date(),
+            goals: validated.goals.map(g => ({
+                ...g,
+                goalText: sanitizeText(g.goalText, 500),
+                promises: g.promises.map(p => ({
+                    ...p,
+                    text: sanitizeText(p.text, 200)
+                }))
+            }))
         });
 
         revalidateSprintPaths();
@@ -88,17 +89,21 @@ export const updateSprintAction = createActionWithParam(
             throw new BusinessRuleError("End date must be after start date");
         }
 
-        // Clean up priorities if present
+        // Clean up and sanitize data
         const updateData: Partial<typeof validated> = { ...validated };
-        if (validated.priorities) {
-            updateData.priorities = validated.priorities.map(p => ({
-                ...p,
-                label: sanitizeText(p.label.trim(), 200),
-                unitDefinition: p.unitDefinition ? sanitizeText(p.unitDefinition.trim(), 200) : undefined,
-            }));
-        }
         if (validated.name) {
             updateData.name = sanitizeText(validated.name.trim(), 200);
+        }
+
+        if (validated.goals) {
+            updateData.goals = validated.goals.map(g => ({
+                ...g,
+                goalText: sanitizeText(g.goalText, 500),
+                promises: g.promises.map(p => ({
+                    ...p,
+                    text: sanitizeText(p.text, 200)
+                }))
+            }));
         }
 
         await updateSprint(sprintId, userId, updateData);
@@ -192,8 +197,5 @@ export const getActiveSprintAction = createActionWithoutValidation(
 
 
 function revalidateSprintPaths() {
-    revalidateTag('active-sprint', 'max');
-    revalidatePath("/dashboard", "layout");
-    revalidatePath("/dashboard/sprint", "layout");
-    revalidatePath("/sprints", "layout");
+    revalidateDashboard();
 }

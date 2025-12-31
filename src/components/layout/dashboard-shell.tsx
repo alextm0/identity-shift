@@ -6,7 +6,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-[#14141F] text-white selection:bg-emerald-500/30">
       {/* Background Blooms */}
       <div className="bg-blooms pointer-events-none">
         <div className="bloom-violet" />

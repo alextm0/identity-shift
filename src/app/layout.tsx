@@ -47,7 +47,7 @@ export default function RootLayout({
               {children}
             </main>
           </div>
-          <Toaster position="top-right" theme="dark" />
+          <Toaster position="bottom-right" theme="dark" richColors closeButton />
         </NeonAuthUIProvider>
       </body>
     </html>

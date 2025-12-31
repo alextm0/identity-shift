@@ -4,6 +4,8 @@ import { SprintStatus } from '@/components/dashboard/SprintStatus';
 import { ConsistencyGrid } from '@/components/dashboard/ConsistencyGrid';
 import { PrioritiesWorkflow } from '@/components/dashboard/PrioritiesWorkflow';
 import { QuickActions } from '@/components/dashboard/QuickActions';
+import { TimeMetrics } from '@/components/dashboard/TimeMetrics';
+import { MiniCalendar } from '@/components/dashboard/MiniCalendar';
 
 export default async function DashboardPage() {
   const {
@@ -16,6 +18,8 @@ export default async function DashboardPage() {
     sprintProgress,
     consistencyData,
     prioritiesWithProgress,
+    timeMetrics,
+    datesWithLogs,
   } = await getDashboardData();
 
   const hasCompletedPlanning = planning?.status === 'completed';
@@ -30,7 +34,7 @@ export default async function DashboardPage() {
           {/* Sprint & Consistency Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {activeSprint ? (
-              <SprintStatus 
+              <SprintStatus
                 sprintProgress={sprintProgress}
                 currentDay={currentDay}
                 sprintDuration={sprintDuration}
@@ -46,10 +50,16 @@ export default async function DashboardPage() {
 
           {/* Priorities Workflow */}
           {activeSprint && <PrioritiesWorkflow priorities={prioritiesWithProgress} />}
+
+          {/* Time Metrics & Calendar Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TimeMetrics metrics={timeMetrics} />
+            <MiniCalendar highlightedDates={datesWithLogs} />
+          </div>
         </div>
 
         {/* Sidebar Column - Right 1/3 */}
-        <QuickActions 
+        <QuickActions
           todayStatus={todayStatus}
           completedYearlyReview={completedYearlyReview}
           hasCompletedPlanning={hasCompletedPlanning}

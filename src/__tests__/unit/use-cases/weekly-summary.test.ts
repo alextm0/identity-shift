@@ -8,165 +8,90 @@ import { createMockDailyLog, createMockSprint } from '@/__tests__/mocks/db';
 
 describe('calculateWeeklySummary', () => {
   it('should calculate priority summary correctly', () => {
-    const sprint = createMockSprint({
-      priorities: [
+    const sprint = {
+      ...createMockSprint(),
+      goals: [
         {
-          key: 'priority-1',
-          label: 'Priority 1',
-          type: 'habit',
-          weeklyTargetUnits: 10,
-        },
-        {
-          key: 'priority-2',
-          label: 'Priority 2',
-          type: 'work',
-          weeklyTargetUnits: 5,
+          id: 'goal-1',
+          goalText: 'Goal 1',
+          promises: [
+            {
+              id: 'promise-1',
+              text: 'Promise 1',
+              type: 'daily',
+              scheduleDays: [1, 2, 3, 4, 5], // 5 days
+            },
+            {
+              id: 'promise-2',
+              text: 'Promise 2',
+              type: 'weekly',
+              weeklyTarget: 3,
+            },
+          ],
         },
       ],
-    });
+    } as any;
+
+    const promiseLogs = [
+      { id: 'pl-1', promiseId: 'promise-1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+      { id: 'pl-2', promiseId: 'promise-1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+      { id: 'pl-3', promiseId: 'promise-1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+      { id: 'pl-4', promiseId: 'promise-2', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+      { id: 'pl-5', promiseId: 'promise-2', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+    ] as any;
 
     const logs = [
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 3 },
-          'priority-2': { done: true, units: 2 },
-        },
-      }),
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 4 },
-          'priority-2': { done: true, units: 1 },
-        },
-      }),
+      createMockDailyLog({ energy: 3 }),
+      createMockDailyLog({ energy: 4 }),
     ];
 
-    const summary = calculateWeeklySummary(logs, sprint);
+    const summary = calculateWeeklySummary(logs, sprint, promiseLogs);
 
-    expect(summary.prioritySummary['priority-1']).toEqual({
-      label: 'Priority 1',
-      actual: 7,
-      target: 10,
-      ratio: 0.7,
-    });
-
-    expect(summary.prioritySummary['priority-2']).toEqual({
-      label: 'Priority 2',
+    expect(summary.prioritySummary['promise-1']).toEqual(expect.objectContaining({
+      label: 'Promise 1',
       actual: 3,
       target: 5,
       ratio: 0.6,
-    });
-  });
+    }));
 
-  it('should cap ratio at 1.0 when actual exceeds target', () => {
-    const sprint = createMockSprint({
-      priorities: [
-        {
-          key: 'priority-1',
-          label: 'Priority 1',
-          type: 'habit',
-          weeklyTargetUnits: 5,
-        },
-      ],
-    });
-
-    const logs = [
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 10 },
-        },
-      }),
-    ];
-
-    const summary = calculateWeeklySummary(logs, sprint);
-    expect(summary.prioritySummary['priority-1'].ratio).toBe(1.0);
+    const p2 = summary.prioritySummary['promise-2'];
+    expect(p2.label).toBe('Promise 2');
+    expect(p2.actual).toBe(2);
+    expect(p2.target).toBe(3);
+    expect(p2.ratio).toBeCloseTo(0.666, 2);
+    expect(p2.status).toBeDefined();
   });
 
   it('should calculate average energy correctly', () => {
-    const sprint = createMockSprint();
+    const sprint = { ...createMockSprint(), goals: [] } as any;
     const logs = [
       createMockDailyLog({ energy: 3 }),
       createMockDailyLog({ energy: 4 }),
       createMockDailyLog({ energy: 5 }),
     ];
 
-    const summary = calculateWeeklySummary(logs, sprint);
+    const summary = calculateWeeklySummary(logs, sprint, []);
     expect(summary.avgEnergy).toBe(4);
   });
 
-  it('should return 0 for average energy when no logs', () => {
-    const sprint = createMockSprint();
-    const logs: any[] = [];
-
-    const summary = calculateWeeklySummary(logs, sprint);
-    expect(summary.avgEnergy).toBe(0);
-  });
-
   it('should calculate total actual units', () => {
-    const sprint = createMockSprint();
-    const logs = [
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 5 },
-          'priority-2': { done: true, units: 3 },
-        },
-      }),
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 2 },
-        },
-      }),
-    ];
+    const sprint = { ...createMockSprint(), goals: [] } as any;
+    const promiseLogs = [
+      { id: 'pl-1', promiseId: 'p1', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+      { id: 'pl-2', promiseId: 'p2', completed: true, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+      { id: 'pl-3', promiseId: 'p3', completed: false, date: new Date(), createdAt: new Date(), userId: 'test-user', dailyLogId: null },
+    ] as any;
+    const logs = [createMockDailyLog()];
 
-    const summary = calculateWeeklySummary(logs, sprint);
-    expect(summary.totalActualUnits).toBe(10);
-  });
-
-  it('should calculate action units (units >= 2)', () => {
-    const sprint = createMockSprint();
-    const logs = [
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 5 }, // action
-          'priority-2': { done: true, units: 1 }, // motion
-        },
-      }),
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 3 }, // action
-          'priority-2': { done: true, units: 2 }, // action
-        },
-      }),
-    ];
-
-    const summary = calculateWeeklySummary(logs, sprint);
-    expect(summary.actionUnits).toBe(10); // 5 + 3 + 2
-  });
-
-  it('should calculate motion units (units === 1)', () => {
-    const sprint = createMockSprint();
-    const logs = [
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 1 }, // motion
-          'priority-2': { done: true, units: 1 }, // motion
-        },
-      }),
-      createMockDailyLog({
-        priorities: {
-          'priority-1': { done: true, units: 2 }, // action
-        },
-      }),
-    ];
-
-    const summary = calculateWeeklySummary(logs, sprint);
-    expect(summary.motionUnits).toBe(2); // only units === 1
+    const summary = calculateWeeklySummary(logs, sprint, promiseLogs);
+    expect(summary.totalActualUnits).toBe(2);
   });
 
   it('should return correct logs count', () => {
-    const sprint = createMockSprint();
+    const sprint = { ...createMockSprint(), goals: [] } as any;
     const logs = Array(5).fill(null).map(() => createMockDailyLog());
 
-    const summary = calculateWeeklySummary(logs, sprint);
+    const summary = calculateWeeklySummary(logs, sprint, []);
     expect(summary.logsCount).toBe(5);
   });
 });

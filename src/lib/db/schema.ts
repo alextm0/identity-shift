@@ -1,4 +1,5 @@
 import { pgTable, text, integer, timestamp, boolean, json, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 // USER table (managed by Better Auth - defined here for foreign keys)
 export const user = pgTable('user', {
@@ -93,7 +94,6 @@ export const planning = pgTable('planning', {
 
     // Step 8: Commitment
     commitmentStatement: text('commitmentStatement'), // "The kind of year I'm choosing..."
-    signatureName: text('signatureName'), // Signature name
     signatureImage: text('signatureImage'), // Base64 signature
     signedAt: timestamp('signedAt'), // When signed
 
@@ -123,7 +123,31 @@ export const sprint = pgTable('sprint', {
     sprintOrderIdx: index('sprint_userId_startDate_idx').on(table.userId, table.startDate),
 }));
 
-// SPRINT_PRIORITY
+// SPRINT_GOAL (New)
+export const sprintGoal = pgTable('sprintGoal', {
+    id: text('id').primaryKey(),
+    sprintId: text('sprintId').notNull().references(() => sprint.id, { onDelete: 'cascade' }),
+    goalId: text('goalId').notNull(),           // References annualGoals[].id from planning
+    goalText: text('goalText').notNull(),         // Denormalized for display
+    sortOrder: integer('sortOrder').notNull(),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
+// PROMISE (New)
+export const promise = pgTable('promise', {
+    id: text('id').primaryKey(),
+    sprintId: text('sprintId').notNull().references(() => sprint.id, { onDelete: 'cascade' }),
+    sprintGoalId: text('sprintGoalId').notNull().references(() => sprintGoal.id, { onDelete: 'cascade' }),
+    text: text('text').notNull(),             // "Research thesis 30 min"
+    type: text('type').notNull(),             // 'daily' | 'weekly'
+    scheduleDays: integer('scheduleDays').array(), // For daily: [1,2,3,4,5] = Mon-Fri (0=Sun, 1=Mon, ..., 6=Sat)
+    weeklyTarget: integer('weeklyTarget'),           // For weekly: e.g., 3 for "gym 3x/week"
+    sortOrder: integer('sortOrder').notNull(),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+// SPRINT_PRIORITY (Deprecated, keep for migration)
 export const sprintPriority = pgTable('sprintPriority', {
     id: text('id').primaryKey(),
     sprintId: text('sprintId').notNull().references(() => sprint.id, { onDelete: 'cascade' }),
@@ -144,11 +168,18 @@ export const dailyLog = pgTable('dailyLog', {
     date: timestamp('date').notNull(), // format: YYYY-MM-DD
     energy: integer('energy').notNull(), // 1-5
     sleepHours: integer('sleepHours'), // optional: hours or null
-    mainFocusCompleted: boolean('mainFocusCompleted').notNull(),
+
+    // New columns
+    mainGoalId: text('mainGoalId'),  // Required: which goal is today's focus
+    blockerTag: text('blockerTag'),  // Optional: single-select blocker
+
+    // Deprecated columns (keep for migration)
+    mainFocusCompleted: boolean('mainFocusCompleted'), // made optional for now
     morningGapMin: integer('morningGapMin'), // optional
     distractionMin: integer('distractionMin'), // optional
-    priorities: json('priorities').notNull(), // JSON: {priorityKey: {done, units, deepWorkMin?, autonomyLevel?}}
-    proofOfWork: json('proofOfWork').notNull(), // JSON: [{type, value, url}]
+    priorities: json('priorities'), // made optional
+    proofOfWork: json('proofOfWork'), // made optional
+
     win: text('win'), // optional: one-liner
     drain: text('drain'), // optional: one-liner
     note: text('note'), // optional: general note
@@ -157,6 +188,21 @@ export const dailyLog = pgTable('dailyLog', {
 }, (table) => ({
     uniqueUserSprintDate: uniqueIndex('dailyLog_userId_sprintId_date_idx').on(table.userId, table.sprintId, table.date),
     dailyLogSprintDateIdx: index('dailyLog_sprintId_date_idx').on(table.sprintId, table.date),
+}));
+
+// PROMISE_LOG (New)
+export const promiseLog = pgTable('promiseLog', {
+    id: text('id').primaryKey(),
+    userId: text('userId').notNull().references(() => user.id),
+    promiseId: text('promiseId').notNull().references(() => promise.id, { onDelete: 'cascade' }),
+    date: timestamp('date').notNull(),             // Primary reference: the date this completion applies to
+    dailyLogId: text('dailyLogId').references(() => dailyLog.id, { onDelete: 'set null' }),  // Optional link to full audit
+    completed: boolean('completed').notNull().default(false),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+}, (table) => ({
+    promiseLogUnique: uniqueIndex('promiseLog_promiseId_date_unique').on(table.promiseId, table.date), // One log per promise per day
+    promiseLogUserDateIdx: index('promiseLog_userId_date_idx').on(table.userId, table.date),
+    promiseLogPromiseDateIdx: index('promiseLog_promiseId_date_idx').on(table.promiseId, table.date),
 }));
 
 // WEEKLY_REVIEW
@@ -240,10 +286,11 @@ export const auditLog = pgTable('auditLog', {
 }));
 
 // RELATIONS
-import { relations } from 'drizzle-orm';
 
 export const sprintRelations = relations(sprint, ({ many }) => ({
     priorities: many(sprintPriority),
+    goals: many(sprintGoal),
+    promises: many(promise),
 }));
 
 export const sprintPriorityRelations = relations(sprintPriority, ({ one }) => ({
@@ -251,5 +298,44 @@ export const sprintPriorityRelations = relations(sprintPriority, ({ one }) => ({
         fields: [sprintPriority.sprintId],
         references: [sprint.id],
     }),
+}));
+
+export const sprintGoalRelations = relations(sprintGoal, ({ one, many }) => ({
+    sprint: one(sprint, {
+        fields: [sprintGoal.sprintId],
+        references: [sprint.id],
+    }),
+    promises: many(promise),
+}));
+
+export const promiseRelations = relations(promise, ({ one, many }) => ({
+    sprint: one(sprint, {
+        fields: [promise.sprintId],
+        references: [sprint.id],
+    }),
+    sprintGoal: one(sprintGoal, {
+        fields: [promise.sprintGoalId],
+        references: [sprintGoal.id],
+    }),
+    logs: many(promiseLog),
+}));
+
+export const promiseLogRelations = relations(promiseLog, ({ one }) => ({
+    user: one(user, {
+        fields: [promiseLog.userId],
+        references: [user.id],
+    }),
+    promise: one(promise, {
+        fields: [promiseLog.promiseId],
+        references: [promise.id],
+    }),
+    dailyLog: one(dailyLog, {
+        fields: [promiseLog.dailyLogId],
+        references: [dailyLog.id],
+    }),
+}));
+
+export const dailyLogRelations = relations(dailyLog, ({ many }) => ({
+    promiseLogs: many(promiseLog),
 }));
 

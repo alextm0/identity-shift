@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 
 interface UseWizardNavigationOptions {
@@ -33,12 +33,14 @@ export function useWizardNavigation({
   multiStepIndices = [],
   itemsPerMultiStep = LIFE_DIMENSIONS.length,
 }: UseWizardNavigationOptions): WizardNavigationReturn {
+  const [lastStep, setLastStep] = useState(currentStep);
   const [subStepIndex, setSubStepIndex] = useState(0);
 
-  // Reset sub-step index when step changes
-  useEffect(() => {
+  // Reset sub-step index when step changes (WITHOUT effect)
+  if (currentStep !== lastStep) {
     setSubStepIndex(0);
-  }, [currentStep]);
+    setLastStep(currentStep);
+  }
 
   const isMultiStep = useCallback(
     (step: number) => multiStepIndices.includes(step as any),

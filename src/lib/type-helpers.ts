@@ -5,14 +5,14 @@
  */
 
 import type { DailyLog, Planning, WeeklyReview, MonthlyReview, YearlyReview, Sprint } from '@/lib/types';
-import type { DailyPriorityLog, ProofOfWork, Goal, WheelOfLife, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal, SprintPriority } from '@/lib/validators';
+import type { DailyPriorityLog, ProofOfWork, WheelOfLife, PlanningGoal, SimplifiedGoal, AntiGoal, AnnualGoal, SprintPriority } from '@/lib/validators';
 import type { DailyLogWithTypedFields, PlanningWithTypedFields, WeeklyReviewWithTypedFields, MonthlyReviewWithTypedFields, YearlyReviewWithTypedFields, SprintWithPriorities } from '@/lib/types';
 
 
 /**
  * Safely parses sprint priorities from JSON field.
  */
-export function parseSprintPriorities(sprint: any): SprintPriority[] {
+export function parseSprintPriorities(sprint: { priorities?: unknown } | null | undefined): SprintPriority[] {
     if (!sprint || !sprint.priorities) return [];
 
     if (Array.isArray(sprint.priorities)) {
@@ -228,7 +228,6 @@ export function toPlanningWithTypedFields(planning: Planning): PlanningWithTyped
         antiVision: planning.antiVision ?? undefined,
         antiGoals: planning.antiGoals ? (planning.antiGoals as AntiGoal[]) : undefined,
         commitmentStatement: planning.commitmentStatement ?? undefined,
-        signatureName: planning.signatureName ?? undefined,
         signatureImage: planning.signatureImage ?? undefined,
         signedAt: planning.signedAt ?? undefined,
         currentModule: planning.currentModule ?? undefined,

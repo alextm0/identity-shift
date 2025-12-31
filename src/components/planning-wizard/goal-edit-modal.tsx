@@ -110,7 +110,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white appearance-none cursor-pointer hover:bg-white/[0.07] hover:border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-focus-violet/50 focus:border-focus-violet/50 pr-10"
                             >
                                 {LIFE_DIMENSIONS.map((dim) => (
-                                    <option key={dim} value={dim} className="bg-[#050505]">
+                                    <option key={dim} value={dim} className="bg-[#14141F]">
                                         {DIMENSION_LABELS[dim as LifeDimension]}
                                     </option>
                                 ))}

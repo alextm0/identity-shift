@@ -14,14 +14,14 @@ export function SprintStatus({ sprintProgress, currentDay, sprintDuration }: Spr
         <Clock className="h-24 w-24" />
       </div>
       <div>
-        <h3 className="text-[10px] font-mono text-white/40 uppercase tracking-widest mb-2">Sprint Velocity</h3>
+        <h3 className="metric-label mb-2">Sprint Velocity</h3>
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-white">{Math.round(sprintProgress)}%</span>
-          <span className="text-xs font-mono text-white/40 uppercase">Complete</span>
+          <span className="metric-value">{Math.round(sprintProgress)}%</span>
+          <span className="label text-white/40">Complete</span>
         </div>
       </div>
       <div className="space-y-2 mt-4 relative z-10">
-        <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider">
+        <div className="flex justify-between label-sm">
           <span className="text-white/60">Day {currentDay}</span>
           <span className="text-white/20">Target {sprintDuration}</span>
         </div>

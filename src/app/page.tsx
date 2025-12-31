@@ -1,25 +1,25 @@
 'use client';
 
 import Link from 'next/link';
-import { motion, useScroll, useTransform, useSpring, useReducedMotion, Variants } from 'framer-motion';
-import { 
-  LineChart, 
-  Line, 
-  ResponsiveContainer, 
-  XAxis, 
-  YAxis, 
+import { motion, useScroll, useTransform, useSpring, useReducedMotion, Variants, MotionValue } from 'framer-motion';
+import {
+  LineChart,
+  Line,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
   Tooltip,
   AreaChart,
   Area
 } from 'recharts';
-import { 
-  ArrowRight, 
-  ShieldCheck, 
-  Activity, 
-  Target, 
-  Zap, 
-  BarChart3, 
-  Layers, 
+import {
+  ArrowRight,
+  ShieldCheck,
+  Activity,
+  Target,
+  Zap,
+  BarChart3,
+  Layers,
   Fingerprint,
   Menu,
   X,
@@ -32,7 +32,7 @@ import { authClient } from '@/lib/auth/client';
 
 // --- Background Components ---
 
-function BackgroundShapes({ scrollYProgress }: { scrollYProgress: any }) {
+function BackgroundShapes({ scrollYProgress }: { scrollYProgress: MotionValue<number> }) {
   const y1 = useTransform(scrollYProgress, [0, 0.5], [0, -100]);
   const y2 = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
   const opacity1 = useTransform(scrollYProgress, [0, 0.2, 0.4], [0.03, 0.05, 0.04]);
@@ -42,33 +42,33 @@ function BackgroundShapes({ scrollYProgress }: { scrollYProgress: any }) {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
       {/* Primary Glow */}
-      <motion.div 
+      <motion.div
         style={{ y: y1, opacity: opacity1, backgroundColor: color1 }}
         animate={{
           scale: [1, 1.05, 1],
         }}
         transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] rounded-full blur-[120px]" 
+        className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] rounded-full blur-[120px]"
       />
-      
+
       {/* Secondary Glow */}
-      <motion.div 
+      <motion.div
         style={{ y: y2, opacity: opacity2 }}
         animate={{
           scale: [1.05, 1, 1.05],
         }}
         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-emerald-500/10 rounded-full blur-[140px]" 
+        className="absolute bottom-[-20%] left-[-10%] w-[1000px] h-[1000px] bg-emerald-500/10 rounded-full blur-[140px]"
       />
 
       {/* Grid Overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.1]" 
-        style={{ 
+      <div
+        className="absolute inset-0 opacity-[0.1]"
+        style={{
           backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)`,
           backgroundSize: '40px 40px',
           maskImage: 'radial-gradient(circle at center, black, transparent 80%)'
-        }} 
+        }}
       />
     </div>
   );
@@ -90,13 +90,11 @@ function Navbar() {
   const isAuthenticated = session?.session && session?.user;
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      isScrolled ? 'py-3' : 'py-5'
-    }`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'py-3' : 'py-5'
+      }`}>
       <div className="container mx-auto px-6">
-        <div className={`glass-panel border-white/5 rounded-xl px-5 py-2.5 flex items-center justify-between transition-all duration-500 ${
-          isScrolled ? 'bg-black/60 backdrop-blur-2xl shadow-2xl scale-[0.98]' : 'bg-transparent'
-        }`}>
+        <div className={`glass-panel border-white/5 rounded-xl px-5 py-2.5 flex items-center justify-between transition-all duration-500 ${isScrolled ? 'bg-black/60 backdrop-blur-2xl shadow-2xl scale-[0.98]' : 'bg-transparent'
+          }`}>
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-lg bg-[var(--color-focus-violet)] flex items-center justify-center group-hover:rotate-12 transition-transform">
               <Activity className="h-5 w-5 text-white" />
@@ -106,8 +104,8 @@ function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <a 
-              href="#features" 
+            <a
+              href="#features"
               className="text-sm font-medium text-[var(--color-secondary)] hover:text-white transition-colors"
               onClick={(e) => {
                 e.preventDefault();
@@ -116,8 +114,8 @@ function Navbar() {
             >
               Features
             </a>
-            <a 
-              href="#how-it-works" 
+            <a
+              href="#how-it-works"
               className="text-sm font-medium text-[var(--color-secondary)] hover:text-white transition-colors"
               onClick={(e) => {
                 e.preventDefault();
@@ -126,8 +124,8 @@ function Navbar() {
             >
               How it works
             </a>
-            <Link 
-              href="/docs" 
+            <Link
+              href="/docs"
               className="text-sm font-medium text-[var(--color-secondary)] hover:text-white transition-colors"
             >
               Manifesto
@@ -161,7 +159,7 @@ function Navbar() {
           </div>
 
           {/* Mobile Toggle */}
-          <button 
+          <button
             className="md:hidden text-white"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -172,14 +170,14 @@ function Navbar() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden absolute top-full left-6 right-6 mt-2 glass-panel border-white/10 rounded-2xl p-6 bg-black/90 backdrop-blur-2xl z-40"
         >
           <div className="flex flex-col gap-4">
-            <a 
-              href="#features" 
+            <a
+              href="#features"
               className="text-lg font-medium text-[var(--color-secondary)] hover:text-white transition-colors"
               onClick={(e) => {
                 e.preventDefault();
@@ -189,8 +187,8 @@ function Navbar() {
             >
               Features
             </a>
-            <a 
-              href="#how-it-works" 
+            <a
+              href="#how-it-works"
               className="text-lg font-medium text-[var(--color-secondary)] hover:text-white transition-colors"
               onClick={(e) => {
                 e.preventDefault();
@@ -200,8 +198,8 @@ function Navbar() {
             >
               How it works
             </a>
-            <Link 
-              href="/docs" 
+            <Link
+              href="/docs"
               className="text-lg font-medium text-[var(--color-secondary)] hover:text-white transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
@@ -253,8 +251,8 @@ function HeroVisual() {
     <div className="relative w-full aspect-square flex items-center justify-center p-0 md:p-4">
       {/* Background Glow for Visual */}
       <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/10 via-transparent to-emerald-500/10 rounded-[3rem] blur-3xl -z-10" />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
@@ -279,7 +277,7 @@ function HeroVisual() {
             </div>
 
             {/* Insight Card - Refined */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 1 }}
@@ -289,7 +287,7 @@ function HeroVisual() {
               <div className="absolute -top-2 -right-2 bg-zinc-900 text-rose-400/80 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]">
                 Mismatch: 42%
               </div>
-              
+
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[9px] font-bold text-violet-400/50 uppercase tracking-[0.2em]">INSIGHT</span>
               </div>
@@ -306,26 +304,26 @@ function HeroVisual() {
             <AreaChart data={heroData} margin={{ top: 15, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorIntention" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.05}/>
-                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.05} />
+                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorEvidence" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.05}/>
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.05} />
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorGapFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.12}/>
-                  <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0.01}/>
+                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.12} />
+                  <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 11, fontWeight: 500, fontFamily: 'system-ui, sans-serif' }}
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: 'rgba(255,255,255,0.2)', fontSize: 11, fontWeight: 500, fontFamily: 'Inter, sans-serif' }}
                 dy={10}
               />
-              <Tooltip 
+              <Tooltip
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length >= 2) {
                     const plan = payload.find(p => p.name === 'PLAN')?.value as number;
@@ -354,11 +352,11 @@ function HeroVisual() {
                   return null;
                 }}
               />
-              
+
               {/* Shaded GAP region */}
-              <Area 
-                type="monotone" 
-                dataKey="gap" 
+              <Area
+                type="monotone"
+                dataKey="gap"
                 stroke="rgba(139, 92, 246, 0.15)"
                 strokeWidth={1}
                 fill="url(#colorGapFill)"
@@ -368,26 +366,26 @@ function HeroVisual() {
               />
 
               {/* Proof line - Glowing Green (Muted) */}
-              <Area 
-                type="monotone" 
-                dataKey="evidence" 
+              <Area
+                type="monotone"
+                dataKey="evidence"
                 name="PROOF"
-                stroke="rgba(16, 185, 129, 0.3)" 
+                stroke="rgba(16, 185, 129, 0.3)"
                 strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorEvidence)" 
+                fillOpacity={1}
+                fill="url(#colorEvidence)"
                 animationDuration={2500}
               />
-              
+
               {/* Plan line - Muted Purple */}
-              <Area 
-                type="monotone" 
-                dataKey="intention" 
+              <Area
+                type="monotone"
+                dataKey="intention"
                 name="PLAN"
-                stroke="rgba(139, 92, 246, 0.25)" 
+                stroke="rgba(139, 92, 246, 0.25)"
                 strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorIntention)" 
+                fillOpacity={1}
+                fill="url(#colorIntention)"
                 animationDuration={2000}
               />
             </AreaChart>
@@ -420,7 +418,7 @@ function HeroVisual() {
               </div>
             </div>
             <div className="h-1.5 w-full bg-emerald-500/10 rounded-full overflow-hidden">
-              <motion.div 
+              <motion.div
                 initial={{ width: 0 }}
                 whileInView={{ width: "45%" }}
                 transition={{ duration: 1.5, delay: 1.2 }}
@@ -505,7 +503,7 @@ export default function Home() {
                 Stop guessing. <br />
                 <span className="text-white/90">See what you <span className="text-white font-bold">actually</span> do.</span>
               </h1>
-              
+
               <p className="text-base md:text-lg text-white/40 max-w-lg leading-relaxed font-medium">
                 Plan your first sprint to expose the gap between intention and action. <br className="hidden md:block" />
                 Track promises kept—not streaks.
@@ -531,7 +529,7 @@ export default function Home() {
                     </Link>
                   </Button>
                 </div>
-                
+
                 <p className="text-xs text-white/30 font-medium tracking-tight pl-1">
                   You’ll leave with 3 priorities + your next sprint.
                 </p>
@@ -544,11 +542,11 @@ export default function Home() {
           </div>
 
           {/* Scroll Cue */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: [0, 1, 1, 0], y: [0, 5, 5, 10] }}
-            transition={{ 
-              duration: 3, 
+            transition={{
+              duration: 3,
               times: [0, 0.2, 0.8, 1],
               repeat: 0,
               delay: 2
@@ -561,8 +559,8 @@ export default function Home() {
         </section>
 
         {/* Feature Bento Grid */}
-        <motion.section 
-          id="features" 
+        <motion.section
+          id="features"
           className="py-24 space-y-16 scroll-mt-24"
           variants={containerVariants}
           initial="hidden"
@@ -578,7 +576,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto">
             {/* Card 1: Proof Log */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               whileHover={shouldReduceMotion ? {} : { y: -4, scale: 1.005, transition: { duration: 0.2 } }}
               className="md:col-span-8 glass-panel border-white/5 hover:border-white/10 rounded-2xl p-6 flex flex-col justify-between overflow-hidden relative group min-h-[280px] transition-colors duration-300"
@@ -587,7 +585,7 @@ export default function Home() {
                 <ShieldCheck className="h-40 w-40 rotate-12" />
               </div>
               <div className="z-10 max-w-md space-y-3">
-                <motion.div 
+                <motion.div
                   className="p-1.5 w-fit rounded-lg bg-violet-500/5 text-violet-500/30 group-hover:text-violet-500/50 group-hover:bg-violet-500/10 transition-all duration-300"
                 >
                   <ShieldCheck className="h-4 w-4" />
@@ -603,7 +601,7 @@ export default function Home() {
             </motion.div>
 
             {/* Card 2: Reality Score (FEATURED) */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               whileHover={shouldReduceMotion ? {} : { y: -4, scale: 1.005, transition: { duration: 0.2 } }}
               className="md:col-span-4 glass-panel border-white/20 ring-1 ring-violet-500/20 bg-violet-500/[0.03] shadow-[inset_0_0_20px_rgba(139,92,246,0.02)] rounded-2xl p-6 space-y-4 overflow-hidden relative min-h-[280px] group transition-all duration-300 hover:border-white/30 hover:shadow-[inset_0_0_30px_rgba(139,92,246,0.05)]"
@@ -620,16 +618,16 @@ export default function Home() {
                   Consistency ≠ progress.
                 </p>
               </div>
-              
+
               <div className="pt-4 relative">
                 <div className="h-20 w-full flex items-end gap-1.5 px-1">
                   {[40, 70, 45, 90, 65, 85, 95].map((h, i) => (
                     <div key={i} className="flex-1 flex flex-col gap-1 items-center">
-                      <motion.div 
+                      <motion.div
                         initial={{ height: 0 }}
                         whileInView={{ height: `${h}%` }}
                         transition={{ duration: 1, delay: i * 0.1 }}
-                        className={`w-full rounded-t-sm bg-violet-500/20 group-hover:bg-violet-500/30 transition-colors duration-300`} 
+                        className={`w-full rounded-t-sm bg-violet-500/20 group-hover:bg-violet-500/30 transition-colors duration-300`}
                       />
                     </div>
                   ))}
@@ -643,7 +641,7 @@ export default function Home() {
             </motion.div>
 
             {/* Card 3: Identity Check */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               whileHover={shouldReduceMotion ? {} : { y: -4, scale: 1.005, transition: { duration: 0.2 } }}
               className="md:col-span-4 glass-panel border-white/5 hover:border-white/10 rounded-2xl p-6 space-y-4 min-h-[280px] flex flex-col transition-colors duration-300 group"
@@ -663,7 +661,7 @@ export default function Home() {
             </motion.div>
 
             {/* Card 4: Private by default */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               whileHover={shouldReduceMotion ? {} : { y: -4, scale: 1.005, transition: { duration: 0.2 } }}
               className="md:col-span-8 glass-panel border-white/5 hover:border-white/10 rounded-2xl p-6 flex items-center gap-6 group min-h-[280px] transition-colors duration-300"
@@ -695,14 +693,14 @@ export default function Home() {
                 Three Simple Steps <br />
                 <span className="text-white/30">to Organized Bliss.</span>
               </h2>
-              
+
               <div className="space-y-8">
                 {[
                   { step: "01", title: "Review Your Year", desc: "Start with a brutal audit of your last 12 months. Where did the time actually go?" },
                   { step: "02", title: "Define Your Identity", desc: "Choose 3 key traits you will embody. Not goals, but ways of being." },
                   { step: "03", title: "Log Daily Evidence", desc: "Spend 120 seconds every night proving you are who you say you are." }
                 ].map((item, i) => (
-                  <motion.div 
+                  <motion.div
                     key={i}
                     whileInView={{ opacity: 1, x: 0 }}
                     initial={{ opacity: 0, x: -10 }}
@@ -718,27 +716,27 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            
+
             <div className="relative">
               <div className="absolute inset-0 bg-[var(--color-focus-violet)]/5 blur-[80px] -z-10" />
               <div className="glass-panel border-white/5 rounded-3xl p-3 shadow-2xl overflow-hidden rotate-1 hover:rotate-0 transition-transform duration-700">
                 <div className="bg-black/40 rounded-2xl p-6 aspect-square flex flex-col justify-center gap-5">
-                   <div className="space-y-2">
-                     <div className="h-3 w-24 bg-emerald-500/20 rounded-full" />
-                     <div className="h-6 w-48 bg-white/5 rounded-md" />
-                   </div>
-                   <div className="space-y-2">
-                     <div className="h-3 w-20 bg-violet-500/20 rounded-full" />
-                     <div className="h-6 w-36 bg-white/5 rounded-md" />
-                   </div>
-                   <div className="space-y-2">
-                     <div className="h-3 w-32 bg-amber-500/20 rounded-full" />
-                     <div className="h-6 w-44 bg-white/5 rounded-md" />
-                   </div>
-                   <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
-                      <span className="text-white/20 text-[10px] font-mono tracking-widest uppercase">Identity Alignment</span>
-                      <span className="text-emerald-500 text-lg font-bold">92%</span>
-                   </div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-24 bg-emerald-500/20 rounded-full" />
+                    <div className="h-6 w-48 bg-white/5 rounded-md" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-20 bg-violet-500/20 rounded-full" />
+                    <div className="h-6 w-36 bg-white/5 rounded-md" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-32 bg-amber-500/20 rounded-full" />
+                    <div className="h-6 w-44 bg-white/5 rounded-md" />
+                  </div>
+                  <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-white/20 text-[10px] font-mono tracking-widest uppercase">Identity Alignment</span>
+                    <span className="text-emerald-500 text-lg font-bold">92%</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -746,7 +744,7 @@ export default function Home() {
         </section>
 
         {/* Friction Section */}
-        <motion.section 
+        <motion.section
           id="friction"
           className="py-24 px-6"
           initial="hidden"
@@ -756,7 +754,7 @@ export default function Home() {
           <div className="max-w-5xl mx-auto glass-panel border-white/5 p-12 md:p-16 bg-white/[0.01] rounded-[3rem] relative overflow-hidden">
             {/* Background Accent */}
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-violet-500/[0.03] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div className="space-y-10 text-left">
                 <motion.div className="space-y-4" variants={titleVariants}>
@@ -765,7 +763,7 @@ export default function Home() {
                   <div className="w-12 h-0.5 bg-violet-500/30" />
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   className="space-y-8"
                   variants={containerVariants}
                 >
@@ -790,17 +788,17 @@ export default function Home() {
                   <p className="text-white/60 text-base leading-relaxed font-medium pt-4 border-t border-white/5">
                     We don't optimize for retention; we optimize for <span className="text-white underline decoration-violet-500/30 underline-offset-4">integrity</span>.
                   </p>
-                  <Link 
-                    href="/auth/sign-in" 
+                  <Link
+                    href="/auth/sign-in"
                     className="group flex items-center gap-2 text-sm font-bold text-violet-400/80 hover:text-violet-400 transition-colors"
                   >
-                    Start your first sprint 
+                    Start your first sprint
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </motion.div>
               </div>
 
-              <motion.div 
+              <motion.div
                 className="relative"
                 variants={itemVariants}
                 initial="hidden"
@@ -809,7 +807,7 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
               >
                 <div className="absolute inset-0 bg-violet-500/5 blur-[100px] -z-10" />
-                <motion.div 
+                <motion.div
                   whileHover={shouldReduceMotion ? {} : { y: -4, transition: { duration: 0.2 } }}
                   className="glass-panel border-white/10 hover:border-white/20 bg-black/40 rounded-[2rem] p-6 md:p-8 shadow-2xl transition-all duration-300"
                 >
@@ -818,7 +816,7 @@ export default function Home() {
                     <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">The Proof is in the Data.</h3>
                     <div className="w-16 h-0.5 bg-violet-500/40" />
                   </div>
-                  
+
                   {/* 7-Day Timeline - Compact Design */}
                   <div className="space-y-6">
                     {/* Day Labels - Compact */}
@@ -841,8 +839,8 @@ export default function Home() {
                           <span className="text-[10px] font-mono text-white/30 w-16 text-left">Logged</span>
                           <div className="flex-1 flex items-center justify-between gap-1.5">
                             {[true, true, true, true, true, true, true].map((done, i) => (
-                              <motion.div 
-                                key={i} 
+                              <motion.div
+                                key={i}
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.5 + i * 0.05 }}
@@ -855,14 +853,13 @@ export default function Home() {
                           <span className="text-[10px] font-mono text-white/30 w-16 text-left">Meaningful</span>
                           <div className="flex-1 flex items-center justify-between gap-1.5">
                             {[true, false, false, true, false, false, false].map((done, i) => (
-                              <motion.div 
-                                key={i} 
+                              <motion.div
+                                key={i}
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.6 + i * 0.05 }}
-                                className={`w-6 h-6 rounded-full flex-shrink-0 border transition-all ${
-                                  done ? 'bg-violet-500/20 border-violet-500/30' : 'bg-white/5 border-white/5'
-                                }`} 
+                                className={`w-6 h-6 rounded-full flex-shrink-0 border transition-all ${done ? 'bg-violet-500/20 border-violet-500/30' : 'bg-white/5 border-white/5'
+                                  }`}
                               />
                             ))}
                           </div>
@@ -873,7 +870,7 @@ export default function Home() {
                     {/* Identity-Shift - Highlighted */}
                     <div className="space-y-3 relative">
                       <div className="absolute inset-0 bg-violet-500/[0.02] rounded-xl -mx-2 -my-1 border border-violet-500/10" />
-                      
+
                       <div className="flex items-center gap-2 mb-3 relative z-10">
                         <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                           Identity-Shift
@@ -888,16 +885,15 @@ export default function Home() {
                             {[true, true, false, true, true, false, true].map((done, i) => {
                               const isMiss = !done;
                               return (
-                                <motion.div 
-                                  key={i} 
+                                <motion.div
+                                  key={i}
                                   initial={{ opacity: 0, scale: 0.8 }}
                                   whileInView={{ opacity: 1, scale: 1 }}
                                   transition={{ delay: 0.7 + i * 0.05 }}
-                                  className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${
-                                    isMiss 
-                                      ? 'bg-zinc-800/50 border border-white/5' 
-                                      : 'bg-violet-500/40 border border-violet-500/40 shadow-[0_0_12px_rgba(139,92,246,0.1)]'
-                                  }`} 
+                                  className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${isMiss
+                                    ? 'bg-zinc-800/50 border border-white/5'
+                                    : 'bg-violet-500/40 border border-violet-500/40 shadow-[0_0_12px_rgba(139,92,246,0.1)]'
+                                    }`}
                                 >
                                   {isMiss && (
                                     <span className="text-[8px] text-white/20 font-bold">×</span>
@@ -911,16 +907,15 @@ export default function Home() {
                           <span className="text-[10px] font-mono text-white/50 w-16 text-left">Meaningful</span>
                           <div className="flex-1 flex items-center justify-between gap-1.5">
                             {[true, true, false, true, true, false, true].map((done, i) => (
-                              <motion.div 
-                                key={i} 
+                              <motion.div
+                                key={i}
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.8 + i * 0.05 }}
-                                className={`w-7 h-7 rounded-full flex-shrink-0 transition-all border ${
-                                  done 
-                                    ? 'bg-violet-500/60 border-violet-500/60 shadow-[0_0_15px_rgba(139,92,246,0.2)]' 
-                                    : 'bg-white/5 border-white/5'
-                                }`} 
+                                className={`w-7 h-7 rounded-full flex-shrink-0 transition-all border ${done
+                                  ? 'bg-violet-500/60 border-violet-500/60 shadow-[0_0_15px_rgba(139,92,246,0.2)]'
+                                  : 'bg-white/5 border-white/5'
+                                  }`}
                               />
                             ))}
                           </div>
@@ -942,21 +937,21 @@ export default function Home() {
         </motion.section>
 
         {/* Final CTA */}
-        <motion.section 
+        <motion.section
           className="py-24"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={containerVariants}
         >
-          <motion.div 
+          <motion.div
             variants={itemVariants}
             className="glass-panel border-white/5 rounded-[2.5rem] p-12 md:p-20 text-center space-y-8 bg-gradient-to-br from-violet-600/[0.03] via-transparent to-violet-600/[0.03] relative overflow-hidden"
           >
             {/* Background Glows */}
             <div className="absolute top-0 left-0 w-[300px] h-[300px] bg-violet-500/[0.02] rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2" />
             <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-violet-500/[0.02] rounded-full blur-[100px] translate-x-1/2 translate-y-1/2" />
-            
+
             <div className="relative z-10 max-w-2xl mx-auto space-y-8">
               <div className="space-y-4">
                 <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
@@ -969,10 +964,10 @@ export default function Home() {
               </div>
 
               <div className="space-y-4">
-                <Button 
-                  size="lg" 
-                  variant="violet" 
-                  className="h-14 px-10 text-lg rounded-2xl shadow-xl shadow-violet-500/20 font-bold transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-violet-500/30" 
+                <Button
+                  size="lg"
+                  variant="violet"
+                  className="h-14 px-10 text-lg rounded-2xl shadow-xl shadow-violet-500/20 font-bold transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-violet-500/30"
                   asChild
                 >
                   <Link href="/auth/sign-up">Start your first sprint</Link>
@@ -1000,7 +995,7 @@ export default function Home() {
                 A quiet system for those who value honesty over performance.
               </p>
             </div>
-            
+
             {/* Product */}
             <div className="space-y-4">
               <h4 className="text-[10px] font-bold text-white/10 uppercase tracking-[0.2em]">Product</h4>

@@ -7,10 +7,11 @@
 
 import { create } from "zustand";
 import { SprintFormData } from "@/lib/validators";
+import { SprintWithDetails } from "@/lib/types";
 
 interface SprintStore {
     // Active sprint
-    activeSprint: any | null;
+    activeSprint: SprintWithDetails | null;
     isLoading: boolean;
     error: string | null;
 
@@ -19,8 +20,9 @@ interface SprintStore {
     isDirty: boolean;
 
     // Actions
-    setActiveSprint: (sprint: any | null) => void;
+    setActiveSprint: (sprint: SprintWithDetails | null) => void;
     setFormData: (data: Partial<SprintFormData>) => void;
+
     resetForm: () => void;
     setLoading: (loading: boolean) => void;
     setError: (error: string | null) => void;

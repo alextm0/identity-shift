@@ -18,7 +18,7 @@ export default async function AccountSettingsPage() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white uppercase">
-                            Account <span className="text-white/20 font-light">//</span> <span className="text-focus-violet">Settings</span>
+                            Account <span className="text-white/20 font-light">{"//"}</span> <span className="text-focus-violet">Settings</span>
                         </h1>
                         <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/40 mt-4">
                             Manage your account and data

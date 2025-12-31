@@ -18,7 +18,7 @@ import { sanitizeText } from "@/lib/sanitize";
 import { randomUUID } from "crypto";
 import { WeeklyReviewFormSchema, MonthlyReviewFormSchema } from "@/lib/validators";
 import { NotFoundError } from "@/lib/errors";
-import { success } from "@/lib/actions/result";
+import { success, failure } from "@/lib/actions/result";
 import { createAction, createActionWithParam } from "@/lib/actions/middleware";
 
 export const createWeeklyReviewAction = createAction(
@@ -91,6 +91,15 @@ export const updateWeeklyReviewAction = createActionWithParam(
 export const createMonthlyReviewAction = createAction(
     MonthlyReviewFormSchema,
     async (userId, validated) => {
+        // Validate sprint ownership
+        if (validated.sprintId) {
+            const { getSprintById } = await import("@/data-access/sprints");
+            const sprint = await getSprintById(validated.sprintId, userId);
+            if (!sprint) {
+                return failure("Sprint not found or access denied", "SPRINT_NOT_FOUND", 404);
+            }
+        }
+
         const reviewId = randomUUID();
         await createMonthlyReview({
             id: reviewId,
@@ -108,10 +117,10 @@ export const createMonthlyReviewAction = createAction(
         revalidatePath("/dashboard");
         revalidatePath("/reviews");
         revalidatePath("/reviews/monthly");
-        
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Monthly review saved successfully",
                 redirect: "monthly"
             }

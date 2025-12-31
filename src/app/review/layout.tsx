@@ -16,7 +16,7 @@ export default function ReviewLayout({
   children,
 }: ReviewLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-[#14141F] text-white selection:bg-emerald-500/30">
       {/* Background Blooms */}
       <div className="bg-blooms pointer-events-none fixed inset-0 z-[-1]">
         <div className="bloom-violet" />

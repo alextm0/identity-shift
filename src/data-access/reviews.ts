@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { weeklyReview, monthlyReview } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { WeeklyReview, NewWeeklyReview, MonthlyReview, NewMonthlyReview } from "@/lib/types";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 

@@ -73,7 +73,6 @@ export type AntiGoal = z.infer<typeof AntiGoalSchema>;
  */
 export const CommitmentSchema = z.object({
     commitmentStatement: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
-    signatureName: z.string().min(1, "Signature name is required").max(200).transform(val => sanitizeText(val, 200)),
     signatureImage: z.string().optional().transform(val => val ? val.substring(0, 500000) : val), // 500KB limit for base64
     signedAt: z.date().or(z.string().transform(str => new Date(str))),
 });
@@ -126,7 +125,6 @@ export const PlanningFormSchema = z.object({
 
     // Step 8: Commitment
     commitmentStatement: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
-    signatureName: z.string().max(200).optional().transform(val => val ? sanitizeText(val, 200) : val),
     signatureImage: z.string().optional().transform(val => val ? val.substring(0, 500000) : val).refine(
         (val) => !val || val.startsWith("data:image/"),
         { message: "Invalid signature format. Must be a data URL." }
@@ -166,7 +164,6 @@ export const CompletePlanningSchema = PlanningFormSchema.extend({
     annualGoalIds: z.array(z.string().uuid()).min(1, "At least one annual goal required"),
     antiVision: z.string().max(2000).optional(),
     antiGoals: z.array(AntiGoalSchema).min(3, "At least 3 anti-goals required"),
-    signatureName: z.string().min(1, "Signature name is required").max(200),
     signatureImage: z.string().min(1, "Signature is required"),
     signedAt: z.date().or(z.string().transform(str => new Date(str))),
     status: z.literal(PlanningStatus.COMPLETED),

@@ -8,7 +8,7 @@
  * - Common query patterns
  */
 
-import { eq, and, SQL } from "drizzle-orm";
+import { eq, and, SQL, AnyColumn } from "drizzle-orm";
 import { NotFoundError, DatabaseError } from "@/lib/errors";
 
 /**
@@ -82,7 +82,7 @@ export async function withDatabaseErrorHandling<T>(
  * @param userIdColumn - The userId column from the table
  * @param userId - The authenticated user's ID
  */
-export function createOwnershipCondition(userIdColumn: any, userId: string): SQL {
+export function createOwnershipCondition(userIdColumn: AnyColumn, userId: string): SQL {
     return eq(userIdColumn, userId);
 }
 
@@ -95,9 +95,9 @@ export function createOwnershipCondition(userIdColumn: any, userId: string): SQL
  * @param userId - The authenticated user's ID
  */
 export function createOwnershipAndIdCondition(
-    idColumn: any,
+    idColumn: AnyColumn,
     id: string,
-    userIdColumn: any,
+    userIdColumn: AnyColumn,
     userId: string
 ): SQL {
     return and(
@@ -105,4 +105,5 @@ export function createOwnershipAndIdCondition(
         eq(userIdColumn, userId)
     ) as SQL;
 }
+
 

@@ -33,7 +33,7 @@ export default async function AccountPage({
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4">
                     <div>
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter text-white uppercase">
-                            Account <span className="text-white/20 font-light">//</span> <span className="text-focus-violet">{getPageTitle(path)}</span>
+                            Account <span className="text-white/20 font-light">{"//"}</span> <span className="text-focus-violet">{getPageTitle(path)}</span>
                         </h1>
                         <p className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-white/40 mt-2 md:mt-3">
                             Manage your account settings and preferences

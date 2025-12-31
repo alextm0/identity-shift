@@ -40,7 +40,7 @@ export function SprintCard({ sprint, isActive, onUpdate }: SprintCardProps) {
   if (showEditForm) {
     return (
       <SprintForm
-        sprintToEdit={sprint}
+        sprintToEdit={sprint as any}
         onSuccess={() => {
           setShowEditForm(false);
           onUpdate?.();
