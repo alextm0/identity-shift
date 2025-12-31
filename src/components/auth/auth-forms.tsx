@@ -173,17 +173,7 @@ export function AuthForm({ type }: AuthFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                    <div className="flex items-center justify-between ml-1">
-                        <Label htmlFor="password" className="text-telemetry-slate text-[10px] uppercase tracking-widest">Access Key</Label>
-                        {isSignIn && (
-                            <Link
-                                href="/auth/forgot-password"
-                                className="text-[10px] uppercase tracking-wider text-action-emerald hover:opacity-80 transition-opacity"
-                            >
-                                Recovery?
-                            </Link>
-                        )}
-                    </div>
+                    <Label htmlFor="password" className="text-telemetry-slate ml-1 text-[10px] uppercase tracking-widest">Access Key</Label>
                     <div className="relative group">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-telemetry-slate opacity-50 group-focus-within:text-focus-violet transition-colors" />
                         <Input
