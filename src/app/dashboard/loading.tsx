@@ -28,7 +28,7 @@ export default function DashboardLoading() {
                             <div className="h-4 w-24 bg-white/5 rounded mb-4" />
                             <div className="flex gap-1.5 h-full pt-4">
                                 {Array.from({ length: 14 }).map((_, i) => (
-                                    <div key={i} className="flex-1 bg-white/5 rounded-sm" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                                    <div key={i} className="flex-1 bg-white/5 rounded-sm" style={{ height: `${20 + (i * 13) % 61}%` }} />
                                 ))}
                             </div>
                         </GlassPanel>

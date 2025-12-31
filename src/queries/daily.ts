@@ -1,5 +1,4 @@
 import { getRequiredSession } from "@/lib/auth/server";
-import { getActiveSprint } from "@/data-access/sprints";
 import { getDailyLogByDate } from "@/data-access/daily-logs";
 
 export async function getDailyData(date: Date = new Date()) {

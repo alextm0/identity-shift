@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { Sprint } from "@/lib/types";
-import { format, differenceInDays } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Target } from "lucide-react";
+import { differenceInDays } from "date-fns";
 
 interface ActiveSprintPillProps {
   sprint: Sprint | null;

@@ -8,7 +8,7 @@
  * - Common query patterns
  */
 
-import { eq, and, SQL } from "drizzle-orm";
+import { eq, and, SQL, AnyColumn } from "drizzle-orm";
 import { NotFoundError, DatabaseError } from "@/lib/errors";
 
 /**
@@ -57,24 +57,57 @@ export async function withOwnershipCheck<T>(
 }
 
 /**
- * Wraps a database operation with standardized error handling
+ * Wraps a database operation with standardized error handling and retry logic
  * 
  * @param operation - The database operation to execute
  * @param errorMessage - Custom error message if operation fails
+ * @param maxRetries - Maximum number of retries for transient errors
  */
 export async function withDatabaseErrorHandling<T>(
     operation: () => Promise<T>,
-    errorMessage: string = "Database operation failed"
+    errorMessage: string = "Database operation failed",
+    maxRetries: number = 3
 ): Promise<T> {
-    try {
-        return await operation();
-    } catch (error) {
-        if (error instanceof NotFoundError || error instanceof DatabaseError) {
-            throw error;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error: unknown) {
+            lastError = error;
+
+            // Don't retry non-database errors or specific app errors
+            if (error instanceof NotFoundError) {
+                throw error;
+            }
+
+            // Check if error is transient/retryable (Neon/Postgres)
+            const err = error as { message?: string; code?: string };
+            const isTransient =
+                err.message?.includes('pool') ||
+                err.message?.includes('timeout') ||
+                err.message?.includes('connection') ||
+                err.code === '57P01' || // admin_shutdown
+                err.code === '57P02' || // crash_shutdown
+                err.code === '57P03';   // cannot_connect_now
+
+            if (!isTransient || attempt === maxRetries) {
+                break;
+            }
+
+            // Exponential backoff: 100ms, 200ms, 400ms...
+            const delay = Math.pow(2, attempt) * 100;
+            console.warn(`Transient database error, retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`, err.message);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
-        throw new DatabaseError(errorMessage, error);
     }
+
+    if (lastError instanceof DatabaseError) {
+        throw lastError;
+    }
+    throw new DatabaseError(errorMessage, lastError);
 }
+
 
 /**
  * Creates a standard ownership condition for Drizzle queries
@@ -82,7 +115,7 @@ export async function withDatabaseErrorHandling<T>(
  * @param userIdColumn - The userId column from the table
  * @param userId - The authenticated user's ID
  */
-export function createOwnershipCondition(userIdColumn: any, userId: string): SQL {
+export function createOwnershipCondition(userIdColumn: AnyColumn, userId: string): SQL {
     return eq(userIdColumn, userId);
 }
 
@@ -95,9 +128,9 @@ export function createOwnershipCondition(userIdColumn: any, userId: string): SQL
  * @param userId - The authenticated user's ID
  */
 export function createOwnershipAndIdCondition(
-    idColumn: any,
+    idColumn: AnyColumn,
     id: string,
-    userIdColumn: any,
+    userIdColumn: AnyColumn,
     userId: string
 ): SQL {
     return and(
@@ -105,4 +138,5 @@ export function createOwnershipAndIdCondition(
         eq(userIdColumn, userId)
     ) as SQL;
 }
+
 

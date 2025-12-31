@@ -24,16 +24,9 @@ export function InteractiveWheelOfLifeWithTargets({
 
   const [activeDimension, setActiveDimension] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [localTargetValues, setLocalTargetValues] = useState<Record<string, number>>(targetValues);
+  const [dragValue, setDragValue] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Sync local state with props when not dragging
-  useEffect(() => {
-    if (!isDragging) {
-      setLocalTargetValues(targetValues);
-    }
-  }, [targetValues, isDragging]);
 
   // Cleanup debounce timer on unmount
   useEffect(() => {
@@ -87,8 +80,8 @@ export function InteractiveWheelOfLifeWithTargets({
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Update local state immediately for visual feedback
-    setLocalTargetValues(prev => ({ ...prev, [dimension]: value }));
+    // Update local drag state immediately for visual feedback
+    setDragValue(value);
 
     // Debounce the actual store update
     debounceTimerRef.current = setTimeout(() => {
@@ -105,6 +98,7 @@ export function InteractiveWheelOfLifeWithTargets({
 
     const dimIndex = dimensions.indexOf(dimension);
     const value = getValueFromMouse(dimIndex, e.clientX, e.clientY);
+    setDragValue(value);
     debouncedOnChange(dimension, value);
   }, [dimensions, getValueFromMouse, debouncedOnChange]);
 
@@ -124,13 +118,14 @@ export function InteractiveWheelOfLifeWithTargets({
     }
 
     // Ensure final value is saved
-    if (activeDimension && localTargetValues[activeDimension] !== undefined) {
-      onChange(activeDimension, localTargetValues[activeDimension]);
+    if (activeDimension && dragValue !== null) {
+      onChange(activeDimension, dragValue);
     }
 
     setIsDragging(false);
     setActiveDimension(null);
-  }, [activeDimension, localTargetValues, onChange]);
+    setDragValue(null);
+  }, [activeDimension, dragValue, onChange]);
 
   // Computed data for rendering - use local state during dragging for smooth updates
   const spokeData = useMemo(() => {
@@ -139,10 +134,13 @@ export function InteractiveWheelOfLifeWithTargets({
     return dimensions.map((dimension, i) => {
       const angle = i * angleStep - Math.PI / 2;
       const currentValue = currentValues[dimension] || 5;
-      // Use local state if dragging this dimension, otherwise use props
-      const targetValue = isDragging && activeDimension === dimension
-        ? (localTargetValues[dimension] ?? targetValues[dimension] ?? currentValue)
+
+      // Use dragValue if we're currently dragging THIS dimension
+      const isThisDimDragging = isDragging && activeDimension === dimension;
+      const targetValue = isThisDimDragging && dragValue !== null
+        ? dragValue
         : (targetValues[dimension] ?? currentValue);
+
       const currentR = (currentValue / 10) * radius;
       const targetR = (targetValue / 10) * radius;
 
@@ -174,7 +172,7 @@ export function InteractiveWheelOfLifeWithTargets({
         centerY: adjustedCenter,
       };
     });
-  }, [dimensions, currentValues, targetValues, localTargetValues, isDragging, activeDimension, radius, center, angleStep, viewBoxPadding]);
+  }, [dimensions, currentValues, targetValues, dragValue, isDragging, activeDimension, radius, center, angleStep, viewBoxPadding]);
 
   const currentPolygonPoints = spokeData.map(d => `${d.currentX},${d.currentY}`).join(" ");
   const targetPolygonPoints = spokeData.map(d => `${d.targetX},${d.targetY}`).join(" ");
@@ -338,11 +336,6 @@ export function InteractiveWheelOfLifeWithTargets({
 
         {/* Labels */}
         {spokeData.map((spoke, i) => {
-          const textAnchor = Math.cos(spoke.angle) > 0.1
-            ? "start"
-            : Math.cos(spoke.angle) < -0.1
-              ? "end"
-              : "middle";
           const isActive = activeDimension === spoke.dimension;
 
           const ratingText = spoke.targetValue !== spoke.currentValue

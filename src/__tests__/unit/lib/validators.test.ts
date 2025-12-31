@@ -12,7 +12,7 @@ import {
   WeeklyReviewFormSchema,
   MonthlyReviewFormSchema,
 } from '@/lib/validators';
-import { SprintPriorityType, OneChangeOption, DesiredIdentityStatus } from '@/lib/enums';
+import { SprintPriorityType, OneChangeOption } from '@/lib/enums';
 
 describe('GoalSchema', () => {
   it('should validate a valid goal', () => {
@@ -105,49 +105,50 @@ describe('DailyLogFormSchema', () => {
   it('should validate a valid daily log', () => {
     const log = {
       date: new Date(),
+      mainGoalId: '550e8400-e29b-41d4-a716-446655440000',
       energy: 3,
-      mainFocusCompleted: true,
-      priorities: {
-        'priority-1': { done: true, units: 5 },
+      promiseCompletions: {
+        'promise-1': true,
       },
-      proofOfWork: [],
     };
     expect(() => DailyLogFormSchema.parse(log)).not.toThrow();
   });
 
-  it('should require energy between 1 and 5', () => {
+  it('should require mainGoalId', () => {
     const log = {
       date: new Date(),
+      energy: 3,
+      promiseCompletions: {},
+    };
+    expect(() => DailyLogFormSchema.parse(log)).toThrow();
+  });
+
+  it('should validate energy between 1 and 5', () => {
+    const log = {
+      date: new Date(),
+      mainGoalId: '550e8400-e29b-41d4-a716-446655440000',
       energy: 0,
-      mainFocusCompleted: true,
-      priorities: {},
-      proofOfWork: [],
+      promiseCompletions: {},
     };
     expect(() => DailyLogFormSchema.parse(log)).toThrow();
 
     const log2 = {
       date: new Date(),
+      mainGoalId: '550e8400-e29b-41d4-a716-446655440000',
       energy: 6,
-      mainFocusCompleted: true,
-      priorities: {},
-      proofOfWork: [],
+      promiseCompletions: {},
     };
     expect(() => DailyLogFormSchema.parse(log2)).toThrow();
   });
 
-  it('should accept optional fields', () => {
+  it('should accept optional note and blockerTag', () => {
     const log = {
       date: new Date(),
+      mainGoalId: '550e8400-e29b-41d4-a716-446655440000',
       energy: 3,
-      mainFocusCompleted: true,
-      sleepHours: 7,
-      morningGapMin: 30,
-      distractionMin: 15,
-      priorities: {},
-      proofOfWork: [],
-      win: 'Great day',
-      drain: 'Tired',
+      blockerTag: 'energy',
       note: 'Some notes',
+      promiseCompletions: {},
     };
     expect(() => DailyLogFormSchema.parse(log)).not.toThrow();
   });
@@ -157,40 +158,44 @@ describe('SprintFormSchema', () => {
   it('should validate a valid sprint', () => {
     const sprint = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
-      priorities: [
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
+      goals: [
         {
-          key: 'priority-1',
-          label: 'Exercise',
-          type: SprintPriorityType.HABIT,
-          weeklyTargetUnits: 5,
+          goalId: '550e8400-e29b-41d4-a716-446655440000',
+          goalText: 'Health Goal',
+          promises: [
+            {
+              text: 'Gym',
+              type: 'daily' as const,
+              scheduleDays: [1, 3, 5],
+            },
+          ],
         },
       ],
     };
     expect(() => SprintFormSchema.parse(sprint)).not.toThrow();
   });
 
-  it('should require at least one priority', () => {
+  it('should require at least one goal', () => {
     const sprint = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
-      priorities: [],
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
+      goals: [],
     };
     expect(() => SprintFormSchema.parse(sprint)).toThrow();
   });
 
-  it('should limit to maximum 3 priorities', () => {
+  it('should limit to maximum 3 goals', () => {
     const sprint = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
-      priorities: Array(4).fill({
-        key: 'priority-1',
-        label: 'Exercise',
-        type: SprintPriorityType.HABIT,
-        weeklyTargetUnits: 5,
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
+      goals: Array(4).fill({
+        goalId: '550e8400-e29b-41d4-a716-446655440000',
+        goalText: 'Goal',
+        promises: [{ text: 'Promise', type: 'daily', scheduleDays: [1] }],
       }),
     };
     expect(() => SprintFormSchema.parse(sprint)).toThrow();
@@ -199,14 +204,13 @@ describe('SprintFormSchema', () => {
   it('should require name to be at least 3 characters', () => {
     const sprint = {
       name: 'Te',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
-      priorities: [
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
+      goals: [
         {
-          key: 'priority-1',
-          label: 'Exercise',
-          type: SprintPriorityType.HABIT,
-          weeklyTargetUnits: 5,
+          goalId: '550e8400-e29b-41d4-a716-446655440000',
+          goalText: 'Health Goal',
+          promises: [{ text: 'Gym', type: 'daily', scheduleDays: [1] }],
         },
       ],
     };

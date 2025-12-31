@@ -5,7 +5,8 @@
  */
 
 import { vi } from 'vitest';
-import type { DailyLog, Sprint, SprintWithPriorities, Planning, WeeklyReview, MonthlyReview, YearlyReview } from '@/lib/types';
+import type { DailyLog, SprintWithDetails, Planning, WeeklyReview, MonthlyReview, YearlyReview, SprintWithPriorities } from '@/lib/types';
+import { SprintPriorityType } from '@/lib/enums';
 
 // Mock the database module
 export const mockDb = {
@@ -31,6 +32,7 @@ export function createMockDailyLog(overrides?: Partial<DailyLog>): DailyLog {
     date: new Date('2024-01-15'),
     energy: 3,
     sleepHours: 7,
+    mainGoalId: 'goal-1',
     mainFocusCompleted: true,
     morningGapMin: 30,
     distractionMin: 15,
@@ -47,7 +49,7 @@ export function createMockDailyLog(overrides?: Partial<DailyLog>): DailyLog {
   };
 }
 
-export function createMockSprint(overrides?: Partial<SprintWithPriorities>): SprintWithPriorities {
+export function createMockSprint(overrides?: Partial<SprintWithDetails>): SprintWithDetails {
   return {
     id: 'sprint-1',
     userId: 'user-1',
@@ -58,10 +60,49 @@ export function createMockSprint(overrides?: Partial<SprintWithPriorities>): Spr
       {
         key: 'priority-1',
         label: 'Test Priority',
-        type: 'habit' as const,
+        type: SprintPriorityType.HABIT,
         weeklyTargetUnits: 5,
       },
     ],
+    active: true,
+    goals: [
+      {
+        id: 'goal-1',
+        sprintId: 'sprint-1',
+        goalId: 'annual-goal-1',
+        goalText: 'Test Goal',
+        sortOrder: 0,
+        createdAt: new Date('2024-01-01'),
+        promises: [
+          {
+            id: 'promise-1',
+            sprintId: 'sprint-1',
+            sprintGoalId: 'goal-1',
+            text: 'Test Promise',
+            type: 'daily' as const,
+            scheduleDays: [1, 2, 3, 4, 5],
+            weeklyTarget: null,
+            sortOrder: 0,
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          }
+        ]
+      }
+    ],
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    ...overrides,
+  };
+}
+
+export function createMockSprintWithPriorities(overrides?: Partial<SprintWithPriorities>): SprintWithPriorities {
+  return {
+    id: 'sprint-1',
+    userId: 'user-1',
+    name: 'Test Sprint',
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-01-14'),
+    priorities: [],
     active: true,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
@@ -75,6 +116,9 @@ export function createMockPlanning(overrides?: Partial<Planning>): Planning {
     userId: 'user-1',
     year: new Date().getFullYear() + 1,
     futureIdentity: 'I am becoming the person who achieves their goals',
+    activeGoals: [],
+    backlogGoals: [],
+    archivedGoals: [],
     goals: [],
     annualGoals: [],
     wheelOfLife: {
@@ -88,6 +132,7 @@ export function createMockPlanning(overrides?: Partial<Planning>): Planning {
     currentGoalIndex: 0,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    completedAt: null,
     ...overrides,
   };
 }

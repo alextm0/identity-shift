@@ -1,4 +1,3 @@
-import { GlassPanel } from '@/components/dashboard/glass-panel';
 import { MetricGauge } from '@/components/dashboard/metric-gauge';
 import { getDashboardData } from '@/queries/dashboard';
 
@@ -11,10 +10,10 @@ export default async function AuditPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8">
         <div>
           <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white mb-2 uppercase">
-            Command Center <span className="text-white/20 font-light">//</span> <span className="text-action-emerald">2026</span>
+            Command Center <span className="text-white/20 font-light">{"//"}</span> <span className="text-action-emerald">2026</span>
           </h1>
           <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-telemetry-slate">
-            Subject: <span className="text-white/80 tracking-widest">{dashboardData.user.name || dashboardData.user.email}</span> // 24_HOUR_REALITY: ACTIVE
+            Subject: <span className="text-white/80 tracking-widest">{dashboardData.user.name || dashboardData.user.email}</span> {"//"} 24_HOUR_REALITY: ACTIVE
           </p>
         </div>
       </div>
@@ -64,7 +63,7 @@ export default async function AuditPage() {
           <div className="flex-[3] p-8 flex flex-col gap-12 bg-white/[0.01] self-stretch">
             <div className="space-y-8">
               <h3 className="font-mono text-[10px] uppercase tracking-[0.4em] text-telemetry-slate text-center">Audit_Metrics</h3>
-              
+
               <div className="flex flex-col items-center">
                 <MetricGauge value={78} label="Current_ABS" className="scale-110" />
               </div>

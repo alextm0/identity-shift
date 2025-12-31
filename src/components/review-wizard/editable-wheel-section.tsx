@@ -55,7 +55,7 @@ export function EditableWheelSection({
             } else {
                 toast.error(result.error || "Failed to update ratings");
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to update ratings");
         } finally {
             setIsSaving(false);

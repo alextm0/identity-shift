@@ -34,7 +34,7 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                 toast.error(result.error || "Failed to delete review");
                 setIsDeleting(false);
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete review");
             setIsDeleting(false);
         }
@@ -44,7 +44,7 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
     const { weakDimensions, strongDimensions } = analyzeDimensions(review.wheelRatings);
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white">
+        <div className="min-h-screen bg-[#14141F] text-white">
             {/* Background Blooms */}
             <div className="bg-blooms pointer-events-none fixed inset-0 z-[-1]">
                 <div className="bloom-violet" />

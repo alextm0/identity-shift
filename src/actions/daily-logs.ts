@@ -12,69 +12,19 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidatePath } from "next/cache";
-import { upsertDailyLog, getDailyLogById, deleteDailyLog, getTodayLogForUser } from "@/data-access/daily-logs";
+import { revalidateTag, updateTag } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidate";
+import { getDailyLogById, deleteDailyLog, saveDailyAudit } from "@/data-access/daily-logs";
+import { logPromiseCompletion } from "@/data-access/promises";
 import { getActiveSprint } from "@/data-access/sprints";
-import { DailyLogFormSchema } from "@/lib/validators";
-import { sanitizeText, sanitizeUrl } from "@/lib/sanitize";
-import { NotFoundError } from "@/lib/errors";
+import { DailyAuditSchema, QuickPromiseLogSchema, UpdateDailyLogSchema } from "@/lib/validators";
+import { NotFoundError, BusinessRuleError } from "@/lib/errors";
 import { success } from "@/lib/actions/result";
-import { createAction, createActionWithParam, createActionWithoutValidation } from "@/lib/actions/middleware";
-import { normalizeDate } from "@/lib/data-access/base";
-import { randomUUID } from "crypto";
+import { createAction, createActionWithoutValidation } from "@/lib/actions/middleware";
+import { db } from "@/lib/db";
+import { dailyLog } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
-export const saveDailyLogAction = createAction(
-    DailyLogFormSchema,
-    async (userId, validated) => {
-        const activeSprint = await getActiveSprint(userId);
-
-        // Check if log exists for today to update instead of create
-        const today = normalizeDate(new Date(validated.date));
-        const existingLog = await getTodayLogForUser(userId, today);
-
-        // Sanitize text inputs
-        const sanitizedProofOfWork = validated.proofOfWork.map(pow => ({
-            ...pow,
-            value: sanitizeText(pow.value, 5000),
-            url: pow.url ? sanitizeUrl(pow.url) : undefined,
-        }));
-
-        const logId = existingLog?.id || randomUUID();
-        await upsertDailyLog({
-            id: logId,
-            userId,
-            sprintId: activeSprint?.id ?? null,
-            date: today,
-            energy: validated.energy,
-            sleepHours: validated.sleepHours ?? null,
-            mainFocusCompleted: validated.mainFocusCompleted,
-            morningGapMin: validated.morningGapMin ?? null,
-            distractionMin: validated.distractionMin ?? null,
-            priorities: validated.priorities,
-            proofOfWork: sanitizedProofOfWork,
-            win: validated.win ? sanitizeText(validated.win, 500) : null,
-            drain: validated.drain ? sanitizeText(validated.drain, 500) : null,
-            note: validated.note ? sanitizeText(validated.note, 2000) : null,
-            createdAt: existingLog?.createdAt || new Date(),
-            updatedAt: new Date(),
-        });
-
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/daily");
-        
-        return success(
-            { id: logId },
-            { 
-                message: "Daily log committed successfully",
-                redirect: "dashboard"
-            }
-        );
-    },
-    {
-        rateLimit: { key: 'daily-log', limit: 20, windowMs: 60000 },
-        errorMessage: "Failed to commit daily log. Please try again."
-    }
-);
 
 export const deleteDailyLogAction = createActionWithoutValidation(
     async (userId, logId: string) => {
@@ -86,10 +36,11 @@ export const deleteDailyLogAction = createActionWithoutValidation(
 
         await deleteDailyLog(logId, userId);
 
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/daily");
-        revalidatePath("/dashboard/weekly");
-        
+        revalidateTag("daily-logs", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("daily-logs");
+        updateTag("dashboard");
+
         return success(
             { deleted: true },
             { message: "Daily log deleted successfully" }
@@ -101,51 +52,128 @@ export const deleteDailyLogAction = createActionWithoutValidation(
     }
 );
 
-export const updateDailyLogByIdAction = createActionWithParam(
-    DailyLogFormSchema,
-    async (userId, logId: string, validated) => {
+
+export const saveDailyAuditAction = createAction(
+    DailyAuditSchema,
+    async (userId, validated) => {
+        const activeSprint = await getActiveSprint(userId);
+        if (!activeSprint) {
+            // Plan says "Without Active Sprint ... Allow logging energy, blocker, note only, no promise tracking"
+            // But DailyAuditSchema requires mainGoalId, which comes from sprint.
+            // If freestyling, mainGoalId might be optional or handled differently?
+            // Plan says "Freestyle Day ... No promise tracking, no scoring".
+            // The simplified schema has mainGoalId required.
+            // Maybe for freestyle day we use a different action or handle mainGoalId as optional?
+            // Or allow null mainGoalId? UUID schema forbids null.
+            // If no sprint, we should probably throw basic error for now as v1 focuses on sprint.
+            throw new BusinessRuleError("No active sprint found. Please start a sprint to log an audit.");
+        }
+
+        // Validate that mainGoalId belongs to the active sprint
+        const goalExists = activeSprint.goals.some(goal => goal.id === validated.mainGoalId);
+        if (!goalExists) {
+            throw new BusinessRuleError("Selected goal does not belong to the active sprint.");
+        }
+
+        const logId = await saveDailyAudit(
+            userId,
+            activeSprint.id,
+            {
+                date: validated.date,
+                mainGoalId: validated.mainGoalId,
+                energy: validated.energy,
+                blockerTag: validated.blockerTag ?? undefined,
+                note: validated.note,
+                promiseCompletions: validated.promiseCompletions
+            }
+        );
+
+        revalidateDashboard();
+        revalidateTag("daily-logs", "max");
+        revalidateTag("active-sprint", "max");
+        updateTag("daily-logs");
+        updateTag("active-sprint");
+
+        return success(
+            { id: logId },
+            {
+                message: "Daily audit saved successfully",
+                redirect: "dashboard"
+            }
+        );
+    },
+    {
+        rateLimit: { key: 'save-daily-audit', limit: 20, windowMs: 60000 },
+        errorMessage: "Failed to save daily audit"
+    }
+);
+
+export const logPromiseCompletionAction = createAction(
+    QuickPromiseLogSchema,
+    async (userId, validated) => {
+        // Find if there is an active sprint - not strictly required for logging if we just use promiseId,
+        // but promise belongs to a sprint.
+        // logPromiseCompletion handles logic.
+
+        await logPromiseCompletion(
+            validated.promiseId,
+            validated.date,
+            validated.completed,
+            userId,
+            undefined // dailyLogId - simplified log doesn't attach to full audit initially
+        );
+
+        // Revalidate to show updated counters
+        revalidateDashboard();
+
+        return success(
+            { logged: true },
+            { message: validated.completed ? "Promise completed" : "Promise unchecked" }
+        );
+    },
+    {
+        rateLimit: { key: 'log-promise', limit: 60, windowMs: 60000 },
+        errorMessage: "Failed to log promise"
+    }
+);
+
+export const updateDailyLogByIdAction = createAction(
+    UpdateDailyLogSchema,
+    async (userId, validated) => {
         // Verify ownership
-        const existingLog = await getDailyLogById(logId, userId);
-        if (!existingLog) {
+        const log = await getDailyLogById(validated.logId, userId);
+        if (!log) {
             throw new NotFoundError("Daily log not found");
         }
 
-        // Sanitize text inputs
-        const sanitizedProofOfWork = validated.proofOfWork.map(pow => ({
-            ...pow,
-            value: sanitizeText(pow.value, 5000),
-            url: pow.url ? sanitizeUrl(pow.url) : undefined,
-        }));
+        // Update the daily log with validated fields
+        await db.update(dailyLog)
+            .set({
+                energy: validated.energy,
+                sleepHours: validated.sleepHours,
+                mainFocusCompleted: validated.mainFocusCompleted,
+                morningGapMin: validated.morningGapMin,
+                distractionMin: validated.distractionMin,
+                priorities: validated.priorities,
+                proofOfWork: validated.proofOfWork,
+                win: validated.win,
+                drain: validated.drain,
+                note: validated.note,
+                updatedAt: new Date(),
+            })
+            .where(and(
+                eq(dailyLog.id, validated.logId),
+                eq(dailyLog.userId, userId)
+            ));
 
-        await upsertDailyLog({
-            id: logId,
-            userId,
-            sprintId: existingLog.sprintId,
-            date: normalizeDate(new Date(validated.date)),
-            energy: validated.energy,
-            sleepHours: validated.sleepHours ?? null,
-            mainFocusCompleted: validated.mainFocusCompleted,
-            morningGapMin: validated.morningGapMin ?? null,
-            distractionMin: validated.distractionMin ?? null,
-            priorities: validated.priorities,
-            proofOfWork: sanitizedProofOfWork,
-            win: validated.win ? sanitizeText(validated.win, 500) : null,
-            drain: validated.drain ? sanitizeText(validated.drain, 500) : null,
-            note: validated.note ? sanitizeText(validated.note, 2000) : null,
-            createdAt: existingLog.createdAt,
-            updatedAt: new Date(),
-        });
+        revalidateTag("daily-logs", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("daily-logs");
+        updateTag("dashboard");
 
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/daily");
-        revalidatePath("/dashboard/weekly");
-        
         return success(
-            { id: logId },
-            { 
-                message: "Daily log updated successfully",
-                redirect: "dashboard"
-            }
+            { updated: true },
+            { message: "Daily log updated successfully" }
         );
     },
     {

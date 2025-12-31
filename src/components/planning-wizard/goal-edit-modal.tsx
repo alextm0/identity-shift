@@ -30,13 +30,13 @@ interface GoalEditModalProps {
 export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }: GoalEditModalProps) {
     const router = useRouter();
     const [isSaving, setIsSaving] = useState(false);
-    
+
     // Local state to prevent text erasure
     const [specific, setSpecific] = useState(goal.specific || "");
     const [emotionalWhy, setEmotionalWhy] = useState(goal.emotionalWhy || "");
     const [antiGoal, setAntiGoal] = useState(goal.antiGoal || "");
     const [category, setCategory] = useState(goal.category);
-    
+
     // Sync local state when goal changes
     useEffect(() => {
         if (goal) {
@@ -45,8 +45,8 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
             setAntiGoal(goal.antiGoal || "");
             setCategory(goal.category);
         }
-    }, [goal.id]);
-    
+    }, [goal]);
+
     const handleSave = async () => {
         setIsSaving(true);
         try {
@@ -59,9 +59,9 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                 emotionalWhy,
                 antiGoal: antiGoal || undefined,
             };
-            
+
             // Ensure planning.status is a valid PlanningStatus or undefined
-            const statusToSave: PlanningStatus | undefined = 
+            const statusToSave: PlanningStatus | undefined =
                 Object.values(PlanningStatus).includes(planning.status as PlanningStatus)
                     ? (planning.status as PlanningStatus)
                     : undefined;
@@ -70,11 +70,11 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
             const result = await savePlanningProgressAction(planning.id, {
                 activeGoals: updatedActiveGoals,
                 currentModule: planning.currentModule ?? undefined,
-                currentStep: planning.currentStep,
-                currentGoalIndex: planning.currentGoalIndex,
+                currentStep: planning.currentStep ?? undefined,
+                currentGoalIndex: planning.currentGoalIndex ?? undefined,
                 status: statusToSave, // Use the converted status
             });
-            
+
             if (result.success) {
                 onOpenChange(false);
                 router.refresh();
@@ -87,7 +87,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
             setIsSaving(false);
         }
     };
-    
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl bg-background/95 backdrop-blur-2xl border-white/10">
@@ -96,7 +96,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                         Edit Goal
                     </DialogTitle>
                 </DialogHeader>
-                
+
                 <div className="space-y-6 mt-4">
                     {/* Category */}
                     <div className="space-y-2">
@@ -110,7 +110,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white appearance-none cursor-pointer hover:bg-white/[0.07] hover:border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-focus-violet/50 focus:border-focus-violet/50 pr-10"
                             >
                                 {LIFE_DIMENSIONS.map((dim) => (
-                                    <option key={dim} value={dim} className="bg-[#050505]">
+                                    <option key={dim} value={dim} className="bg-[#14141F]">
                                         {DIMENSION_LABELS[dim as LifeDimension]}
                                     </option>
                                 ))}
@@ -132,7 +132,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Specific Goal */}
                     <div className="space-y-2">
                         <Label className="text-xs font-mono text-white/60 uppercase tracking-widest">
@@ -149,7 +149,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                             Must be measurable or binary. Reject vague goals.
                         </p>
                     </div>
-                    
+
                     {/* Emotional Why */}
                     <div className="space-y-2">
                         <Label className="text-xs font-mono text-white/60 uppercase tracking-widest">
@@ -164,7 +164,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                             maxLength={1000}
                         />
                     </div>
-                    
+
                     {/* Anti-Goal */}
                     <div className="space-y-2">
                         <Label className="text-xs font-mono text-white/60 uppercase tracking-widest">
@@ -181,7 +181,7 @@ export function GoalEditModal({ goal, goalIndex, planning, open, onOpenChange }:
                             What are you NOT willing to sacrifice?
                         </p>
                     </div>
-                    
+
                     {/* Actions */}
                     <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
                         <Button

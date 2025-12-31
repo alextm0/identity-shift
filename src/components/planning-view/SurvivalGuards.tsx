@@ -6,11 +6,10 @@ import { cn } from "@/lib/utils";
 
 interface SurvivalGuardsProps {
   antiVision?: string | null;
-  driftResponse?: string | null;
   antiGoals: Array<{ text: string }>;
 }
 
-export function SurvivalGuards({ antiVision, driftResponse, antiGoals }: SurvivalGuardsProps) {
+export function SurvivalGuards({ antiVision, antiGoals }: SurvivalGuardsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -41,17 +40,6 @@ export function SurvivalGuards({ antiVision, driftResponse, antiGoals }: Surviva
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                 <p className="text-sm text-white/70 leading-relaxed font-sans">
                   {antiVision}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {driftResponse && (
-            <div className="space-y-2">
-              <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest pl-1">Recovery Protocol</p>
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-sm text-white/70 leading-relaxed font-sans">
-                  {driftResponse}
                 </p>
               </div>
             </div>

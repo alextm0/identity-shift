@@ -6,7 +6,7 @@
  */
 
 import { create } from "zustand";
-import { YearlyReviewFormData, LIFE_DIMENSIONS, DIMENSION_LABELS } from "@/lib/validators/yearly-review";
+import { YearlyReviewFormData, LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
 import type { YearlyReviewWithTypedFields } from "@/lib/types";
 
 interface ReviewStore {

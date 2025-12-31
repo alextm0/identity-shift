@@ -1,5 +1,5 @@
 import { sanitizeText } from "./sanitize";
-import type { PlanningFormData, SimplifiedGoal, AnnualGoal, AntiGoal, PlanningGoal, DraftAnnualGoal } from "@/lib/validators";
+import type { PlanningFormData, SimplifiedGoal, AntiGoal, DraftAnnualGoal } from "@/lib/validators";
 
 /**
  * Sanitizes planning form data to prevent XSS and ensure data integrity.
@@ -65,9 +65,6 @@ export function sanitizePlanningData(validated: Partial<PlanningFormData>): Part
     // Sanitize Step 8 fields
     if (validated.commitmentStatement) {
         updateData.commitmentStatement = sanitizeText(validated.commitmentStatement, 1000);
-    }
-    if (validated.signatureName) {
-        updateData.signatureName = sanitizeText(validated.signatureName, 200);
     }
     if (validated.signatureImage) {
         // Basic length check for base64

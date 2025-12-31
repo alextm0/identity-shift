@@ -11,14 +11,15 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { format } from "date-fns";
-import { DailyLog } from "@/lib/types";
+import { DailyLog, PromiseLog } from "@/lib/types";
 import { getTotalUnits } from "@/lib/type-helpers";
 
 interface WeeklyTrendChartProps {
   weeklyLogs: DailyLog[];
+  promiseLogs: PromiseLog[];
 }
 
-export function WeeklyTrendChart({ weeklyLogs }: WeeklyTrendChartProps) {
+export function WeeklyTrendChart({ weeklyLogs, promiseLogs }: WeeklyTrendChartProps) {
   // Create a map of logs by date
   const logsByDate = new Map<string, DailyLog>();
   weeklyLogs.forEach(log => {
@@ -34,16 +35,19 @@ export function WeeklyTrendChart({ weeklyLogs }: WeeklyTrendChartProps) {
     date.setHours(0, 0, 0, 0);
     return date;
   });
-
   const chartData = days.map(date => {
     const dateKey = format(date, "yyyy-MM-dd");
     const log = logsByDate.get(dateKey);
+
+    const dayPromiseCompletions = promiseLogs.filter(pl =>
+      format(new Date(pl.date), "yyyy-MM-dd") === dateKey && pl.completed
+    ).length;
 
     return {
       date: format(date, "EEE"),
       fullDate: format(date, "MMM d"),
       energy: log?.energy || 0,
-      totalUnits: getTotalUnits(log),
+      totalUnits: dayPromiseCompletions || getTotalUnits(log),
     };
   });
 
@@ -101,7 +105,7 @@ export function WeeklyTrendChart({ weeklyLogs }: WeeklyTrendChartProps) {
             }}
             itemStyle={{ color: '#fff', fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase' }}
             labelStyle={{ color: 'rgba(255,255,255,0.4)', fontSize: '8px', marginBottom: '4px' }}
-            formatter={(value: any, name?: string) => {
+            formatter={(value: number | string | undefined, name?: string) => {
               if (name === 'energy') return [`${value}/5`, 'Energy'];
               if (name === 'totalUnits') return [value, 'Total Units'];
               return [value, name || ''];

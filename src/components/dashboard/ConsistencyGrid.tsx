@@ -16,15 +16,15 @@ export function ConsistencyGrid({ consistencyData }: ConsistencyGridProps) {
   return (
     <GlassPanel className="p-6 flex flex-col justify-between min-h-[160px] border-white/5 shadow-none hover:bg-white/[0.02] transition-colors">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Consistency</h3>
+        <h3 className="metric-label">Consistency</h3>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-action-emerald" />
-            <span className="text-[8px] font-mono uppercase text-white/20">Hit</span>
+            <span className="label-sm text-white/20">Hit</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-            <span className="text-[8px] font-mono uppercase text-white/20">Miss</span>
+            <span className="label-sm text-white/20">Miss</span>
           </div>
         </div>
       </div>
@@ -42,7 +42,7 @@ export function ConsistencyGrid({ consistencyData }: ConsistencyGridProps) {
               )}
             />
             <span className={cn(
-              "text-[8px] font-mono uppercase text-center w-full",
+              "label-sm text-center w-full",
               day.isToday ? "text-white" : "text-white/10"
             )}>
               {format(day.date, 'EEEEE')}

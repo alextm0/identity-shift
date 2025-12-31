@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SprintWithPriorities } from "@/lib/types";
+import { SprintWithDetails } from "@/lib/types";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { SprintForm } from "./sprint-form";
 
 interface SprintCardProps {
-  sprint: SprintWithPriorities;
+  sprint: SprintWithDetails;
   isActive: boolean;
   onUpdate?: () => void;
 }

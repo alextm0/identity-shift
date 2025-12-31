@@ -5,6 +5,8 @@
  * Server actions return redirect hints, and client-side hooks handle the actual redirects.
  */
 
+import { redirect } from "next/navigation";
+
 /**
  * Redirect paths for different actions
  */
@@ -40,13 +42,8 @@ export function getRedirectPathForClient(path: RedirectHint): string | null {
     return getRedirectPath(path);
 }
 
-/**
- * Server-side redirect (throws to stop execution)
- * Use this in server actions when you need immediate redirect
- */
 export function serverRedirect(path: RedirectHint) {
     if (typeof window !== 'undefined') return; // Only works server-side
-    const { redirect } = require("next/navigation");
     const targetPath = getRedirectPath(path);
     if (targetPath) {
         redirect(targetPath);

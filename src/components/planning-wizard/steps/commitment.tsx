@@ -8,11 +8,7 @@ import { ShieldCheck } from "lucide-react";
 import { StepHeader } from "../ui/step-header";
 import { StepContainer } from "../ui/step-container";
 
-interface CommitmentStepProps {
-    onComplete?: () => void;
-}
-
-export function CommitmentStep({ onComplete }: CommitmentStepProps) {
+export function CommitmentStep() {
     const {
         setSignatureImage,
     } = usePlanningStore();

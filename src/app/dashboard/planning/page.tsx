@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/server";
 import { getOrCreatePlanning } from "@/data-access/planning";
-import { toPlanningWithTypedFields } from "@/lib/type-helpers";
 import { PlanningWizardContainer } from "@/components/planning-wizard/wizard-container";
 
 interface PlanningPageProps {
@@ -9,9 +8,11 @@ interface PlanningPageProps {
 }
 
 export default async function PlanningPage({ searchParams }: PlanningPageProps) {
-    const session = await verifySession();
-    const userId = session.user.id;
-    const params = await searchParams;
+    const [{ user }, params] = await Promise.all([
+        verifySession(),
+        searchParams
+    ]);
+    const userId = user.id;
     const editMode = params.edit === 'true';
 
     // Get or create planning for user
@@ -22,12 +23,9 @@ export default async function PlanningPage({ searchParams }: PlanningPageProps) 
         redirect('/dashboard/planning/view');
     }
 
-    // Convert to typed format
-    const typedPlanning = toPlanningWithTypedFields(planning);
-
     return (
         <PlanningWizardContainer 
-            initialPlanning={typedPlanning}
+            initialPlanning={planning}
             isEditMode={editMode}
         />
     );

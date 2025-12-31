@@ -1,6 +1,5 @@
 import { saveYearlyReviewProgressAction, completeYearlyReviewAction } from "@/actions/yearly-reviews";
-import type { YearlyReviewFormData } from "@/lib/validators/yearly-review";
-import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
+import type { YearlyReviewFormData, CompleteYearlyReviewData } from "@/lib/validators/yearly-review";
 
 interface HandleReviewCompletionOptions {
   reviewId: string;
@@ -62,7 +61,7 @@ export async function handleReviewCompletion({
         wheelRatings,
         wins,
         otherDetails: formData.otherDetails ?? undefined,
-      } as any);
+      } as CompleteYearlyReviewData);
 
       if (completeResult.success) {
         onSavingChange(false);
@@ -79,7 +78,7 @@ export async function handleReviewCompletion({
         wheelRatings,
         wins,
         otherDetails: formData.otherDetails ?? undefined,
-      } as any);
+      } as CompleteYearlyReviewData);
 
       if (result.success) {
         onSavingChange(false);
@@ -96,4 +95,5 @@ export async function handleReviewCompletion({
     onSavingChange(false);
   }
 }
+
 

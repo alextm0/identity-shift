@@ -39,7 +39,6 @@ interface PlanningStore {
 
     // Step 2: Wheel of Life Vision
     targetWheelOfLife: Record<string, number>;
-    focusAreas: string[];
     wheelVisionStatements: Record<string, string>; // Per-dimension "what would be true"
 
 
@@ -54,11 +53,9 @@ interface PlanningStore {
     // Step 7: Anti-Vision + Anti-Goals
     antiVision: string; // Failure narrative
     antiGoals: AntiGoal[]; // Unlimited list
-    driftResponse: string; // If/Then drift response
 
     // Step 8: Commitment
     commitmentStatement: string;
-    signatureName: string;
     signatureImage: string;
     signedAt: Date | null;
 
@@ -78,7 +75,6 @@ interface PlanningStore {
     // Actions - Step 2: Wheel Vision
     setTargetWheelOfLife: (targets: Record<string, number>) => void;
     updateTargetDimension: (dimension: string, score: number) => void;
-    toggleFocusArea: (area: string) => void;
     setWheelVisionStatement: (dimension: string, statement: string) => void;
 
     // Actions - Step 3: Letter from Future You
@@ -102,11 +98,9 @@ interface PlanningStore {
     addAntiGoal: (text: string) => void;
     removeAntiGoal: (id: string) => void;
     updateAntiGoal: (id: string, text: string) => void;
-    setDriftResponse: (text: string) => void;
 
     // Actions - Step 8: Commitment
     setCommitmentStatement: (text: string) => void;
-    setSignatureName: (name: string) => void;
     setSignatureImage: (base64: string) => void;
     setSignedAt: (date: Date) => void;
 
@@ -138,7 +132,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
 
     // Step 2
     targetWheelOfLife: {},
-    focusAreas: [],
     wheelVisionStatements: {},
 
     // Step 3
@@ -152,11 +145,9 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
     // Step 7
     antiVision: "",
     antiGoals: [],
-    driftResponse: "",
 
     // Step 8
     commitmentStatement: "",
-    signatureName: "",
     signatureImage: "",
     signedAt: null,
 
@@ -191,16 +182,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             targetWheelOfLife: { ...state.targetWheelOfLife, [dimension]: score },
             isDirty: true,
         }));
-    },
-    toggleFocusArea: (area) => {
-        set((state) => {
-            const isSelected = state.focusAreas.includes(area);
-            if (isSelected) {
-                return { focusAreas: state.focusAreas.filter(a => a !== area), isDirty: true };
-            }
-            if (state.focusAreas.length >= 3) return state;
-            return { focusAreas: [...state.focusAreas, area], isDirty: true };
-        });
     },
     setWheelVisionStatement: (dimension, statement) => {
         set((state) => ({
@@ -346,12 +327,9 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             isDirty: true,
         }));
     },
-    setDriftResponse: (text) => set({ driftResponse: text, isDirty: true }),
 
     // Step 8 Actions
     setCommitmentStatement: (text) => set({ commitmentStatement: text, isDirty: true }),
-
-    setSignatureName: (name) => set({ signatureName: name, isDirty: true }),
     setSignatureImage: (base64) => set({ signatureImage: base64, isDirty: true }),
     setSignedAt: (date) => set({ signedAt: date, isDirty: true }),
 
@@ -393,7 +371,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             brainDump: data.brainDump || "",
             futureIdentity: data.futureIdentity || "",
             targetWheelOfLife: (data.targetWheelOfLife as Record<string, number>) || {},
-            focusAreas: data.focusAreas || [],
             wheelVisionStatements: (data.wheelVisionStatements as Record<string, string>) || {},
             futureYouLetter: data.futureYouLetter || "",
             goals,
@@ -401,9 +378,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             annualGoals,
             antiVision: data.antiVision || "",
             antiGoals,
-            driftResponse: data.driftResponse || "",
             commitmentStatement: data.commitmentStatement || "",
-            signatureName: data.signatureName || "",
             signatureImage: data.signatureImage || "",
             signedAt: data.signedAt ? new Date(data.signedAt) : null,
             previousIdentity: data.previousIdentity || "",
@@ -423,7 +398,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             brainDump: "",
             futureIdentity: "",
             targetWheelOfLife: {},
-            focusAreas: [],
             wheelVisionStatements: {},
             futureYouLetter: "",
             goals: [],
@@ -431,9 +405,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             annualGoals: [],
             antiVision: "",
             antiGoals: [],
-            driftResponse: "",
             commitmentStatement: "",
-            signatureName: "",
             signatureImage: "",
             signedAt: null,
             previousIdentity: "",
@@ -448,7 +420,6 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             brainDump: state.brainDump || undefined,
             futureIdentity: state.futureIdentity || undefined,
             targetWheelOfLife: Object.keys(state.targetWheelOfLife).length > 0 ? state.targetWheelOfLife : undefined,
-            focusAreas: state.focusAreas.length > 0 ? state.focusAreas : undefined,
             wheelVisionStatements: Object.keys(state.wheelVisionStatements).length > 0 ? state.wheelVisionStatements : undefined,
             futureYouLetter: state.futureYouLetter || undefined,
             goals: state.goals.length > 0 ? state.goals : undefined,
@@ -456,9 +427,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
             annualGoals: state.annualGoals,
             antiVision: state.antiVision || undefined,
             antiGoals: state.antiGoals.length > 0 ? state.antiGoals : undefined,
-            driftResponse: state.driftResponse || undefined,
             commitmentStatement: state.commitmentStatement || undefined,
-            signatureName: state.signatureName || undefined,
             signatureImage: state.signatureImage || undefined,
             signedAt: state.signedAt || undefined,
             currentStep: state.currentStep,

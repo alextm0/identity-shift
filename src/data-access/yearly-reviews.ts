@@ -4,6 +4,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { YearlyReview, NewYearlyReview } from "@/lib/types";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
+import { unstable_cache } from "next/cache";
 
 /**
  * Data Access Layer for Yearly Reviews
@@ -15,32 +16,40 @@ import { randomUUID } from "crypto";
 /**
  * Get all yearly reviews for a user
  */
-export async function getYearlyReviews(userId: string): Promise<YearlyReview[]> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            return await db.select()
-                .from(yearlyReview)
-                .where(createOwnershipCondition(yearlyReview.userId, userId))
-                .orderBy(desc(yearlyReview.year));
-        },
-        "Failed to fetch yearly reviews"
-    );
-}
+export const getYearlyReviews = unstable_cache(
+    async (userId: string): Promise<YearlyReview[]> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                return await db.select()
+                    .from(yearlyReview)
+                    .where(createOwnershipCondition(yearlyReview.userId, userId))
+                    .orderBy(desc(yearlyReview.year));
+            },
+            "Failed to fetch yearly reviews"
+        );
+    },
+    ['yearly-reviews-list'],
+    { tags: ['yearly-reviews'] }
+);
 
 /**
  * Get a yearly review by ID
  */
-export async function getYearlyReviewById(id: string, userId: string): Promise<YearlyReview | undefined> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            return (await db.select()
-                .from(yearlyReview)
-                .where(createOwnershipAndIdCondition(yearlyReview.id, id, yearlyReview.userId, userId))
-                .limit(1))[0];
-        },
-        "Failed to fetch yearly review by ID"
-    );
-}
+export const getYearlyReviewById = unstable_cache(
+    async (id: string, userId: string): Promise<YearlyReview | undefined> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                return (await db.select()
+                    .from(yearlyReview)
+                    .where(createOwnershipAndIdCondition(yearlyReview.id, id, yearlyReview.userId, userId))
+                    .limit(1))[0];
+            },
+            "Failed to fetch yearly review by ID"
+        );
+    },
+    ['yearly-review-by-id'],
+    { tags: ['yearly-reviews'] }
+);
 
 /**
  * Get or create a yearly review for a specific year
@@ -83,7 +92,7 @@ export async function getOrCreateYearlyReview(userId: string, year: number): Pro
                     eq(yearlyReview.year, year)
                 ))
                 .limit(1);
-            
+
             if (existing.length === 0) {
                 // This state should be unreachable if the unique constraint is in place.
                 // It indicates a potential database issue or misconfiguration.
@@ -99,37 +108,45 @@ export async function getOrCreateYearlyReview(userId: string, year: number): Pro
 /**
  * Get the latest yearly review for a user (by year)
  */
-export async function getLatestYearlyReview(userId: string): Promise<YearlyReview | undefined> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            return (await db.select()
-                .from(yearlyReview)
-                .where(createOwnershipCondition(yearlyReview.userId, userId))
-                .orderBy(desc(yearlyReview.year))
-                .limit(1))[0];
-        },
-        "Failed to fetch latest yearly review"
-    );
-}
+export const getLatestYearlyReview = unstable_cache(
+    async (userId: string): Promise<YearlyReview | undefined> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                return (await db.select()
+                    .from(yearlyReview)
+                    .where(createOwnershipCondition(yearlyReview.userId, userId))
+                    .orderBy(desc(yearlyReview.year))
+                    .limit(1))[0];
+            },
+            "Failed to fetch latest yearly review"
+        );
+    },
+    ['latest-yearly-review'],
+    { tags: ['yearly-reviews'] }
+);
 
 /**
  * Get completed yearly review for a specific year
  */
-export async function getCompletedYearlyReview(userId: string, year: number): Promise<YearlyReview | undefined> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            return (await db.select()
-                .from(yearlyReview)
-                .where(and(
-                    eq(yearlyReview.userId, userId),
-                    eq(yearlyReview.year, year),
-                    eq(yearlyReview.status, 'completed')
-                ))
-                .limit(1))[0];
-        },
-        "Failed to fetch completed yearly review"
-    );
-}
+export const getCompletedYearlyReview = unstable_cache(
+    async (userId: string, year: number): Promise<YearlyReview | undefined> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                return (await db.select()
+                    .from(yearlyReview)
+                    .where(and(
+                        eq(yearlyReview.userId, userId),
+                        eq(yearlyReview.year, year),
+                        eq(yearlyReview.status, 'completed')
+                    ))
+                    .limit(1))[0];
+            },
+            "Failed to fetch completed yearly review"
+        );
+    },
+    ['completed-yearly-review'],
+    { tags: ['yearly-reviews'] }
+);
 
 /**
  * Create a new yearly review
@@ -158,7 +175,7 @@ export async function updateYearlyReview(id: string, userId: string, data: Parti
                 .set(updateData)
                 .where(createOwnershipAndIdCondition(yearlyReview.id, id, yearlyReview.userId, userId))
                 .returning();
-            
+
             if (result.length === 0) {
                 throw new Error("Yearly review not found");
             }
@@ -182,7 +199,7 @@ export async function completeYearlyReview(id: string, userId: string): Promise<
                 })
                 .where(createOwnershipAndIdCondition(yearlyReview.id, id, yearlyReview.userId, userId))
                 .returning();
-            
+
             if (result.length === 0) {
                 throw new Error("Yearly review not found");
             }
@@ -201,7 +218,7 @@ export async function deleteYearlyReview(id: string, userId: string): Promise<vo
             const result = await db.delete(yearlyReview)
                 .where(createOwnershipAndIdCondition(yearlyReview.id, id, yearlyReview.userId, userId))
                 .returning();
-            
+
             if (result.length === 0) {
                 throw new Error("Yearly review not found");
             }

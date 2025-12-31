@@ -31,7 +31,7 @@ export function GoalBacklogStep() {
                 addButtonText="Add"
                 renderRightAction={(item) => (
                     <select
-                        value={item.category || ""}
+                        value={typeof item.category === 'string' ? item.category : ""}
                         onChange={(e) => updateGoalCategory(item.id, e.target.value === "" ? undefined : e.target.value as LifeDimension)}
                         className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs font-mono uppercase tracking-wider focus:ring-1 focus:ring-white/20 outline-none mr-2"
                     >

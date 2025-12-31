@@ -6,8 +6,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { startSprintAction, closeSprintAction } from '@/actions/sprints';
 import { getRequiredSession } from '@/lib/auth/server';
 import { createSprint, deactivateAllSprints, getSprintById, closeSprintById } from '@/data-access/sprints';
-import { createMockSprint } from '@/__tests__/mocks/db';
-import { BusinessRuleError, NotFoundError } from '@/lib/errors';
+import { createMockSprint, createMockSprintWithPriorities } from '@/__tests__/mocks/db';
+import { NotFoundError } from '@/lib/errors';
+import { SprintWithDetails } from '@/lib/types';
 
 // Mock dependencies
 vi.mock('@/lib/auth/server', async () => {
@@ -24,6 +25,7 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
@@ -32,24 +34,29 @@ describe('startSprintAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should create a new sprint successfully', async () => {
-    const newSprint = createMockSprint({ id: 'sprint-1' });
-    vi.mocked(deactivateAllSprints).mockResolvedValue(undefined);
-    vi.mocked(createSprint).mockResolvedValue([newSprint]);
+    const newSprint = createMockSprintWithPriorities({ id: 'sprint-1' });
+    vi.mocked(deactivateAllSprints).mockResolvedValue([]);
+    vi.mocked(createSprint).mockResolvedValue(newSprint);
 
     const formData = {
       name: 'Test Sprint',
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-14'),
-      priorities: [
+      startDate: '2024-01-01',
+      endDate: '2024-01-14',
+      goals: [
         {
-          key: 'priority-1',
-          label: 'Exercise',
-          type: 'habit' as const,
-          weeklyTargetUnits: 5,
+          goalId: '550e8400-e29b-41d4-a716-446655440000',
+          goalText: 'Health Goal',
+          promises: [
+            {
+              text: 'Gym',
+              type: 'daily' as const,
+              scheduleDays: [1, 3, 5],
+            },
+          ],
         },
       ],
     };
@@ -62,20 +69,25 @@ describe('startSprintAction', () => {
   });
 
   it('should deactivate existing active sprint before creating new one', async () => {
-    const newSprint = createMockSprint({ id: 'sprint-2' });
-    vi.mocked(deactivateAllSprints).mockResolvedValue(undefined);
-    vi.mocked(createSprint).mockResolvedValue([newSprint]);
+    const newSprint = createMockSprintWithPriorities({ id: 'sprint-2' });
+    vi.mocked(deactivateAllSprints).mockResolvedValue([]);
+    vi.mocked(createSprint).mockResolvedValue(newSprint);
 
     const formData = {
       name: 'New Sprint',
-      startDate: new Date('2024-01-15'),
-      endDate: new Date('2024-01-28'),
-      priorities: [
+      startDate: '2024-01-15',
+      endDate: '2024-01-28',
+      goals: [
         {
-          key: 'priority-1',
-          label: 'Exercise',
-          type: 'habit' as const,
-          weeklyTargetUnits: 5,
+          goalId: '550e8400-e29b-41d4-a716-446655440000',
+          goalText: 'Work Goal',
+          promises: [
+            {
+              text: 'Focus session',
+              type: 'daily' as const,
+              scheduleDays: [1, 2, 3, 4, 5],
+            },
+          ],
         },
       ],
     };
@@ -92,12 +104,12 @@ describe('closeSprintAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should close a sprint successfully', async () => {
     const sprint = createMockSprint({ id: 'sprint-1', active: true });
-    vi.mocked(getSprintById).mockResolvedValue(sprint);
+    vi.mocked(getSprintById).mockResolvedValue(sprint as SprintWithDetails);
     vi.mocked(closeSprintById).mockResolvedValue([{ ...sprint, active: false }]);
 
     await closeSprintAction('sprint-1');
@@ -109,13 +121,6 @@ describe('closeSprintAction', () => {
     vi.mocked(getSprintById).mockResolvedValue(undefined);
 
     await expect(closeSprintAction('non-existent')).rejects.toThrow(NotFoundError);
-  });
-
-  it('should throw AuthorizationError when sprint belongs to different user', async () => {
-    const sprint = createMockSprint({ id: 'sprint-1', userId: 'other-user' });
-    vi.mocked(getSprintById).mockResolvedValue(undefined); // Not found for current user
-
-    await expect(closeSprintAction('sprint-1')).rejects.toThrow(NotFoundError);
   });
 });
 

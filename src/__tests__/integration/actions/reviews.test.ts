@@ -3,15 +3,15 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { 
-  createWeeklyReviewAction, 
+import {
+  createWeeklyReviewAction,
   updateWeeklyReviewAction,
   createMonthlyReviewAction,
-  updateMonthlyReviewAction 
+  updateMonthlyReviewAction
 } from '@/actions/reviews';
 import { getRequiredSession } from '@/lib/auth/server';
-import { 
-  createWeeklyReview, 
+import {
+  createWeeklyReview,
   getWeeklyReviewById,
   updateWeeklyReview,
   createMonthlyReview,
@@ -21,12 +21,11 @@ import {
 import { getSprintById } from '@/data-access/sprints';
 import { createMockSprint, createMockWeeklyReview, createMockMonthlyReview } from '@/__tests__/mocks/db';
 import { NotFoundError } from '@/lib/errors';
+import { OneChangeOption } from '@/lib/enums';
 
 // Valid UUIDs for testing
 const TEST_SPRINT_ID = '550e8400-e29b-41d4-a716-446655440000';
 const TEST_USER_ID = '550e8400-e29b-41d4-a716-446655440001';
-const TEST_REVIEW_ID = '550e8400-e29b-41d4-a716-446655440002';
-const NON_EXISTENT_ID = '550e8400-e29b-41d4-a716-446655440099';
 
 // Mock dependencies
 vi.mock('@/lib/auth/server', async () => {
@@ -44,6 +43,7 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
@@ -52,13 +52,13 @@ describe('createWeeklyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: TEST_USER_ID },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should create a weekly review successfully', async () => {
     const sprint = createMockSprint({ id: TEST_SPRINT_ID, userId: TEST_USER_ID });
     vi.mocked(getSprintById).mockResolvedValue(sprint);
-    vi.mocked(createWeeklyReview).mockResolvedValue(undefined);
+    vi.mocked(createWeeklyReview).mockResolvedValue([]);
 
     const formData = {
       sprintId: TEST_SPRINT_ID,
@@ -67,21 +67,23 @@ describe('createWeeklyReviewAction', () => {
       evidenceRatio: 75,
       antiBullshitScore: 80,
       alerts: ['Low energy detected'],
-      oneChange: 'KEEP_SAME' as const,
+      oneChange: OneChangeOption.KEEP_SAME,
       changeReason: 'Everything is working well',
     };
 
     const result = await createWeeklyReviewAction(formData);
 
     expect(result.success).toBe(true);
-    expect(result.data?.id).toBeDefined();
+    if (result.success) {
+      expect(result.data.id).toBeDefined();
+    }
     expect(createWeeklyReview).toHaveBeenCalled();
   });
 
   it('should sanitize alert messages', async () => {
     const sprint = createMockSprint({ id: TEST_SPRINT_ID, userId: TEST_USER_ID });
     vi.mocked(getSprintById).mockResolvedValue(sprint);
-    vi.mocked(createWeeklyReview).mockResolvedValue(undefined);
+    vi.mocked(createWeeklyReview).mockResolvedValue([]);
 
     const formData = {
       sprintId: TEST_SPRINT_ID,
@@ -90,13 +92,13 @@ describe('createWeeklyReviewAction', () => {
       evidenceRatio: 75,
       antiBullshitScore: 80,
       alerts: ['<script>alert("xss")</script>Valid alert'],
-      oneChange: 'KEEP_SAME' as const,
+      oneChange: OneChangeOption.KEEP_SAME,
     };
 
     await createWeeklyReviewAction(formData);
 
     const createCall = vi.mocked(createWeeklyReview).mock.calls[0][0];
-    expect(createCall.alerts[0]).not.toContain('<script>');
+    expect((createCall.alerts as string[])[0]).not.toContain('<script>');
   });
 });
 
@@ -105,22 +107,24 @@ describe('updateWeeklyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should update a weekly review successfully', async () => {
     const existingReview = createMockWeeklyReview({ id: 'review-1', userId: 'user-1' });
     vi.mocked(getWeeklyReviewById).mockResolvedValue(existingReview);
-    vi.mocked(updateWeeklyReview).mockResolvedValue(undefined);
+    vi.mocked(updateWeeklyReview).mockResolvedValue([]);
 
     const updateAction = updateWeeklyReviewAction('review-1');
     const result = await updateAction({
-      oneChange: 'ADD_RECOVERY',
+      oneChange: OneChangeOption.ADD_RECOVERY,
       changeReason: 'Need more rest',
     });
 
     expect(result.success).toBe(true);
-    expect(result.data?.id).toBe('review-1');
+    if (result.success) {
+      expect(result.data.id).toBe('review-1');
+    }
     expect(updateWeeklyReview).toHaveBeenCalled();
   });
 
@@ -128,9 +132,9 @@ describe('updateWeeklyReviewAction', () => {
     vi.mocked(getWeeklyReviewById).mockResolvedValue(undefined);
 
     const updateAction = updateWeeklyReviewAction('non-existent');
-    
+
     await expect(updateAction({
-      oneChange: 'KEEP_SAME',
+      oneChange: OneChangeOption.KEEP_SAME,
     })).rejects.toThrow(NotFoundError);
   });
 });
@@ -140,13 +144,13 @@ describe('createMonthlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: TEST_USER_ID },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should create a monthly review successfully', async () => {
     const sprint = createMockSprint({ id: TEST_SPRINT_ID, userId: TEST_USER_ID });
     vi.mocked(getSprintById).mockResolvedValue(sprint);
-    vi.mocked(createMonthlyReview).mockResolvedValue(undefined);
+    vi.mocked(createMonthlyReview).mockResolvedValue([]);
 
     const formData = {
       sprintId: TEST_SPRINT_ID,
@@ -161,7 +165,9 @@ describe('createMonthlyReviewAction', () => {
     const result = await createMonthlyReviewAction(formData);
 
     expect(result.success).toBe(true);
-    expect(result.data?.id).toBeDefined();
+    if (result.success) {
+      expect(result.data.id).toBeDefined();
+    }
     expect(createMonthlyReview).toHaveBeenCalled();
   });
 });
@@ -171,13 +177,13 @@ describe('updateMonthlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should update a monthly review successfully', async () => {
     const existingReview = createMockMonthlyReview({ id: 'monthly-1', userId: 'user-1' });
     vi.mocked(getMonthlyReviewById).mockResolvedValue(existingReview);
-    vi.mocked(updateMonthlyReview).mockResolvedValue(undefined);
+    vi.mocked(updateMonthlyReview).mockResolvedValue([]);
 
     const updateAction = updateMonthlyReviewAction('monthly-1');
     const result = await updateAction({
@@ -185,7 +191,9 @@ describe('updateMonthlyReviewAction', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.data?.id).toBe('monthly-1');
+    if (result.success) {
+      expect(result.data.id).toBe('monthly-1');
+    }
     expect(updateMonthlyReview).toHaveBeenCalled();
   });
 
@@ -193,7 +201,7 @@ describe('updateMonthlyReviewAction', () => {
     vi.mocked(getMonthlyReviewById).mockResolvedValue(undefined);
 
     const updateAction = updateMonthlyReviewAction('non-existent');
-    
+
     await expect(updateAction({
       oneChange: 'Test change',
     })).rejects.toThrow(NotFoundError);

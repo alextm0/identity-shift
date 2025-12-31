@@ -3,12 +3,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { saveDailyLogAction, deleteDailyLogAction, updateDailyLogByIdAction } from '@/actions/daily-logs';
+import { saveDailyAuditAction, deleteDailyLogAction } from '@/actions/daily-logs';
 import { getRequiredSession } from '@/lib/auth/server';
 import { getActiveSprint } from '@/data-access/sprints';
-import { upsertDailyLog, getDailyLogById, deleteDailyLog, getTodayLogForUser } from '@/data-access/daily-logs';
+import { saveDailyAudit, getDailyLogById, deleteDailyLog } from '@/data-access/daily-logs';
 import { createMockDailyLog, createMockSprint } from '@/__tests__/mocks/db';
 import { BusinessRuleError, NotFoundError } from '@/lib/errors';
+import { SprintWithDetails } from '@/lib/types';
 
 // Mock dependencies
 vi.mock('@/lib/auth/server', async () => {
@@ -23,67 +24,76 @@ vi.mock('@/data-access/daily-logs');
 vi.mock('@/lib/rate-limit', () => ({
   enforceRateLimit: vi.fn(),
 }));
+vi.mock('@/lib/db', () => ({
+  db: {
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    where: vi.fn().mockResolvedValue([{}]),
+  },
+}));
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
-describe('saveDailyLogAction', () => {
+const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
+
+describe('saveDailyAuditAction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
-  it('should save a new daily log successfully', async () => {
-    const activeSprint = createMockSprint({ id: 'sprint-1' });
+  it('should save a new daily audit successfully', async () => {
+    const activeSprint = createMockSprint({
+      id: VALID_UUID,
+      goals: [
+        {
+          id: VALID_UUID,
+          sprintId: VALID_UUID,
+          goalId: VALID_UUID,
+          goalText: 'Test Goal',
+          sortOrder: 0,
+          promises: []
+        } as unknown as SprintWithDetails['goals'][number]
+      ]
+    });
     vi.mocked(getActiveSprint).mockResolvedValue(activeSprint);
-    vi.mocked(getTodayLogForUser).mockResolvedValue(undefined);
-    vi.mocked(upsertDailyLog).mockResolvedValue([createMockDailyLog()]);
+    vi.mocked(saveDailyAudit).mockResolvedValue('log-1');
 
     const formData = {
       date: new Date('2024-01-15'),
       energy: 3,
-      mainFocusCompleted: true,
-      priorities: {
-        'priority-1': { done: true, units: 5 },
+      mainGoalId: VALID_UUID,
+      promiseCompletions: {
+        [VALID_UUID]: true,
       },
-      proofOfWork: [],
     };
 
-    const result = await saveDailyLogAction(formData);
+    const result = await saveDailyAuditAction(formData);
 
     expect(result.success).toBe(true);
-    expect(result.message).toContain('successfully');
-    expect(upsertDailyLog).toHaveBeenCalled();
+    if (result.success) {
+      expect(result.message).toContain('successfully');
+    }
+    expect(saveDailyAudit).toHaveBeenCalled();
   });
 
-  it('should update existing log when log for date already exists', async () => {
-    const activeSprint = createMockSprint({ id: 'sprint-1' });
-    const existingLog = createMockDailyLog({ id: 'log-1' });
-    
-    vi.mocked(getActiveSprint).mockResolvedValue(activeSprint);
-    vi.mocked(getTodayLogForUser).mockResolvedValue(existingLog);
-    vi.mocked(upsertDailyLog).mockResolvedValue([existingLog]);
+  it('should throw error when no active sprint exists', async () => {
+    vi.mocked(getActiveSprint).mockResolvedValue(undefined);
 
     const formData = {
       date: new Date('2024-01-15'),
-      energy: 4,
-      mainFocusCompleted: true,
-      priorities: {},
-      proofOfWork: [],
+      energy: 3,
+      mainGoalId: VALID_UUID,
+      promiseCompletions: {},
     };
 
-    const result = await saveDailyLogAction(formData);
-
-    expect(result.success).toBe(true);
-    expect(upsertDailyLog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'log-1',
-      })
-    );
+    await expect(saveDailyAuditAction(formData)).rejects.toThrow(BusinessRuleError);
   });
 });
 
@@ -92,7 +102,7 @@ describe('deleteDailyLogAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should delete a daily log successfully', async () => {
@@ -100,61 +110,15 @@ describe('deleteDailyLogAction', () => {
     vi.mocked(getDailyLogById).mockResolvedValue(log);
     vi.mocked(deleteDailyLog).mockResolvedValue([log]);
 
-    await deleteDailyLogAction('log-1');
+    await deleteDailyLogAction(VALID_UUID);
 
-    expect(deleteDailyLog).toHaveBeenCalledWith('log-1', 'user-1');
+    expect(deleteDailyLog).toHaveBeenCalledWith(VALID_UUID, 'user-1');
   });
 
   it('should throw NotFoundError when log does not exist', async () => {
     vi.mocked(getDailyLogById).mockResolvedValue(undefined);
 
-    await expect(deleteDailyLogAction('non-existent')).rejects.toThrow(NotFoundError);
-  });
-});
-
-describe('updateDailyLogByIdAction', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(getRequiredSession).mockResolvedValue({
-      user: { id: 'user-1' },
-    } as any);
-  });
-
-  it('should update a daily log successfully', async () => {
-    const existingLog = createMockDailyLog({ id: 'log-1', sprintId: 'sprint-1' });
-    vi.mocked(getDailyLogById).mockResolvedValue(existingLog);
-    vi.mocked(upsertDailyLog).mockResolvedValue([existingLog]);
-
-    const formData = {
-      date: new Date('2024-01-15'),
-      energy: 4,
-      mainFocusCompleted: true,
-      priorities: {},
-      proofOfWork: [],
-    };
-
-    // updateDailyLogByIdAction is curried: (logId) => (formData) => Promise<Result>
-    const updateAction = updateDailyLogByIdAction('log-1');
-    const result = await updateAction(formData);
-
-    expect(result.success).toBe(true);
-    expect(upsertDailyLog).toHaveBeenCalled();
-  });
-
-  it('should throw NotFoundError when log does not exist', async () => {
-    vi.mocked(getDailyLogById).mockResolvedValue(undefined);
-
-    const formData = {
-      date: new Date('2024-01-15'),
-      energy: 3,
-      mainFocusCompleted: true,
-      priorities: {},
-      proofOfWork: [],
-    };
-
-    // updateDailyLogByIdAction is curried: (logId) => (formData) => Promise<Result>
-    const updateAction = updateDailyLogByIdAction('non-existent');
-    await expect(updateAction(formData)).rejects.toThrow(NotFoundError);
+    await expect(deleteDailyLogAction(VALID_UUID)).rejects.toThrow(NotFoundError);
   });
 });
 

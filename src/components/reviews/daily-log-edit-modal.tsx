@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DailyLogFormSchema, type DailyLogFormData } from "@/lib/validators";
 import { updateDailyLogByIdAction } from "@/actions/daily-logs";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -16,15 +16,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { EnergySlider } from "@/components/daily/energy-slider";
 import { ProgressBar } from "@/components/daily/progress-bar";
 import { ProofInput } from "@/components/daily/proof-input";
 import { toast } from "sonner";
 import { Save, Loader2, Trophy, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DailyLog, SprintWithPriorities, DailyLogWithTypedFields } from "@/lib/types";
+import { DailyLog, SprintWithPriorities } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
+
+// Legacy schema for editing existing daily logs with all fields
+const LegacyDailyLogEditSchema = z.object({
+  date: z.date(),
+  energy: z.number().min(1).max(10),
+  sleepHours: z.number().optional(),
+  mainFocusCompleted: z.boolean().optional(),
+  morningGapMin: z.number().optional(),
+  distractionMin: z.number().optional(),
+  priorities: z.record(z.string(), z.object({
+    done: z.boolean(),
+    units: z.number()
+  })).optional(),
+  proofOfWork: z.array(z.object({
+    type: z.string(),
+    value: z.string(),
+    url: z.string().optional()
+  })).optional(),
+  win: z.string().optional(),
+  drain: z.string().optional(),
+  note: z.string().optional(),
+});
+
+type LegacyDailyLogEditData = z.infer<typeof LegacyDailyLogEditSchema>;
 
 interface DailyLogEditModalProps {
   log: DailyLog;
@@ -39,13 +62,13 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
   const priorities = activeSprint?.priorities || [];
   const typedLog = toDailyLogWithTypedFields(log);
 
-  const form = useForm<DailyLogFormData>({
-    resolver: zodResolver(DailyLogFormSchema),
+  const form = useForm<LegacyDailyLogEditData>({
+    resolver: zodResolver(LegacyDailyLogEditSchema),
     defaultValues: {
       date: new Date(log.date),
       energy: log.energy,
       sleepHours: log.sleepHours || 7,
-      mainFocusCompleted: log.mainFocusCompleted,
+      mainFocusCompleted: log.mainFocusCompleted ?? undefined,
       morningGapMin: log.morningGapMin || 0,
       distractionMin: log.distractionMin || 0,
       priorities: typedLog.priorities || priorities.reduce((acc, p) => ({
@@ -59,21 +82,21 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
     },
   });
 
-  async function onSubmit(data: DailyLogFormData) {
+  async function onSubmit(data: LegacyDailyLogEditData) {
     setIsPending(true);
     try {
       const submissionData = {
         ...data,
-        priorities: Object.keys(data.priorities).reduce((acc, key) => ({
+        priorities: data.priorities ? Object.keys(data.priorities).reduce((acc, key) => ({
           ...acc,
           [key]: {
-            ...data.priorities[key],
-            done: data.priorities[key].units > 0
+            ...data.priorities![key],
+            done: data.priorities![key].units > 0
           }
-        }), {})
+        }), {}) : undefined
       };
 
-      await updateDailyLogByIdAction(log.id, submissionData);
+      await updateDailyLogByIdAction({ ...submissionData, logId: log.id });
       toast.success("Daily log updated successfully");
       onOpenChange(false);
       router.refresh();
@@ -98,10 +121,16 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
               <GlassPanel className="p-6 space-y-6">
-                <EnergySlider
-                  value={form.watch("energy")}
-                  onChange={(val) => form.setValue("energy", val)}
-                />
+                <div className="space-y-3">
+                  <Label className="text-xs font-mono uppercase tracking-widest text-white/60">Energy_Level</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    {...form.register("energy", { valueAsNumber: true })}
+                    className="h-10 bg-white/5 border-white/10 text-sm font-medium px-3 focus:bg-white/10 transition-colors"
+                  />
+                </div>
 
                 <div className="space-y-4 pt-4 border-t border-white/5">
                   <div className="space-y-3">
@@ -167,7 +196,7 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
 
 
 
-<div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-4">
 
               {priorities.length > 0 ? (
 

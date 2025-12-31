@@ -1,5 +1,5 @@
 import { getRequiredSession } from "@/lib/auth/server";
-import { getSprints, getActiveSprint } from "@/data-access/sprints";
+import { getSprints, getActiveSprintCached } from "@/data-access/sprints";
 
 export async function getSprintsData() {
     const session = await getRequiredSession();
@@ -7,7 +7,7 @@ export async function getSprintsData() {
 
     const [allSprints, activeSprint] = await Promise.all([
         getSprints(userId),
-        getActiveSprint(userId)
+        getActiveSprintCached(userId)
     ]);
 
     return {

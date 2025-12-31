@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      CI: true
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      NEXT_PUBLIC_NEON_AUTH_URL: https://dummy.auth.url
+      NEXT_PUBLIC_NEON_AUTH_BASE_URL: https://dummy.auth.url
+      NEON_AUTH_BASE_URL: https://dummy.auth.url
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # - name: Lint
+      #   run: npm run lint
+
+      # - name: Typecheck
+      #   run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Run Tests
+        run: npm test -- --run

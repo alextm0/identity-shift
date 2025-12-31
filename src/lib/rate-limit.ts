@@ -31,18 +31,19 @@ export function checkRateLimit(
 ): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now();
     const key = identifier;
-    
+
     const entry = rateLimitStore.get(key);
-    
+
     // Clean up expired entries periodically
     if (Math.random() < 0.01) { // 1% chance to clean up
         for (const [k, v] of rateLimitStore.entries()) {
             if (v.resetAt < now) {
+                // eslint-disable-next-line drizzle/enforce-delete-with-where
                 rateLimitStore.delete(k);
             }
         }
     }
-    
+
     if (!entry || entry.resetAt < now) {
         // Create new entry
         const newEntry: RateLimitEntry = {
@@ -56,11 +57,11 @@ export function checkRateLimit(
             resetAt: newEntry.resetAt,
         };
     }
-    
+
     // Increment count
     entry.count++;
     rateLimitStore.set(key, entry);
-    
+
     if (entry.count > limit) {
         return {
             allowed: false,
@@ -68,7 +69,7 @@ export function checkRateLimit(
             resetAt: entry.resetAt,
         };
     }
-    
+
     return {
         allowed: true,
         remaining: limit - entry.count,
@@ -91,7 +92,7 @@ export function enforceRateLimit(
     windowMs: number = 60000
 ): void {
     const result = checkRateLimit(identifier, limit, windowMs);
-    
+
     if (!result.allowed) {
         const resetIn = Math.ceil((result.resetAt - Date.now()) / 1000);
         throw new RateLimitError(

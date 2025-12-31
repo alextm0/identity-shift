@@ -68,7 +68,7 @@ export function GoalDetailsStep() {
             </div>
 
             <div className="relative group">
-                <GlassPanel key={goal.id} className="relative p-8 space-y-8 border-white/10 bg-black/40">
+                <GlassPanel key={goal.id} className="relative p-8 space-y-8 border-[var(--color-border)] bg-[var(--color-surface)]">
 
                     {/* Goal Header */}
                     <div className="space-y-4 border-b border-white/5 pb-8">
@@ -133,6 +133,7 @@ export function GoalDetailsStep() {
         </div>
     );
 }
+
 
 
 

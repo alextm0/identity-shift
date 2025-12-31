@@ -38,6 +38,7 @@ vi.mock('@/lib/rate-limit', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_cache: vi.fn((fn) => fn),
 }));
 
@@ -65,7 +66,7 @@ describe('getOrCreateYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should return existing yearly review', async () => {
@@ -79,9 +80,11 @@ describe('getOrCreateYearlyReviewAction', () => {
     const result = await getOrCreateYearlyReviewAction(2025);
 
     expect(result.success).toBe(true);
-    expect(result.data?.reviewId).toBe('review-1');
-    expect(result.data?.currentStep).toBe(2);
-    expect(result.data?.status).toBe('draft');
+    if (result.success) {
+      expect(result.data.reviewId).toBe('review-1');
+      expect(result.data.currentStep).toBe(2);
+      expect(result.data.status).toBe('draft');
+    }
   });
 
   it('should create new yearly review if none exists', async () => {
@@ -95,8 +98,10 @@ describe('getOrCreateYearlyReviewAction', () => {
     const result = await getOrCreateYearlyReviewAction(2025);
 
     expect(result.success).toBe(true);
-    expect(result.data?.reviewId).toBe('new-review');
-    expect(result.data?.currentStep).toBe(1);
+    if (result.success) {
+      expect(result.data.reviewId).toBe('new-review');
+      expect(result.data.currentStep).toBe(1);
+    }
   });
 });
 
@@ -105,13 +110,13 @@ describe('saveYearlyReviewProgressAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should save yearly review progress successfully', async () => {
     const existingReview = createMockYearlyReview({ id: 'review-1' });
     vi.mocked(getYearlyReviewById).mockResolvedValue(existingReview);
-    vi.mocked(updateYearlyReview).mockResolvedValue(undefined);
+    vi.mocked(updateYearlyReview).mockResolvedValue(existingReview);
 
     const saveAction = saveYearlyReviewProgressAction('review-1');
     const result = await saveAction({
@@ -129,7 +134,9 @@ describe('saveYearlyReviewProgressAction', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.data?.reviewId).toBe('review-1');
+    if (result.success) {
+      expect(result.data.reviewId).toBe('review-1');
+    }
     expect(updateYearlyReview).toHaveBeenCalled();
   });
 
@@ -146,7 +153,7 @@ describe('saveYearlyReviewProgressAction', () => {
   it('should sanitize text inputs', async () => {
     const existingReview = createMockYearlyReview({ id: 'review-1' });
     vi.mocked(getYearlyReviewById).mockResolvedValue(existingReview);
-    vi.mocked(updateYearlyReview).mockResolvedValue(undefined);
+    vi.mocked(updateYearlyReview).mockResolvedValue(existingReview);
 
     const saveAction = saveYearlyReviewProgressAction('review-1');
     await saveAction({
@@ -165,13 +172,13 @@ describe('completeYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should complete yearly review successfully', async () => {
     const existingReview = createMockYearlyReview({ id: 'review-1', status: 'draft' });
     vi.mocked(getYearlyReviewById).mockResolvedValue(existingReview);
-    vi.mocked(updateYearlyReview).mockResolvedValue(undefined);
+    vi.mocked(updateYearlyReview).mockResolvedValue({ ...existingReview, status: 'completed' });
     vi.mocked(completeYearlyReview).mockResolvedValue({ ...existingReview, status: 'completed' });
 
     const completeAction = completeYearlyReviewAction('review-1');
@@ -187,11 +194,14 @@ describe('completeYearlyReviewAction', () => {
         income: 5,
       },
       wins: ['Achieved goal 1', 'Learned new skill', 'Built good habits'],
+      otherDetails: 'This was a great year',
       currentStep: 3,
     });
 
     expect(result.success).toBe(true);
-    expect(result.data?.reviewId).toBe('review-1');
+    if (result.success) {
+      expect(result.data.reviewId).toBe('review-1');
+    }
     expect(updateYearlyReview).toHaveBeenCalledWith(
       'review-1',
       'user-1',
@@ -216,6 +226,7 @@ describe('completeYearlyReviewAction', () => {
         income: 5,
       },
       wins: ['Test win'],
+      otherDetails: 'details',
       currentStep: 3,
     })).rejects.toThrow(NotFoundError);
   });
@@ -226,7 +237,7 @@ describe('hasCompletedYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should return true when review is completed', async () => {
@@ -236,7 +247,9 @@ describe('hasCompletedYearlyReviewAction', () => {
     const result = await hasCompletedYearlyReviewAction(2025);
 
     expect(result.success).toBe(true);
-    expect(result.data?.hasCompleted).toBe(true);
+    if (result.success) {
+      expect(result.data.hasCompleted).toBe(true);
+    }
   });
 
   it('should return false when no completed review exists', async () => {
@@ -245,7 +258,9 @@ describe('hasCompletedYearlyReviewAction', () => {
     const result = await hasCompletedYearlyReviewAction(2025);
 
     expect(result.success).toBe(true);
-    expect(result.data?.hasCompleted).toBe(false);
+    if (result.success) {
+      expect(result.data.hasCompleted).toBe(false);
+    }
   });
 });
 
@@ -254,18 +269,20 @@ describe('editYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should unlock review for editing', async () => {
     const completedReview = createMockYearlyReview({ id: 'review-1', status: 'completed' });
     vi.mocked(getYearlyReviewById).mockResolvedValue(completedReview);
-    vi.mocked(updateYearlyReview).mockResolvedValue(undefined);
+    vi.mocked(updateYearlyReview).mockResolvedValue({ ...completedReview, status: 'draft' });
 
     const result = await editYearlyReviewAction('review-1');
 
     expect(result.success).toBe(true);
-    expect(result.data?.reviewId).toBe('review-1');
+    if (result.success) {
+      expect(result.data.reviewId).toBe('review-1');
+    }
     expect(updateYearlyReview).toHaveBeenCalledWith(
       'review-1',
       'user-1',
@@ -285,7 +302,7 @@ describe('deleteYearlyReviewAction', () => {
     vi.clearAllMocks();
     vi.mocked(getRequiredSession).mockResolvedValue({
       user: { id: 'user-1' },
-    } as any);
+    } as unknown as { user: { id: string } });
   });
 
   it('should delete yearly review successfully', async () => {

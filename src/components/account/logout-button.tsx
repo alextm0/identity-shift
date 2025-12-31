@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export function LogoutButton() {
         startTransition(async () => {
             try {
                 const { error } = await authClient.signOut();
-                
+
                 if (error) {
                     toast.error("Failed to sign out. Please try again.");
                     console.error("Logout error:", error);

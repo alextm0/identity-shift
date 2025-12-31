@@ -7,12 +7,11 @@ import { cn } from "@/lib/utils";
 
 interface CommitmentSealProps {
   commitmentStatement?: string | null;
-  signatureName?: string | null;
   signatureImage?: string | null;
   signedAt?: Date | string | null;
 }
 
-export function CommitmentSeal({ commitmentStatement, signatureName, signatureImage, signedAt }: CommitmentSealProps) {
+export function CommitmentSeal({ commitmentStatement, signatureImage, signedAt }: CommitmentSealProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -57,11 +56,6 @@ export function CommitmentSeal({ commitmentStatement, signatureName, signatureIm
                   alt="Signature"
                   className="max-w-full h-auto rounded-lg"
                 />
-                {signatureName && (
-                  <p className="text-xs font-mono text-white/50 uppercase tracking-widest mt-3">
-                    {signatureName}
-                  </p>
-                )}
                 {signedAt && (
                   <p className="text-[10px] font-mono text-white/30 uppercase tracking-widest mt-1">
                     Signed on {format(new Date(signedAt), "MMMM d, yyyy")}

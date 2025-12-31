@@ -66,7 +66,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
     <div className="relative w-full h-full aspect-square overflow-visible">
       <svg
         viewBox={`-80 -80 ${size + 160} ${size + 160}`}
-        className="w-full h-full drop-shadow-[0_0_40px_rgba(139,92,246,0.3)]"
+        className="w-full h-full"
         style={{ overflow: 'visible' }}
       >
         {/* Background Circles */}
@@ -76,8 +76,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
             cx={center}
             cy={center}
             r={(level / WHEEL_MAX_VALUE) * radius}
-            className="fill-none stroke-white/6 stroke-[0.5]"
-            style={{ filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.1))' }}
+            className="fill-none stroke-white/8 stroke-[0.75]"
           />
         ))}
 
@@ -110,8 +109,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
         {/* Current Status Polygon - Solid Fill */}
         <polygon
           points={currentPolygonPoints}
-          className="fill-white/12 stroke-white/25 stroke-[1.5] transition-all duration-500 ease-in-out"
-          style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.1))' }}
+          className="fill-white/15 stroke-white/30 stroke-[2] transition-all duration-500 ease-in-out"
         />
 
         {/* Target Status Polygon - Bright Stroke Overlay */}
@@ -120,7 +118,7 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
             points={targetPolygonPoints}
             className="fill-none stroke-focus-violet stroke-[2.5] transition-all duration-500 ease-in-out"
             style={{
-              filter: "drop-shadow(0 0 12px rgba(139, 92, 246, 0.7)) drop-shadow(0 0 4px rgba(139, 92, 246, 0.4))",
+              filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.5))",
             }}
           />
         )}
@@ -134,24 +132,17 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
               key={`current-${i}`}
               cx={p.x}
               cy={p.y}
-              r="5"
+              r="6"
               className={cn(
                 "transition-all duration-500 ease-in-out",
-                isHighlighted 
+                isHighlighted
                   ? "fill-focus-violet"
                   : status === 'weak'
                   ? "fill-bullshit-crimson/70"
                   : status === 'strong'
                   ? "fill-action-emerald/70"
-                  : "fill-white/50"
+                  : "fill-white/60"
               )}
-              style={{
-                filter: isHighlighted 
-                  ? "drop-shadow(0 0 6px rgba(139, 92, 246, 0.8))"
-                  : status === 'strong'
-                  ? "drop-shadow(0 0 4px rgba(16, 185, 129, 0.5))"
-                  : "drop-shadow(0 0 3px rgba(255, 255, 255, 0.2))"
-              }}
             />
           );
         })}
@@ -164,14 +155,13 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
               key={`target-${i}`}
               cx={p.x}
               cy={p.y}
-              r="6"
+              r="7"
               className={cn(
                 "fill-focus-violet transition-all duration-500 ease-in-out",
                 isHighlighted && "fill-focus-violet"
               )}
               style={{
-                filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.9)) drop-shadow(0 0 3px rgba(139, 92, 246, 0.6))",
-                transform: isHighlighted ? "scale(1.2)" : "scale(1)",
+                filter: "drop-shadow(0 0 6px rgba(139, 92, 246, 0.6))",
               }}
             />
           );
@@ -194,18 +184,17 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
                 textAnchor={textAnchor}
                 dominantBaseline="middle"
                 className={cn(
-                  "font-mono text-[12px] uppercase tracking-widest transition-all duration-300 font-bold",
-                  isHighlighted 
+                  "font-mono text-[13px] uppercase tracking-widest transition-all duration-300 font-bold",
+                  isHighlighted
                     ? "fill-focus-violet"
                     : status === 'weak'
                     ? "fill-bullshit-crimson/95"
                     : status === 'strong'
                     ? "fill-action-emerald/95"
-                    : "fill-white/85"
+                    : "fill-white/90"
                 )}
                 style={{
-                  textShadow: "0 0 8px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.8), 0 0 12px rgba(255,255,255,0.3)",
-                  filter: "drop-shadow(0 0 2px rgba(0,0,0,0.8))",
+                  textShadow: "0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5)",
                 }}
               >
                 {label}
@@ -217,18 +206,17 @@ export function WheelOfLife({ values, targetValues, highlightedArea, showWeakStr
                 textAnchor={textAnchor}
                 dominantBaseline="middle"
                 className={cn(
-                  "font-mono text-[11px] font-bold transition-all duration-300",
-                  isHighlighted 
+                  "font-mono text-[12px] font-bold transition-all duration-300",
+                  isHighlighted
                     ? "fill-focus-violet/95"
-                    : "fill-white/75"
+                    : "fill-white/80"
                 )}
                 style={{
-                  textShadow: "0 0 6px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.25)",
-                  filter: "drop-shadow(0 0 2px rgba(0,0,0,0.8))",
+                  textShadow: "0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5)",
                 }}
               >
                 {currentValue}
-                {targetValue && targetValue !== currentValue && (
+                {targetValue && (
                   <tspan className="fill-focus-violet/90"> / {targetValue}</tspan>
                 )}
               </text>

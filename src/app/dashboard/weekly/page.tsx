@@ -2,7 +2,7 @@ import { getWeeklyData } from "@/queries/weekly";
 import { WeeklyReviewPanel } from "@/components/reviews/weekly-review-panel";
 
 export default async function WeeklyReviewPage() {
-  const { activeSprint, weeklyLogs, latestReview, allReviews } = await getWeeklyData();
+  const { activeSprint, weeklyLogs, promiseLogs, latestReview, allReviews } = await getWeeklyData();
 
   return (
     <div className="max-w-6xl mx-auto py-12 px-4 md:px-0 space-y-12">
@@ -20,6 +20,7 @@ export default async function WeeklyReviewPage() {
       <WeeklyReviewPanel
         activeSprint={activeSprint || undefined}
         weeklyLogs={weeklyLogs}
+        promiseLogs={promiseLogs}
         latestReview={latestReview}
         allReviews={allReviews || []}
       />

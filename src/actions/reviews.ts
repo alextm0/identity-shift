@@ -12,13 +12,13 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { createWeeklyReview, createMonthlyReview, getWeeklyReviewById, getMonthlyReviewById, updateWeeklyReview, updateMonthlyReview } from "@/data-access/reviews";
 import { sanitizeText } from "@/lib/sanitize";
 import { randomUUID } from "crypto";
 import { WeeklyReviewFormSchema, MonthlyReviewFormSchema } from "@/lib/validators";
 import { NotFoundError } from "@/lib/errors";
-import { success } from "@/lib/actions/result";
+import { success, failure } from "@/lib/actions/result";
 import { createAction, createActionWithParam } from "@/lib/actions/middleware";
 
 export const createWeeklyReviewAction = createAction(
@@ -42,12 +42,14 @@ export const createWeeklyReviewAction = createAction(
             createdAt: new Date(),
         });
 
-        revalidatePath("/dashboard");
-        revalidatePath("/dashboard/weekly");
-        
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Weekly review saved successfully",
                 redirect: "weekly"
             }
@@ -70,13 +72,14 @@ export const updateWeeklyReviewAction = createActionWithParam(
 
         await updateWeeklyReview(reviewId, userId, validated);
 
-        revalidatePath("/dashboard");
-        revalidatePath("/reviews");
-        revalidatePath("/reviews/weekly");
-        
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Weekly review updated successfully",
                 redirect: "weekly"
             }
@@ -91,6 +94,15 @@ export const updateWeeklyReviewAction = createActionWithParam(
 export const createMonthlyReviewAction = createAction(
     MonthlyReviewFormSchema,
     async (userId, validated) => {
+        // Validate sprint ownership
+        if (validated.sprintId) {
+            const { getSprintById } = await import("@/data-access/sprints");
+            const sprint = await getSprintById(validated.sprintId, userId);
+            if (!sprint) {
+                return failure("Sprint not found or access denied", "SPRINT_NOT_FOUND", 404);
+            }
+        }
+
         const reviewId = randomUUID();
         await createMonthlyReview({
             id: reviewId,
@@ -105,13 +117,14 @@ export const createMonthlyReviewAction = createAction(
             createdAt: new Date(),
         });
 
-        revalidatePath("/dashboard");
-        revalidatePath("/reviews");
-        revalidatePath("/reviews/monthly");
-        
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Monthly review saved successfully",
                 redirect: "monthly"
             }
@@ -134,13 +147,14 @@ export const updateMonthlyReviewAction = createActionWithParam(
 
         await updateMonthlyReview(reviewId, userId, validated);
 
-        revalidatePath("/dashboard");
-        revalidatePath("/reviews");
-        revalidatePath("/reviews/monthly");
-        
+        revalidateTag("reviews", "max");
+        revalidateTag("dashboard", "max");
+        updateTag("reviews");
+        updateTag("dashboard");
+
         return success(
             { id: reviewId },
-            { 
+            {
                 message: "Monthly review updated successfully",
                 redirect: "monthly"
             }

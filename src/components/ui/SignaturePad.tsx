@@ -19,7 +19,7 @@ export function SignaturePad({
   penColor = "white",
   className,
 }: SignaturePadProps) {
-  const sigCanvas = useRef<any>(null);
+  const sigCanvas = useRef<SignatureCanvas>(null);
   const [internalIsSigned, setInternalIsSigned] = useState(false);
 
   const finalIsSigned = isSigned !== undefined ? isSigned : internalIsSigned;
@@ -41,7 +41,7 @@ export function SignaturePad({
 
   return (
     <div className={className}>
-      <div className="relative aspect-[3/1] rounded-2xl border border-white/10 bg-black/40 overflow-hidden cursor-crosshair group hover:border-white/20 transition-colors">
+      <div className="relative aspect-[3/1] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden cursor-crosshair group hover:border-white/20 transition-colors">
         <SignatureCanvas
           ref={sigCanvas}
           penColor={penColor}
@@ -56,7 +56,7 @@ export function SignaturePad({
               variant="ghost"
               size="sm"
               onClick={clearSignature}
-              className="h-8 px-3 rounded-lg bg-black/60 hover:bg-black text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white border border-white/5"
+              className="h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-mono uppercase tracking-widest text-white/40 hover:text-white border border-[var(--color-border)]"
             >
               Clear
             </Button>

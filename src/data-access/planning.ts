@@ -4,6 +4,10 @@ import { eq, and, desc } from "drizzle-orm";
 import { NewPlanning, Planning } from "@/lib/types";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
+import { unstable_cache } from "next/cache";
+import { toPlanningWithTypedFields } from "@/lib/type-helpers";
+import { PlanningWithTypedFields } from "@/lib/types";
+import { NotFoundError } from "@/lib/errors";
 
 /**
  * Data Access Layer for Planning
@@ -12,48 +16,59 @@ import { randomUUID } from "crypto";
  * No business logic - just CRUD operations.
  */
 
+const _toTypedPlanning = (p: Planning): PlanningWithTypedFields => toPlanningWithTypedFields(p);
+
 /**
  * Get planning by user ID (returns the most recent/current year's plan)
  * @deprecated Use getPlanningByUserIdAndYear for explicit year handling
  */
-export async function getPlanningByUserId(userId: string): Promise<Planning | undefined> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            const result = await db.select()
-                .from(planning)
-                .where(createOwnershipCondition(planning.userId, userId))
-                .orderBy(desc(planning.year));
-            return result[0];
-        },
-        "Failed to fetch planning by user ID"
-    );
-}
+export const getPlanningByUserId = unstable_cache(
+    async (userId: string): Promise<PlanningWithTypedFields | undefined> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                const result = await db.select()
+                    .from(planning)
+                    .where(createOwnershipCondition(planning.userId, userId))
+                    .orderBy(desc(planning.year));
+                return result[0] ? _toTypedPlanning(result[0]) : undefined;
+            },
+            "Failed to fetch planning by user ID"
+        );
+    },
+    ['planning-by-user-id'],
+    { tags: ['planning'] }
+);
 
 /**
  * Get planning by user ID and year
  */
-export async function getPlanningByUserIdAndYear(userId: string, year: number): Promise<Planning | undefined> {
-    return await withDatabaseErrorHandling(
-        async () => {
-            const result = await db.select()
-                .from(planning)
-                .where(and(
-                    createOwnershipCondition(planning.userId, userId),
-                    eq(planning.year, year)
-                ));
-            return result[0];
-        },
-        "Failed to fetch planning by user ID and year"
-    );
-}
+export const getPlanningByUserIdAndYear = unstable_cache(
+    async (userId: string, year: number): Promise<PlanningWithTypedFields | undefined> => {
+        return await withDatabaseErrorHandling(
+            async () => {
+                const result = await db.select()
+                    .from(planning)
+                    .where(and(
+                        createOwnershipCondition(planning.userId, userId),
+                        eq(planning.year, year)
+                    ));
+                return result[0] ? _toTypedPlanning(result[0]) : undefined;
+            },
+            "Failed to fetch planning by user ID and year"
+        );
+    },
+    ['planning-by-year'],
+    { tags: ['planning'] }
+);
 
-export async function getPlanningById(id: string, userId: string): Promise<Planning | undefined> {
+export async function getPlanningById(id: string, userId: string): Promise<PlanningWithTypedFields | undefined> {
     return await withDatabaseErrorHandling(
         async () => {
-            return (await db.select()
+            const result = (await db.select()
                 .from(planning)
                 .where(createOwnershipAndIdCondition(planning.id, id, planning.userId, userId))
                 .limit(1))[0];
+            return result ? _toTypedPlanning(result) : undefined;
         },
         "Failed to fetch planning by ID"
     );
@@ -63,7 +78,7 @@ export async function getPlanningById(id: string, userId: string): Promise<Plann
  * Get or create planning for a user for a specific year
  * Defaults to next year (planning is typically for the upcoming year)
  */
-export async function getOrCreatePlanning(userId: string, year?: number): Promise<Planning> {
+export async function getOrCreatePlanning(userId: string, year?: number): Promise<PlanningWithTypedFields> {
     // Default to next year for planning (e.g., in 2025, plan for 2026)
     const planningYear = year ?? new Date().getFullYear() + 1;
 
@@ -111,7 +126,7 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
                         })
                         .where(eq(planning.id, existing.id))
                         .returning();
-                    return result[0];
+                    return _toTypedPlanning(result[0]);
                 }
                 return existing;
             }
@@ -137,7 +152,7 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
             };
 
             const result = await db.insert(planning).values(newPlanning).returning();
-            return result[0];
+            return _toTypedPlanning(result[0]);
         },
         "Failed to get or create planning"
     );
@@ -150,15 +165,17 @@ export async function upsertPlanning(data: NewPlanning) {
             const existing = await getPlanningByUserId(data.userId);
 
             if (existing) {
-                return await db.update(planning)
+                const updated = await db.update(planning)
                     .set({
                         ...data,
                         updatedAt: new Date(),
                     })
                     .where(eq(planning.id, existing.id))
                     .returning();
+                return updated.map(_toTypedPlanning);
             } else {
-                return await db.insert(planning).values(data).returning();
+                const inserted = await db.insert(planning).values(data).returning();
+                return inserted.map(_toTypedPlanning);
             }
         },
         "Failed to upsert planning"
@@ -168,7 +185,7 @@ export async function upsertPlanning(data: NewPlanning) {
 /**
  * Update planning progress
  */
-export async function updatePlanning(id: string, userId: string, data: Partial<NewPlanning>): Promise<Planning> {
+export async function updatePlanning(id: string, userId: string, data: Partial<NewPlanning>): Promise<PlanningWithTypedFields> {
     return await withDatabaseErrorHandling(
         async () => {
             const updateData = {
@@ -181,9 +198,9 @@ export async function updatePlanning(id: string, userId: string, data: Partial<N
                 .returning();
 
             if (result.length === 0) {
-                throw new Error("Planning not found");
+                throw new NotFoundError("Planning not found");
             }
-            return result[0];
+            return _toTypedPlanning(result[0]);
         },
         "Failed to update planning"
     );
@@ -192,7 +209,7 @@ export async function updatePlanning(id: string, userId: string, data: Partial<N
 /**
  * Complete planning (mark as completed)
  */
-export async function completePlanning(id: string, userId: string): Promise<Planning> {
+export async function completePlanning(id: string, userId: string): Promise<PlanningWithTypedFields> {
     return await withDatabaseErrorHandling(
         async () => {
             const result = await db.update(planning)
@@ -205,9 +222,9 @@ export async function completePlanning(id: string, userId: string): Promise<Plan
                 .returning();
 
             if (result.length === 0) {
-                throw new Error("Planning not found");
+                throw new NotFoundError("Planning not found");
             }
-            return result[0];
+            return _toTypedPlanning(result[0]);
         },
         "Failed to complete planning"
     );

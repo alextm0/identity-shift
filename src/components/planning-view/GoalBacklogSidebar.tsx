@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ListTodo, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface Goal {
   id: string;

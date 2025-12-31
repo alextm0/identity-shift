@@ -1,11 +1,9 @@
-import { redirect } from "next/navigation";
 import { getRequiredSession } from "@/lib/auth/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
-import { Button } from "@/components/ui/button";
 import { ExportDataButton } from "@/components/account/export-data-button";
 import { LogoutButton } from "@/components/account/logout-button";
-import { Download, User, Shield, Database } from "lucide-react";
+import { User, Shield, Database } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +16,7 @@ export default async function AccountSettingsPage() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white uppercase">
-                            Account <span className="text-white/20 font-light">//</span> <span className="text-focus-violet">Settings</span>
+                            Account <span className="text-white/20 font-light">{"//"}</span> <span className="text-focus-violet">Settings</span>
                         </h1>
                         <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/40 mt-4">
                             Manage your account and data
