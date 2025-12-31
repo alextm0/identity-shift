@@ -1,13 +1,17 @@
 /**
  * Middleware for route protection and authorization.
- * 
+ *
  * Following Next.js 16+ best practices:
  * - Checks for session cookie existence only (no API calls)
  * - Real authorization happens in page/route handlers using verifySession()
- * 
- * This prevents the "Failed to parse URL" error that occurs when middleware
- * tries to fetch /api/auth/get-session with a relative URL.
- * 
+ *
+ * Cookie naming:
+ * - Production: __Secure-neon-auth.session_token (secure HTTPS-only)
+ * - Development: neon-auth.session_token (fallback for local)
+ *
+ * Neon Auth uses Better Auth with a custom "neon-auth" prefix and follows
+ * secure cookie conventions (__Secure- prefix) in production environments.
+ *
  * Reference: Next.js authentication guide
  * https://nextjs.org/docs/app/guides/authentication#middleware
  */
@@ -29,14 +33,19 @@ export function middleware(request: NextRequest) {
     console.log('[Middleware] All cookies:', allCookies.map(c => `${c.name}=${c.value.substring(0, 20)}...`));
 
     // Check for session cookie existence only (no API calls)
-    // Better Auth default cookie format: "better-auth.session_token"
-    // Reading directly from request.cookies is Edge-safe
-    const token = request.cookies.get("better-auth.session_token")?.value;
+    // Neon Auth uses Better Auth with custom prefix "neon-auth"
+    // In production, it uses __Secure- prefix for secure cookies
+    const token =
+        request.cookies.get("__Secure-neon-auth.session_token")?.value ||
+        request.cookies.get("neon-auth.session_token")?.value; // fallback for local dev
 
     // If no session token exists, redirect to sign-in
     if (!token) {
+        console.log('[Middleware] No session token found, redirecting to sign-in');
         return NextResponse.redirect(new URL('/auth/sign-in', request.url));
     }
+
+    console.log('[Middleware] Session token found, allowing request');
 
     // Allow request to proceed - real authorization happens in page handlers
     // using verifySession() which properly validates the session via API
