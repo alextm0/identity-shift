@@ -1,4 +1,4 @@
-import type { Config } from "drizzle-kit";
+import { defineConfig } from "drizzle-kit";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -8,8 +8,11 @@ if (!DATABASE_URL) {
     throw new Error("Missing required environment variable DATABASE_URL");
 }
 
-export default {
+export default defineConfig({
     schema: "./src/lib/db/schema.ts",
     out: "./drizzle",
-    connectionString: DATABASE_URL,
-} satisfies Config;
+    dialect: "postgresql",
+    dbCredentials: {
+        url: DATABASE_URL,
+    },
+});
