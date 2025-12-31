@@ -3,6 +3,8 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { ExportDataButton } from "@/components/account/export-data-button";
 import { LogoutButton } from "@/components/account/logout-button";
+import { LogoutAllButton } from "@/components/account/logout-all-button";
+import { SessionsList } from "@/components/account/sessions-list";
 import { User, Shield, Database } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
@@ -86,9 +88,18 @@ export default async function AccountSettingsPage() {
                             </div>
                             <div className="pt-4 border-t border-white/5">
                                 <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-4">
-                                    Session Management
+                                    Active Sessions
                                 </p>
-                                <LogoutButton />
+                                <SessionsList />
+                            </div>
+                            <div className="pt-4 border-t border-white/5">
+                                <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-4">
+                                    Sign Out
+                                </p>
+                                <div className="flex gap-3">
+                                    <LogoutButton />
+                                    <LogoutAllButton />
+                                </div>
                             </div>
                         </div>
                     </GlassPanel>

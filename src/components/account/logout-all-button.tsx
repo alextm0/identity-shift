@@ -1,9 +1,3 @@
-/**
- * Logout Button Component
- * 
- * Provides a logout button that signs out the user and redirects to sign-in page.
- */
-
 "use client";
 
 import { useTransition } from "react";
@@ -13,19 +7,22 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export function LogoutButton() {
+export function LogoutAllButton() {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
 
-    const handleLogout = async () => {
+    const handleLogoutAll = async () => {
+        if (!confirm("This will sign you out on all devices. Continue?")) {
+            return;
+        }
+
         startTransition(async () => {
             try {
-                // Use fetchOptions with redirect: "manual" to prevent automatic redirects
-                // and handle the redirect ourselves after successful sign-out
+                // Sign out - this will invalidate all sessions
                 const { error } = await authClient.signOut({
                     fetchOptions: {
                         onSuccess: () => {
-                            toast.success("Signed out successfully");
+                            toast.success("Signed out from all devices");
                             router.push("/auth/sign-in");
                             router.refresh();
                         },
@@ -46,22 +43,22 @@ export function LogoutButton() {
 
     return (
         <Button
-            onClick={handleLogout}
+            onClick={handleLogoutAll}
             disabled={isPending}
-            className="h-12 px-6 bg-bullshit-crimson/10 border border-bullshit-crimson/20 text-bullshit-crimson hover:bg-bullshit-crimson/20 hover:border-bullshit-crimson/30 font-mono uppercase tracking-widest rounded-xl transition-all duration-300"
+            variant="outline"
+            className="h-10 px-4 bg-transparent border border-bullshit-crimson/30 text-bullshit-crimson hover:bg-bullshit-crimson/10 hover:border-bullshit-crimson/40 font-mono text-xs uppercase tracking-wider rounded-lg transition-all duration-300"
         >
             {isPending ? (
                 <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                     Signing Out...
                 </>
             ) : (
                 <>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
+                    <LogOut className="h-3 w-3 mr-2" />
+                    Sign Out All Devices
                 </>
             )}
         </Button>
     );
 }
-

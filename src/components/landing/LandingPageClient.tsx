@@ -437,6 +437,8 @@ function HeroVisual() {
 export default function Home() {
   const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = session?.session && session?.user;
 
   // Animation variants
   const containerVariants: Variants = {
@@ -509,7 +511,7 @@ export default function Home() {
               <div className="space-y-4 w-full">
                 <div className="flex flex-col sm:flex-row gap-4 w-full">
                   <Button size="lg" variant="violet" className="h-14 px-10 text-base md:text-lg rounded-2xl shadow-2xl shadow-violet-500/40 font-bold scale-105 hover:scale-110 transition-transform" asChild>
-                    <Link href="/auth/sign-in">
+                    <Link href={isAuthenticated ? "/dashboard" : "/auth/sign-in"}>
                       Plan your first sprint
                     </Link>
                   </Button>
@@ -779,7 +781,7 @@ export default function Home() {
                     We don't optimize for retention; we optimize for <span className="text-white underline decoration-violet-500/30 underline-offset-4">integrity</span>.
                   </p>
                   <Link
-                    href="/auth/sign-in"
+                    href={isAuthenticated ? "/dashboard" : "/auth/sign-in"}
                     className="group flex items-center gap-2 text-sm font-bold text-violet-400/80 hover:text-violet-400 transition-colors"
                   >
                     Start your first sprint
@@ -960,7 +962,7 @@ export default function Home() {
                   className="h-14 px-10 text-lg rounded-2xl shadow-xl shadow-violet-500/20 font-bold transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-violet-500/30"
                   asChild
                 >
-                  <Link href="/auth/sign-up">Start your first sprint</Link>
+                  <Link href={isAuthenticated ? "/dashboard" : "/auth/sign-up"}>Start your first sprint</Link>
                 </Button>
                 <p className="text-xs text-white/10 font-bold tracking-[0.2em] uppercase">
                   No streaks. Just proof you can trust.
