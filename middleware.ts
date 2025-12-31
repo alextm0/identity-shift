@@ -13,7 +13,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
 
 export function middleware(request: NextRequest) {
     // Redirect legacy routes to dashboard equivalents
@@ -23,16 +22,22 @@ export function middleware(request: NextRequest) {
     if (request.nextUrl.pathname === "/planning" || request.nextUrl.pathname.startsWith("/planning/")) {
         return NextResponse.redirect(new URL('/dashboard/planning', request.url));
     }
-    
+
+    // TEMPORARY: Log all cookies to debug production issue
+    const allCookies = request.cookies.getAll();
+    console.log('[Middleware] Path:', request.nextUrl.pathname);
+    console.log('[Middleware] All cookies:', allCookies.map(c => `${c.name}=${c.value.substring(0, 20)}...`));
+
     // Check for session cookie existence only (no API calls)
-    // Uses Better Auth's getSessionCookie utility to get the correct cookie name
-    const sessionCookie = getSessionCookie(request);
-    
-    // If no session cookie exists, redirect to sign-in
-    if (!sessionCookie) {
+    // Better Auth default cookie format: "better-auth.session_token"
+    // Reading directly from request.cookies is Edge-safe
+    const token = request.cookies.get("better-auth.session_token")?.value;
+
+    // If no session token exists, redirect to sign-in
+    if (!token) {
         return NextResponse.redirect(new URL('/auth/sign-in', request.url));
     }
-    
+
     // Allow request to proceed - real authorization happens in page handlers
     // using verifySession() which properly validates the session via API
     return NextResponse.next();
