@@ -77,7 +77,7 @@ describe('saveDailyAuditAction', () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.toast.message).toContain('successfully');
+      expect(result.message).toContain('successfully');
     }
     expect(saveDailyAudit).toHaveBeenCalled();
   });
