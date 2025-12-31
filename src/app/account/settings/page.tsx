@@ -1,11 +1,9 @@
-import { redirect } from "next/navigation";
 import { getRequiredSession } from "@/lib/auth/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
-import { Button } from "@/components/ui/button";
 import { ExportDataButton } from "@/components/account/export-data-button";
 import { LogoutButton } from "@/components/account/logout-button";
-import { Download, User, Shield, Database } from "lucide-react";
+import { User, Shield, Database } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 

@@ -3,11 +3,8 @@
 import Link from 'next/link';
 import { motion, useScroll, useTransform, useSpring, useReducedMotion, Variants, MotionValue } from 'framer-motion';
 import {
-  LineChart,
-  Line,
   ResponsiveContainer,
   XAxis,
-  YAxis,
   Tooltip,
   AreaChart,
   Area
@@ -17,9 +14,7 @@ import {
   ShieldCheck,
   Activity,
   Target,
-  Zap,
   BarChart3,
-  Layers,
   Fingerprint,
   Menu,
   X,

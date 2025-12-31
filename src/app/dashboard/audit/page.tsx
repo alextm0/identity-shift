@@ -1,4 +1,3 @@
-import { GlassPanel } from '@/components/dashboard/glass-panel';
 import { MetricGauge } from '@/components/dashboard/metric-gauge';
 import { getDashboardData } from '@/queries/dashboard';
 

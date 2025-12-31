@@ -12,7 +12,7 @@ import {
   WeeklyReviewFormSchema,
   MonthlyReviewFormSchema,
 } from '@/lib/validators';
-import { SprintPriorityType, OneChangeOption, DesiredIdentityStatus } from '@/lib/enums';
+import { SprintPriorityType, OneChangeOption } from '@/lib/enums';
 
 describe('GoalSchema', () => {
   it('should validate a valid goal', () => {

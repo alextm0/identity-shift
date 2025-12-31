@@ -5,7 +5,8 @@
  */
 
 import { vi } from 'vitest';
-import type { DailyLog, Sprint, SprintWithPriorities, SprintWithDetails, Planning, WeeklyReview, MonthlyReview, YearlyReview } from '@/lib/types';
+import type { DailyLog, SprintWithDetails, Planning, WeeklyReview, MonthlyReview, YearlyReview, SprintWithPriorities } from '@/lib/types';
+import { SprintPriorityType } from '@/lib/enums';
 
 // Mock the database module
 export const mockDb = {
@@ -31,6 +32,7 @@ export function createMockDailyLog(overrides?: Partial<DailyLog>): DailyLog {
     date: new Date('2024-01-15'),
     energy: 3,
     sleepHours: 7,
+    mainGoalId: 'goal-1',
     mainFocusCompleted: true,
     morningGapMin: 30,
     distractionMin: 15,
@@ -58,7 +60,7 @@ export function createMockSprint(overrides?: Partial<SprintWithDetails>): Sprint
       {
         key: 'priority-1',
         label: 'Test Priority',
-        type: 'habit' as const,
+        type: SprintPriorityType.HABIT,
         weeklyTargetUnits: 5,
       },
     ],
@@ -71,7 +73,6 @@ export function createMockSprint(overrides?: Partial<SprintWithDetails>): Sprint
         goalText: 'Test Goal',
         sortOrder: 0,
         createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
         promises: [
           {
             id: 'promise-1',
@@ -94,12 +95,30 @@ export function createMockSprint(overrides?: Partial<SprintWithDetails>): Sprint
   };
 }
 
+export function createMockSprintWithPriorities(overrides?: Partial<SprintWithPriorities>): SprintWithPriorities {
+  return {
+    id: 'sprint-1',
+    userId: 'user-1',
+    name: 'Test Sprint',
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-01-14'),
+    priorities: [],
+    active: true,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    ...overrides,
+  };
+}
+
 export function createMockPlanning(overrides?: Partial<Planning>): Planning {
   return {
     id: 'planning-1',
     userId: 'user-1',
     year: new Date().getFullYear() + 1,
     futureIdentity: 'I am becoming the person who achieves their goals',
+    activeGoals: [],
+    backlogGoals: [],
+    archivedGoals: [],
     goals: [],
     annualGoals: [],
     wheelOfLife: {
@@ -113,6 +132,7 @@ export function createMockPlanning(overrides?: Partial<Planning>): Planning {
     currentGoalIndex: 0,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    completedAt: null,
     ...overrides,
   };
 }

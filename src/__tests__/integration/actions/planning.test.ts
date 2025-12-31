@@ -11,9 +11,7 @@ import {
 import { getRequiredSession } from '@/lib/auth/server';
 import { 
   getOrCreatePlanning, 
-  getPlanningById, 
-  updatePlanning, 
-  completePlanning 
+  getPlanningById
 } from '@/data-access/planning';
 import { createMockPlanning } from '@/__tests__/mocks/db';
 import { NotFoundError } from '@/lib/errors';
@@ -56,10 +54,12 @@ describe('getOrCreatePlanningAction', () => {
     const result = await getOrCreatePlanningAction();
 
     expect(result.success).toBe(true);
-    expect(result.data?.planningId).toBe('planning-1');
-    expect(result.data?.currentModule).toBe(2);
-    expect(result.data?.currentStep).toBe(3);
-    expect(result.data?.status).toBe('draft');
+    if (result.success) {
+      expect(result.data.planningId).toBe('planning-1');
+      expect(result.data.currentModule).toBe(2);
+      expect(result.data.currentStep).toBe(3);
+      expect(result.data.status).toBe('draft');
+    }
   });
 
   it('should create new planning if none exists', async () => {
@@ -74,8 +74,10 @@ describe('getOrCreatePlanningAction', () => {
     const result = await getOrCreatePlanningAction();
 
     expect(result.success).toBe(true);
-    expect(result.data?.planningId).toBe('new-planning');
-    expect(result.data?.currentStep).toBe(1);
+    if (result.success) {
+      expect(result.data.planningId).toBe('new-planning');
+      expect(result.data.currentStep).toBe(1);
+    }
   });
 });
 

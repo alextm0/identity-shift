@@ -6,8 +6,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { startSprintAction, closeSprintAction } from '@/actions/sprints';
 import { getRequiredSession } from '@/lib/auth/server';
 import { createSprint, deactivateAllSprints, getSprintById, closeSprintById } from '@/data-access/sprints';
-import { createMockSprint } from '@/__tests__/mocks/db';
-import { BusinessRuleError, NotFoundError } from '@/lib/errors';
+import { createMockSprint, createMockSprintWithPriorities } from '@/__tests__/mocks/db';
+import { NotFoundError } from '@/lib/errors';
+import { SprintWithDetails, SprintWithPriorities } from '@/lib/types';
 
 // Mock dependencies
 vi.mock('@/lib/auth/server', async () => {
@@ -36,9 +37,9 @@ describe('startSprintAction', () => {
   });
 
   it('should create a new sprint successfully', async () => {
-    const newSprint = createMockSprint({ id: 'sprint-1' });
-    vi.mocked(deactivateAllSprints).mockResolvedValue(undefined);
-    vi.mocked(createSprint).mockResolvedValue([newSprint]);
+    const newSprint = createMockSprintWithPriorities({ id: 'sprint-1' });
+    vi.mocked(deactivateAllSprints).mockResolvedValue([]);
+    vi.mocked(createSprint).mockResolvedValue(newSprint);
 
     const formData = {
       name: 'Test Sprint',
@@ -67,9 +68,9 @@ describe('startSprintAction', () => {
   });
 
   it('should deactivate existing active sprint before creating new one', async () => {
-    const newSprint = createMockSprint({ id: 'sprint-2' });
-    vi.mocked(deactivateAllSprints).mockResolvedValue(undefined);
-    vi.mocked(createSprint).mockResolvedValue([newSprint]);
+    const newSprint = createMockSprintWithPriorities({ id: 'sprint-2' });
+    vi.mocked(deactivateAllSprints).mockResolvedValue([]);
+    vi.mocked(createSprint).mockResolvedValue(newSprint);
 
     const formData = {
       name: 'New Sprint',
@@ -107,7 +108,7 @@ describe('closeSprintAction', () => {
 
   it('should close a sprint successfully', async () => {
     const sprint = createMockSprint({ id: 'sprint-1', active: true });
-    vi.mocked(getSprintById).mockResolvedValue(sprint);
+    vi.mocked(getSprintById).mockResolvedValue(sprint as SprintWithDetails);
     vi.mocked(closeSprintById).mockResolvedValue([{ ...sprint, active: false }]);
 
     await closeSprintAction('sprint-1');
@@ -119,13 +120,6 @@ describe('closeSprintAction', () => {
     vi.mocked(getSprintById).mockResolvedValue(undefined);
 
     await expect(closeSprintAction('non-existent')).rejects.toThrow(NotFoundError);
-  });
-
-  it('should throw AuthorizationError when sprint belongs to different user', async () => {
-    const sprint = createMockSprint({ id: 'sprint-1', userId: 'other-user' });
-    vi.mocked(getSprintById).mockResolvedValue(undefined); // Not found for current user
-
-    await expect(closeSprintAction('sprint-1')).rejects.toThrow(NotFoundError);
   });
 });
 

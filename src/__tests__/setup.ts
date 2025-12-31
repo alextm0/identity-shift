@@ -50,7 +50,6 @@ vi.mock('@neondatabase/neon-js/auth/next/server', () => ({
 
 // Mock environment variables
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
-process.env.NODE_ENV = 'test';
 
 // Suppress console errors in tests (optional - remove if you want to see them)
 // global.console = {

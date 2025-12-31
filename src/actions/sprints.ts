@@ -11,8 +11,6 @@
  * - Ensures user can only create/manage their own sprints
  * - All data is filtered by authenticated userId
  */
-
-import { revalidatePath, revalidateTag } from "next/cache";
 import { revalidateDashboard } from "@/lib/revalidate";
 import { createSprint, deactivateAllSprints, getSprintById, updateSprint, deleteSprint, closeSprintById, getActiveSprint } from "@/data-access/sprints";
 import { SprintFormSchema } from "@/lib/validators";

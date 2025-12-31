@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, ShieldCheck, Activity, Target, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function DocsPage() {
   return (
