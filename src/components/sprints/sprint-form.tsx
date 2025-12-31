@@ -340,11 +340,11 @@ export function SprintForm({ sprintToEdit, annualGoals = [], onSuccess }: Sprint
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Start</Label>
-                      <Input type="date" {...form.register("startDate", { valueAsDate: true })} className="bg-white/5 border-white/10 text-xs" />
+                      <Input type="date" {...form.register("startDate")} className="bg-white/5 border-white/10 text-xs" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">End</Label>
-                      <Input type="date" {...form.register("endDate", { valueAsDate: true })} className="bg-white/5 border-white/10 text-xs" />
+                      <Input type="date" {...form.register("endDate")} className="bg-white/5 border-white/10 text-xs" />
                     </div>
                   </div>
                 </div>

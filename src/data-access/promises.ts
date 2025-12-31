@@ -1,10 +1,11 @@
 import { db } from "@/lib/db";
-import { promise, promiseLog } from "@/lib/db/schema";
+import { promise, promiseLog, sprint } from "@/lib/db/schema";
 import { eq, and, asc, gte, lte, inArray } from "drizzle-orm";
 import { startOfWeek, endOfWeek } from "date-fns";
 import { normalizeDate } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
 import { unstable_cache } from "next/cache";
+import { NotFoundError, AuthorizationError } from "@/lib/errors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DbInstance = any; // Can be PgTransaction or typeof db
@@ -51,6 +52,25 @@ export async function logPromiseCompletion(
     userId: string,
     dailyLogId?: string
 ) {
+    // Validate that the promise exists and belongs to a sprint owned by the user
+    const promiseWithSprint = await db
+        .select({
+            promiseId: promise.id,
+            sprintUserId: sprint.userId,
+        })
+        .from(promise)
+        .innerJoin(sprint, eq(promise.sprintId, sprint.id))
+        .where(eq(promise.id, promiseId))
+        .limit(1);
+
+    if (promiseWithSprint.length === 0) {
+        throw new NotFoundError("Promise not found");
+    }
+
+    if (promiseWithSprint[0].sprintUserId !== userId) {
+        throw new AuthorizationError("You do not have permission to log this promise");
+    }
+
     const normalizedDate = normalizeDate(date);
 
     await db.insert(promiseLog).values({

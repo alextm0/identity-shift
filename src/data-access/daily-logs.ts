@@ -143,7 +143,7 @@ export const getCurrentWeekLogs = unstable_cache(
                 sunday.setHours(23, 59, 59, 999);
 
                 const weekStart = normalizeDate(monday);
-                const weekEnd = normalizeDate(sunday);
+                const weekEnd = sunday; // Keep end-of-day timestamp to include full Sunday range
 
                 return await db.select()
                     .from(dailyLog)
