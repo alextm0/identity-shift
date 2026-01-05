@@ -12,7 +12,7 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { createWeeklyReview, createMonthlyReview, getWeeklyReviewById, getMonthlyReviewById, updateWeeklyReview, updateMonthlyReview } from "@/data-access/reviews";
 import { sanitizeText } from "@/lib/sanitize";
 import { randomUUID } from "crypto";
@@ -44,8 +44,6 @@ export const createWeeklyReviewAction = createAction(
 
         revalidateTag("reviews", "max");
         revalidateTag("dashboard", "max");
-        updateTag("reviews");
-        updateTag("dashboard");
 
         return success(
             { id: reviewId },
@@ -74,8 +72,6 @@ export const updateWeeklyReviewAction = createActionWithParam(
 
         revalidateTag("reviews", "max");
         revalidateTag("dashboard", "max");
-        updateTag("reviews");
-        updateTag("dashboard");
 
         return success(
             { id: reviewId },
@@ -119,8 +115,6 @@ export const createMonthlyReviewAction = createAction(
 
         revalidateTag("reviews", "max");
         revalidateTag("dashboard", "max");
-        updateTag("reviews");
-        updateTag("dashboard");
 
         return success(
             { id: reviewId },
@@ -149,8 +143,6 @@ export const updateMonthlyReviewAction = createActionWithParam(
 
         revalidateTag("reviews", "max");
         revalidateTag("dashboard", "max");
-        updateTag("reviews");
-        updateTag("dashboard");
 
         return success(
             { id: reviewId },

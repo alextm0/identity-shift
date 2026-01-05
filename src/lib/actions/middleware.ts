@@ -8,6 +8,7 @@
  */
 
 import { ZodSchema } from "zod";
+import { headers } from "next/headers";
 import { getRequiredSession } from "@/lib/auth/server";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { validateAndParse } from "@/lib/validators/utils";
@@ -59,6 +60,21 @@ export function withAuth<TArgs extends unknown[], TReturn>(
     options?: AuthOptions
 ) {
     return async (...args: TArgs): Promise<TReturn> => {
+        // CSRF Protection: Validate Origin header used in Server Actions
+        const headerList = await headers();
+        const origin = headerList.get("origin");
+        const host = headerList.get("host");
+
+        // If Origin is present (browsers send this for POST), it MUST match Host
+        if (origin && host) {
+            // Strip protocol (http:// or https://) for comparison
+            const originHost = origin.replace(/^https?:\/\//, "");
+
+            if (originHost !== host) {
+                console.error(`[Security] CSRF Blocked: Origin ${origin} does not match Host ${host}`);
+                throw new AppError("Cross-Site Request Forgery attempt detected", "CSRF_ERROR");
+            }
+        }
         // Verify session - throws if not authenticated
         const session = await getRequiredSession();
         const userId = session.user.id;
@@ -67,7 +83,7 @@ export function withAuth<TArgs extends unknown[], TReturn>(
         if (options?.rateLimit) {
             const { key, limit, windowMs } = options.rateLimit;
             const rateLimitKey = `${key}:${userId}`;
-            enforceRateLimit(rateLimitKey, limit, windowMs);
+            await enforceRateLimit(rateLimitKey, limit, windowMs);
         }
 
         // Execute action with userId injected

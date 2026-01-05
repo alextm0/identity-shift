@@ -1,20 +1,13 @@
 /**
  * Rate limiting utilities for server actions.
  * 
- * This is a simple in-memory rate limiter. For production, consider using
- * a more robust solution like Upstash Redis or similar.
+ * Uses Postgres 'rateLimit' table for persistence across serverless instances.
  */
 
 import { RateLimitError } from "@/lib/errors";
-
-interface RateLimitEntry {
-    count: number;
-    resetAt: number;
-}
-
-// In-memory store (clears on server restart)
-// For production, use Redis or similar persistent store
-const rateLimitStore = new Map<string, RateLimitEntry>();
+import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 /**
  * Checks if a request should be rate limited.
@@ -24,57 +17,69 @@ const rateLimitStore = new Map<string, RateLimitEntry>();
  * @param windowMs - Time window in milliseconds
  * @returns true if request should be allowed, false if rate limited
  */
-export function checkRateLimit(
+export async function checkRateLimit(
     identifier: string,
     limit: number = 10,
     windowMs: number = 60000 // 1 minute default
-): { allowed: boolean; remaining: number; resetAt: number } {
+): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
     const now = Date.now();
     const key = identifier;
 
-    const entry = rateLimitStore.get(key);
+    try {
+        // 1. Get current entry
+        const existing = await db.select().from(rateLimit).where(eq(rateLimit.key, key)).limit(1);
+        const entry = existing[0];
 
-    // Clean up expired entries periodically
-    if (Math.random() < 0.01) { // 1% chance to clean up
-        for (const [k, v] of rateLimitStore.entries()) {
-            if (v.resetAt < now) {
-                // eslint-disable-next-line drizzle/enforce-delete-with-where
-                rateLimitStore.delete(k);
-            }
+        // 2. If no entry or expired, reset
+        if (!entry || Number(entry.resetAt) < now) {
+            const resetAt = now + windowMs;
+
+            // Upsert mechanism
+            await db.insert(rateLimit)
+                .values({
+                    key,
+                    count: 1,
+                    resetAt: BigInt(resetAt),
+                })
+                .onConflictDoUpdate({
+                    target: rateLimit.key,
+                    set: {
+                        count: 1,
+                        resetAt: BigInt(resetAt),
+                    }
+                });
+
+            return {
+                allowed: true,
+                remaining: limit - 1,
+                resetAt,
+            };
         }
-    }
 
-    if (!entry || entry.resetAt < now) {
-        // Create new entry
-        const newEntry: RateLimitEntry = {
-            count: 1,
-            resetAt: now + windowMs,
-        };
-        rateLimitStore.set(key, newEntry);
+        // 3. If within window but limit reached
+        if (entry.count >= limit) {
+            return {
+                allowed: false,
+                remaining: 0,
+                resetAt: Number(entry.resetAt),
+            };
+        }
+
+        // 4. Increment count
+        await db.update(rateLimit)
+            .set({ count: sql`${rateLimit.count} + 1` })
+            .where(eq(rateLimit.key, key));
+
         return {
             allowed: true,
-            remaining: limit - 1,
-            resetAt: newEntry.resetAt,
+            remaining: limit - (entry.count + 1),
+            resetAt: Number(entry.resetAt),
         };
+    } catch (error) {
+        // Fallback for DB errors to allow traffic (fail open) but log error
+        console.error("Rate limit check failed:", error);
+        return { allowed: true, remaining: 1, resetAt: now + windowMs };
     }
-
-    // Increment count
-    entry.count++;
-    rateLimitStore.set(key, entry);
-
-    if (entry.count > limit) {
-        return {
-            allowed: false,
-            remaining: 0,
-            resetAt: entry.resetAt,
-        };
-    }
-
-    return {
-        allowed: true,
-        remaining: limit - entry.count,
-        resetAt: entry.resetAt,
-    };
 }
 
 /**
@@ -86,12 +91,12 @@ export function checkRateLimit(
  * @param windowMs - Time window in milliseconds
  * @throws Error if rate limit exceeded
  */
-export function enforceRateLimit(
+export async function enforceRateLimit(
     identifier: string,
     limit: number = 10,
     windowMs: number = 60000
-): void {
-    const result = checkRateLimit(identifier, limit, windowMs);
+): Promise<void> {
+    const result = await checkRateLimit(identifier, limit, windowMs);
 
     if (!result.allowed) {
         const resetIn = Math.ceil((result.resetAt - Date.now()) / 1000);
@@ -100,4 +105,3 @@ export function enforceRateLimit(
         );
     }
 }
-

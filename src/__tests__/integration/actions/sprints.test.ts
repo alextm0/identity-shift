@@ -39,7 +39,6 @@ describe('startSprintAction', () => {
 
   it('should create a new sprint successfully', async () => {
     const newSprint = createMockSprintWithPriorities({ id: 'sprint-1' });
-    vi.mocked(deactivateAllSprints).mockResolvedValue([]);
     vi.mocked(createSprint).mockResolvedValue(newSprint);
 
     const formData = {
@@ -64,37 +63,6 @@ describe('startSprintAction', () => {
     const result = await startSprintAction(formData);
 
     expect(result.success).toBe(true);
-    expect(deactivateAllSprints).toHaveBeenCalledWith('user-1');
-    expect(createSprint).toHaveBeenCalled();
-  });
-
-  it('should deactivate existing active sprint before creating new one', async () => {
-    const newSprint = createMockSprintWithPriorities({ id: 'sprint-2' });
-    vi.mocked(deactivateAllSprints).mockResolvedValue([]);
-    vi.mocked(createSprint).mockResolvedValue(newSprint);
-
-    const formData = {
-      name: 'New Sprint',
-      startDate: '2024-01-15',
-      endDate: '2024-01-28',
-      goals: [
-        {
-          goalId: '550e8400-e29b-41d4-a716-446655440000',
-          goalText: 'Work Goal',
-          promises: [
-            {
-              text: 'Focus session',
-              type: 'daily' as const,
-              scheduleDays: [1, 2, 3, 4, 5],
-            },
-          ],
-        },
-      ],
-    };
-
-    await startSprintAction(formData);
-
-    expect(deactivateAllSprints).toHaveBeenCalled();
     expect(createSprint).toHaveBeenCalled();
   });
 });

@@ -2,49 +2,107 @@
  * Unit Tests for Rate Limiting
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { checkRateLimit, enforceRateLimit } from '@/lib/rate-limit';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RateLimitError } from '@/lib/errors';
+
+// 1. Define the mock store
+const mockStore = new Map<string, any>();
+
+// 2. Mock Drizzle/DB dependencies
+vi.mock('@/lib/db/schema', () => ({
+  rateLimit: {
+    key: 'key',
+    count: 'count',
+    resetAt: 'resetAt',
+  }
+}));
+
+vi.mock('drizzle-orm', () => ({
+  eq: (col: any, val: any) => ({ col, val }),
+  sql: (strings: any, ...args: any[]) => 'SQL_MOCK',
+}));
+
+vi.mock('@/lib/db', () => {
+  return {
+    db: {
+      select: () => ({
+        from: () => ({
+          where: (condition: any) => ({
+            limit: async () => {
+              const key = condition.val;
+              const entry = mockStore.get(key);
+              return entry ? [entry] : [];
+            }
+          })
+        })
+      }),
+      insert: () => ({
+        values: (vals: any) => ({
+          onConflictDoUpdate: async () => {
+            mockStore.set(vals.key, {
+              key: vals.key,
+              count: 1, // Reset to 1 on insert/upsert
+              resetAt: BigInt(vals.resetAt)
+            });
+          }
+        })
+      }),
+      update: () => ({
+        set: (vals: any) => ({
+          where: async (condition: any) => {
+            const key = condition.val;
+            const entry = mockStore.get(key);
+            if (entry) {
+              mockStore.set(key, { ...entry, count: entry.count + 1 });
+            }
+          }
+        })
+      })
+    }
+  };
+});
+
+// 3. Import the module under test
+import { checkRateLimit, enforceRateLimit } from '@/lib/rate-limit';
 
 describe('rate limiting', () => {
   beforeEach(() => {
-    // Rate limit store is in-memory, so we need to wait for cleanup
-    // In a real scenario, you might want to expose a reset function
+    mockStore.clear();
   });
 
   describe('checkRateLimit', () => {
-    it('should allow first request', () => {
-      const result = checkRateLimit('test-user', 10, 60000);
+    it('should allow first request', async () => {
+      const result = await checkRateLimit('test-user', 10, 60000);
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(9);
     });
 
-    it('should track multiple requests', () => {
+    it('should track multiple requests', async () => {
       const identifier = 'test-user-2';
-      
+
       // First request
-      const result1 = checkRateLimit(identifier, 10, 60000);
+      const result1 = await checkRateLimit(identifier, 10, 60000);
       expect(result1.allowed).toBe(true);
       expect(result1.remaining).toBe(9);
-      
+
       // Second request
-      const result2 = checkRateLimit(identifier, 10, 60000);
+      const result2 = await checkRateLimit(identifier, 10, 60000);
       expect(result2.allowed).toBe(true);
       expect(result2.remaining).toBe(8);
     });
 
-    it('should deny requests exceeding limit', () => {
+    it('should deny requests exceeding limit', async () => {
       const identifier = 'test-user-3';
       const limit = 3;
-      
+
       // Make requests up to limit
       for (let i = 0; i < limit; i++) {
-        const result = checkRateLimit(identifier, limit, 60000);
+        const result = await checkRateLimit(identifier, limit, 60000);
         expect(result.allowed).toBe(true);
       }
-      
+
       // Next request should be denied
-      const result = checkRateLimit(identifier, limit, 60000);
+      const result = await checkRateLimit(identifier, limit, 60000);
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
     });
@@ -53,49 +111,46 @@ describe('rate limiting', () => {
       const identifier = 'test-user-4';
       const limit = 2;
       const windowMs = 100; // Very short window for testing
-      
+
       // Make requests up to limit
-      checkRateLimit(identifier, limit, windowMs);
-      checkRateLimit(identifier, limit, windowMs);
-      
+      await checkRateLimit(identifier, limit, windowMs);
+      await checkRateLimit(identifier, limit, windowMs);
+
       // Wait for window to expire
       await new Promise(resolve => setTimeout(resolve, windowMs + 10));
-      
+
       // Should be allowed again
-      const result = checkRateLimit(identifier, limit, windowMs);
+      const result = await checkRateLimit(identifier, limit, windowMs);
       expect(result.allowed).toBe(true);
+      expect(result.remaining).toBe(limit - 1);
     });
   });
 
   describe('enforceRateLimit', () => {
-    it('should not throw when limit not exceeded', () => {
-      expect(() => {
-        enforceRateLimit('test-user-5', 10, 60000);
-      }).not.toThrow();
+    it('should not throw when limit not exceeded', async () => {
+      await expect(enforceRateLimit('test-user-5', 10, 60000)).resolves.not.toThrow();
     });
 
-    it('should throw RateLimitError when limit exceeded', () => {
+    it('should throw RateLimitError when limit exceeded', async () => {
       const identifier = 'test-user-6';
       const limit = 2;
-      
+
       // Make requests up to limit
-      enforceRateLimit(identifier, limit, 60000);
-      enforceRateLimit(identifier, limit, 60000);
-      
+      await enforceRateLimit(identifier, limit, 60000);
+      await enforceRateLimit(identifier, limit, 60000);
+
       // Next request should throw
-      expect(() => {
-        enforceRateLimit(identifier, limit, 60000);
-      }).toThrow(RateLimitError);
+      await expect(enforceRateLimit(identifier, limit, 60000)).rejects.toThrow(RateLimitError);
     });
 
-    it('should include reset time in error message', () => {
+    it('should include reset time in error message', async () => {
       const identifier = 'test-user-7';
       const limit = 1;
-      
-      enforceRateLimit(identifier, limit, 60000);
-      
+
+      await enforceRateLimit(identifier, limit, 60000);
+
       try {
-        enforceRateLimit(identifier, limit, 60000);
+        await enforceRateLimit(identifier, limit, 60000);
       } catch (error) {
         expect(error).toBeInstanceOf(RateLimitError);
         expect((error as RateLimitError).message).toContain('seconds');

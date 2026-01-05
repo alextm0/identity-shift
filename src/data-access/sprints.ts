@@ -70,9 +70,14 @@ function mapToSprintWithDetails(row: SprintRow): SprintWithDetails {
 }
 
 export async function getActiveSprint(userId: string): Promise<SprintWithDetails | undefined> {
+    const sprints = await getActiveSprints(userId);
+    return sprints[0];
+}
+
+export async function getActiveSprints(userId: string): Promise<SprintWithDetails[]> {
     return await withDatabaseErrorHandling(
         async () => {
-            const result = await db.query.sprint.findFirst({
+            const results = await db.query.sprint.findMany({
                 where: and(
                     createOwnershipCondition(sprint.userId, userId),
                     eq(sprint.active, true)
@@ -89,9 +94,9 @@ export async function getActiveSprint(userId: string): Promise<SprintWithDetails
                     }
                 }
             });
-            return result ? mapToSprintWithDetails(result) : undefined;
+            return results.map(mapToSprintWithDetails);
         },
-        "Failed to fetch active sprint"
+        "Failed to fetch active sprints"
     );
 }
 
@@ -100,7 +105,16 @@ export const getActiveSprintCached = unstable_cache(
     ['active-sprint'],
     {
         tags: ['active-sprint'],
-        revalidate: 60, // Revalidate every minute
+        revalidate: 60,
+    }
+);
+
+export const getActiveSprintsCached = unstable_cache(
+    async (userId: string) => getActiveSprints(userId),
+    ['active-sprints'],
+    {
+        tags: ['active-sprint'], // Share the same tag for invalidation
+        revalidate: 60,
     }
 );
 

@@ -1,5 +1,5 @@
 import { getRequiredSession } from "@/lib/auth/server";
-import { getSprints, getActiveSprintCached } from "@/data-access/sprints";
+import { getSprints, getActiveSprintCached, getActiveSprintsCached } from "@/data-access/sprints";
 
 export async function getSprintsData() {
     const session = await getRequiredSession();
@@ -12,7 +12,8 @@ export async function getSprintsData() {
 
     return {
         allSprints,
-        activeSprint,
+        activeSprint, // Deprecated, use activeSprints
+        activeSprints: await getActiveSprintsCached(userId),
         userId
     };
 }

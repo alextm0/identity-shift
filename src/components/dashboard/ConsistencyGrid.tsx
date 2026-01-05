@@ -14,42 +14,48 @@ interface ConsistencyGridProps {
 
 export function ConsistencyGrid({ consistencyData }: ConsistencyGridProps) {
   return (
-    <GlassPanel className="p-6 flex flex-col justify-between min-h-[160px] border-white/5 shadow-none hover:bg-white/[0.02] transition-colors">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="metric-label">Consistency</h3>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-action-emerald" />
-            <span className="label-sm text-white/20">Hit</span>
+    <GlassPanel className="p-8 flex flex-col h-full border-white/5 shadow-none hover:bg-white/[0.02] transition-colors relative overflow-hidden group">
+      <div className="flex items-center justify-between mb-8 relative z-10">
+        <h3 className="label text-[10px] tracking-[0.2em] uppercase text-white/30">Consistency Score</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <span className="text-[9px] uppercase font-bold tracking-tighter text-white/20">Log</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-            <span className="label-sm text-white/20">Miss</span>
+            <span className="text-[9px] uppercase font-bold tracking-tighter text-white/20">None</span>
           </div>
         </div>
       </div>
-      <div className="flex justify-between items-end gap-1.5 h-full pt-4">
+
+      <div className="flex items-stretch justify-between gap-1.5 mt-auto h-32 relative z-10">
         {consistencyData.map((day, i) => (
-          <div key={i} className="flex flex-col items-center gap-2 group flex-1 h-full justify-end">
-            <div
-              className={cn(
-                "w-full rounded-sm transition-all duration-300",
-                day.hasLog
-                  ? "bg-action-emerald/80 h-[70%]"
-                  : day.isToday
-                    ? "bg-white/10 h-[30%] animate-pulse"
-                    : "bg-white/5 h-[20%]"
-              )}
-            />
+          <div key={i} className="flex flex-col items-center gap-3 group/day flex-1">
+            <div className="relative w-full flex-1 flex items-end">
+              <div
+                className={cn(
+                  "w-full rounded-md transition-all duration-500",
+                  day.hasLog
+                    ? "bg-action-emerald shadow-[0_0_20px_rgba(16,185,129,0.2)] h-[80%] group-hover/day:h-[95%] group-hover/day:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+                    : day.isToday
+                      ? "bg-white/20 h-[40%] animate-pulse"
+                      : "bg-white/[0.05] h-[20%] group-hover/day:bg-white/[0.1] group-hover/day:h-[30%]"
+                )}
+              />
+            </div>
             <span className={cn(
-              "label-sm text-center w-full",
-              day.isToday ? "text-white" : "text-white/10"
+              "text-[9px] font-mono tracking-tighter transition-colors shrink-0 uppercase font-bold",
+              day.isToday ? "text-white" : "text-white/20 group-hover/day:text-white/40"
             )}>
               {format(day.date, 'EEEEE')}
             </span>
           </div>
         ))}
       </div>
+
+      {/* Subtle background accent */}
+      <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-action-emerald/[0.02] blur-3xl rounded-full" />
     </GlassPanel>
   );
 }

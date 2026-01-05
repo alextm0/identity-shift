@@ -1,8 +1,10 @@
-import { pgTable, text, integer, timestamp, boolean, json, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, pgSchema, text, integer, bigint, timestamp, boolean, json, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-// USER table (managed by Better Auth - defined here for foreign keys)
-export const user = pgTable('user', {
+const authSchema = pgSchema('neon_auth');
+
+// AUTH_USER table (managed by Neon Auth)
+export const authUser = authSchema.table('user', {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
@@ -12,8 +14,18 @@ export const user = pgTable('user', {
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
 
+// APP_USERS table (application-level user data)
+export const users = pgTable('users', {
+    id: text('id').primaryKey().references(() => authUser.id),
+    name: text('name').notNull(),
+    email: text('email').notNull().unique(),
+    image: text('image'),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
 // SESSION table (managed by Better Auth)
-export const session = pgTable('session', {
+export const session = authSchema.table('session', {
     id: text('id').primaryKey(),
     expiresAt: timestamp('expiresAt').notNull(),
     token: text('token').notNull().unique(),
@@ -21,15 +33,15 @@ export const session = pgTable('session', {
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
     ipAddress: text('ipAddress'),
     userAgent: text('userAgent'),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => authUser.id),
 });
 
 // ACCOUNT table (managed by Better Auth)
-export const account = pgTable('account', {
+export const account = authSchema.table('account', {
     id: text('id').primaryKey(),
     accountId: text('accountId').notNull(),
     providerId: text('providerId').notNull(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => authUser.id),
     accessToken: text('accessToken'),
     refreshToken: text('refreshToken'),
     idToken: text('idToken'),
@@ -42,7 +54,7 @@ export const account = pgTable('account', {
 });
 
 // VERIFICATION table (managed by Better Auth)
-export const verification = pgTable('verification', {
+export const verification = authSchema.table('verification', {
     id: text('id').primaryKey(),
     identifier: text('identifier').notNull(),
     value: text('value').notNull(),
@@ -51,10 +63,57 @@ export const verification = pgTable('verification', {
     updatedAt: timestamp('updatedAt'),
 });
 
+// INVITATION table (managed by Better Auth/Neon)
+export const invitation = authSchema.table('invitation', {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    expiresAt: timestamp('expiresAt').notNull(),
+    token: text('token').notNull(),
+    status: text('status').notNull(),
+    createdAt: timestamp('createdAt'),
+    updatedAt: timestamp('updatedAt'),
+});
+
+// JWKS table (managed by Better Auth/Neon)
+export const jwks = authSchema.table('jwks', {
+    id: text('id').primaryKey(),
+    publicKey: text('publicKey').notNull(),
+    privateKey: text('privateKey').notNull(),
+    createdAt: timestamp('createdAt'),
+});
+
+// MEMBER table (managed by Better Auth/Neon)
+export const member = authSchema.table('member', {
+    id: text('id').primaryKey(),
+    organizationId: text('organizationId').notNull(),
+    userId: text('userId').notNull(),
+    role: text('role').notNull(),
+    createdAt: timestamp('createdAt'),
+    updatedAt: timestamp('updatedAt'),
+});
+
+// ORGANIZATION table (managed by Better Auth/Neon)
+export const organization = authSchema.table('organization', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    logo: text('logo'),
+    createdAt: timestamp('createdAt'),
+    updatedAt: timestamp('updatedAt'),
+});
+
+// PROJECT_CONFIG table (managed by Better Auth/Neon)
+export const projectConfig = authSchema.table('project_config', {
+    id: text('id').primaryKey(),
+    config: json('config'),
+    createdAt: timestamp('createdAt'),
+    updatedAt: timestamp('updatedAt'),
+});
+
 // PLANNING
 export const planning = pgTable('planning', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     year: integer('year').notNull().default(new Date().getFullYear()), // Planning year (e.g., 2026)
 
     // Goal Collections (GPS-structured)
@@ -111,7 +170,7 @@ export const planning = pgTable('planning', {
 // SPRINT
 export const sprint = pgTable('sprint', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     name: text('name').notNull(),
     startDate: timestamp('startDate').notNull(),
     endDate: timestamp('endDate').notNull(),
@@ -163,7 +222,7 @@ export const sprintPriority = pgTable('sprintPriority', {
 // DAILY_LOG
 export const dailyLog = pgTable('dailyLog', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     sprintId: text('sprintId').references(() => sprint.id),
     date: timestamp('date').notNull(), // format: YYYY-MM-DD
     energy: integer('energy').notNull(), // 1-5
@@ -193,7 +252,7 @@ export const dailyLog = pgTable('dailyLog', {
 // PROMISE_LOG (New)
 export const promiseLog = pgTable('promiseLog', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     promiseId: text('promiseId').notNull().references(() => promise.id, { onDelete: 'cascade' }),
     date: timestamp('date').notNull(),             // Primary reference: the date this completion applies to
     dailyLogId: text('dailyLogId').references(() => dailyLog.id, { onDelete: 'set null' }),  // Optional link to full audit
@@ -208,7 +267,7 @@ export const promiseLog = pgTable('promiseLog', {
 // WEEKLY_REVIEW
 export const weeklyReview = pgTable('weeklyReview', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     sprintId: text('sprintId').references(() => sprint.id),
     weekEndDate: timestamp('weekEndDate').notNull(),
     progressRatios: json('progressRatios').notNull(), // JSON: {priorityKey: ratio}
@@ -226,7 +285,7 @@ export const weeklyReview = pgTable('weeklyReview', {
 // MONTHLY_REVIEW
 export const monthlyReview = pgTable('monthlyReview', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     sprintId: text('sprintId').references(() => sprint.id),
     month: text('month').notNull(), // YYYY-MM
     whoWereYou: text('whoWereYou'), // optional: identity description
@@ -243,7 +302,7 @@ export const monthlyReview = pgTable('monthlyReview', {
 // YEARLY_REVIEW
 export const yearlyReview = pgTable('yearlyReview', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     year: integer('year').notNull(), // 2025, 2026, etc.
     status: text('status').notNull().default('draft'), // 'draft' | 'completed'
     currentStep: integer('currentStep').notNull().default(1), // 1-3 (updated from 1-6)
@@ -271,7 +330,7 @@ export const yearlyReview = pgTable('yearlyReview', {
 // AUDIT_LOG
 export const auditLog = pgTable('auditLog', {
     id: text('id').primaryKey(),
-    userId: text('userId').notNull().references(() => user.id),
+    userId: text('userId').notNull().references(() => users.id),
     action: text('action').notNull(), // 'CREATE' | 'UPDATE' | 'DELETE'
     entityType: text('entityType').notNull(), // 'dailyLog' | 'sprint' | 'planning' | 'weeklyReview' | 'monthlyReview'
     entityId: text('entityId').notNull(), // ID of the affected entity
@@ -285,9 +344,29 @@ export const auditLog = pgTable('auditLog', {
     auditLogEntityIdx: index('auditLog_entityType_entityId_idx').on(table.entityType, table.entityId),
 }));
 
+// RATE_LIMIT (Security)
+export const rateLimit = pgTable('rateLimit', {
+    key: text('key').primaryKey(),
+    count: integer('count').notNull().default(0),
+    resetAt: bigint('resetAt', { mode: 'number' }).notNull(),
+});
+
 // RELATIONS
 
-export const sprintRelations = relations(sprint, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
+    auth: one(authUser, {
+        fields: [users.id],
+        references: [authUser.id],
+    }),
+    planning: many(planning),
+    sprints: many(sprint),
+}));
+
+export const sprintRelations = relations(sprint, ({ one, many }) => ({
+    user: one(users, {
+        fields: [sprint.userId],
+        references: [users.id],
+    }),
     priorities: many(sprintPriority),
     goals: many(sprintGoal),
     promises: many(promise),
@@ -321,9 +400,9 @@ export const promiseRelations = relations(promise, ({ one, many }) => ({
 }));
 
 export const promiseLogRelations = relations(promiseLog, ({ one }) => ({
-    user: one(user, {
+    user: one(users, {
         fields: [promiseLog.userId],
-        references: [user.id],
+        references: [users.id],
     }),
     promise: one(promise, {
         fields: [promiseLog.promiseId],
@@ -335,7 +414,17 @@ export const promiseLogRelations = relations(promiseLog, ({ one }) => ({
     }),
 }));
 
-export const dailyLogRelations = relations(dailyLog, ({ many }) => ({
+export const dailyLogRelations = relations(dailyLog, ({ one, many }) => ({
+    user: one(users, {
+        fields: [dailyLog.userId],
+        references: [users.id],
+    }),
     promiseLogs: many(promiseLog),
 }));
 
+export const planningRelations = relations(planning, ({ one }) => ({
+    user: one(users, {
+        fields: [planning.userId],
+        references: [users.id],
+    }),
+}));

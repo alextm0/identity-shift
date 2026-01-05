@@ -38,7 +38,7 @@ const isItemActive = (href: string, pathname: string) => {
 };
 
 const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Command Center", shortLabel: "Home", href: "/dashboard" },
+  { icon: LayoutDashboard, label: "Identity Shift", shortLabel: "Home", href: "/dashboard" },
   { icon: Sparkles, label: "Planning", shortLabel: "Plan", href: "/dashboard/planning" },
   { icon: Target, label: "Sprint", shortLabel: "Sprint", href: "/dashboard/sprint" },
   { icon: Calendar, label: "Daily Audit", shortLabel: "Daily", href: "/dashboard/daily" },
@@ -273,12 +273,15 @@ export function LiquidSidebar() {
                 <div className={cn(
                   "relative p-3.5 rounded-2xl transition-all duration-500 flex items-center justify-center overflow-hidden",
                   isActive
-                    ? "bg-gradient-to-br from-white/[0.1] to-white/[0.02] text-focus-violet border border-focus-violet/40 shadow-[0_10px_30px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.1)]"
+                    ? "bg-focus-violet/15 text-focus-violet border border-focus-violet/50 shadow-[0_0_20px_rgba(139,92,246,0.15),inset_0_1px_1px_rgba(255,255,255,0.1)] active-pill"
                     : "text-white/40 hover:text-white/90 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.1] active:scale-90"
                 )}>
                   {/* Active highlight reflection */}
                   {isActive && (
-                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    <>
+                      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-focus-violet/40 to-transparent" />
+                      <div className="absolute inset-0 bg-focus-violet/5 blur-md" />
+                    </>
                   )}
 
                   <item.icon className={cn(

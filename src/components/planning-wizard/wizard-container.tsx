@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useEffect, useCallback, lazy, Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useShallow } from "zustand/react/shallow";
 import { usePlanningStore } from "@/hooks/stores/use-planning-store";
 import { savePlanningProgressAction } from "@/actions/planning";
 import { usePlanningCompletion } from "@/hooks/use-planning-completion";
@@ -48,7 +49,17 @@ const STEP_COMPONENTS: Record<number, React.ComponentType<StepComponentProps>> =
 
 export function PlanningWizardContainer({ initialPlanning, isEditMode = false }: PlanningWizardContainerProps) {
     const router = useRouter();
-    const store = usePlanningStore();
+    const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
+
+    // Actions are stable and don't need re-renders
+    const loadFromServer = usePlanningStore(state => state.loadFromServer);
+    const markSaving = usePlanningStore(state => state.markSaving);
+    const markAsSaved = usePlanningStore(state => state.markAsSaved);
+    const getFormData = usePlanningStore(state => state.getFormData);
+    const nextStep = usePlanningStore(state => state.nextStep);
+    const prevStep = usePlanningStore(state => state.prevStep);
+
+    // Reactive values with shallow comparison to prevent infinite loops
     const {
         planningId,
         currentStep,
@@ -56,14 +67,14 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
         isSaving,
         canGoNext,
         canGoBack,
-    } = usePlanningStore(state => ({
+    } = usePlanningStore(useShallow(state => ({
         planningId: state.planningId,
         currentStep: state.currentStep,
         isDirty: state.isDirty,
         isSaving: state.isSaving,
         canGoNext: state.canGoNext,
         canGoBack: state.canGoBack,
-    }));
+    })));
 
     const { complete, error } = usePlanningCompletion({
         planningId,
@@ -73,27 +84,29 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
 
     // Load initial data from server into the store, runs only once
     useEffect(() => {
-        if (initialPlanning && !store.planningId) {
-            store.loadFromServer(initialPlanning);
+        if (initialPlanning && !planningId) {
+            loadFromServer(initialPlanning);
         }
-    }, [initialPlanning, store]);
+    }, [initialPlanning, planningId, loadFromServer]);
 
 
     // Auto-save on step change (debounced)
     const autoSave = useCallback(async () => {
-        const activeId = store.planningId;
-        if (!activeId || !store.isDirty) return;
+        const activeId = planningId;
+        if (!activeId || !isDirty) return;
 
-        store.markSaving(true);
+        markSaving(true);
+        setAutoSaveError(null);
         try {
-            const formData = store.getFormData();
+            const formData = getFormData();
             await savePlanningProgressAction(activeId, formData);
-            store.markAsSaved();
+            markAsSaved();
         } catch (error) {
             console.error("Failed to auto-save:", error);
-            store.markSaving(false);
+            setAutoSaveError("Auto-save failed. Your changes may not be saved.");
+            markSaving(false);
         }
-    }, [store]);
+    }, [planningId, isDirty, getFormData, markSaving, markAsSaved]);
 
     // Auto-save when step changes (not during typing)
     useEffect(() => {
@@ -111,16 +124,16 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
         if (currentStep === PLANNING_STEPS.length) {
             await complete();
         } else {
-            store.nextStep();
+            nextStep();
             if (isDirty && planningId) {
                 await autoSave();
             }
         }
-    }, [currentStep, complete, store, isDirty, planningId, autoSave]);
+    }, [currentStep, complete, nextStep, isDirty, planningId, autoSave]);
 
     const handleBack = useCallback(() => {
-        store.prevStep();
-    }, [store]);
+        prevStep();
+    }, [prevStep]);
 
     const handleExit = async () => {
         if (isDirty && planningId) {
@@ -136,16 +149,15 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
     const isLastStep = currentStep === PLANNING_STEPS.length;
 
     // Render step using registry pattern with lazy loading
-    const renderStep = useMemo(() => {
-        const StepComponent = STEP_COMPONENTS[currentStep];
-        if (!StepComponent) return null;
-
-        return <StepComponent
+    // Render step using registry pattern with lazy loading
+    const StepComponent = STEP_COMPONENTS[currentStep];
+    const renderStep = StepComponent ? (
+        <StepComponent
             onNext={handleNext}
             onBack={handleBack}
             onComplete={isLastStep ? complete : undefined}
-        />;
-    }, [currentStep, complete, isLastStep, handleNext, handleBack]);
+        />
+    ) : null;
 
     return (
         <div className="min-h-screen flex flex-col p-6 md:p-12">
@@ -167,6 +179,14 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
                         </Suspense>
                     </div>
 
+                    {autoSaveError && (
+                        <div className="mt-4 p-4 bg-bullshit-crimson/10 border border-bullshit-crimson/30 rounded-xl">
+                            <p className="text-bullshit-crimson text-sm font-mono uppercase tracking-widest">
+                                {autoSaveError}
+                            </p>
+                        </div>
+                    )}
+
                     {error && (
                         <div className="mt-4 p-4 bg-bullshit-crimson/10 border border-bullshit-crimson/30 rounded-xl">
                             <p className="text-bullshit-crimson text-sm font-mono uppercase tracking-widest">
@@ -183,7 +203,7 @@ export function PlanningWizardContainer({ initialPlanning, isEditMode = false }:
                     onBack={handleBack}
                     onNext={handleNext}
                     onExit={handleExit}
-                    onSkip={currentStep === 2 ? store.nextStep : undefined}
+                    onSkip={currentStep === 2 || currentStep === 8 ? nextStep : undefined}
                     canGoBack={canGoBack()}
                     canGoNext={canGoNext()}
                     isSaving={isSaving}

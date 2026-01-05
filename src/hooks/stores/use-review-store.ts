@@ -37,6 +37,7 @@ interface ReviewStore {
     loadFromServer: (data: YearlyReviewWithTypedFields) => void;
     reset: () => void;
     getFormData: () => Partial<YearlyReviewFormData>;
+    markClean: () => void;
     markSaving: (saving: boolean) => void;
 }
 
@@ -186,5 +187,6 @@ export const useReviewStore = create<ReviewStore>((set, get) => ({
     },
 
     markSaving: (saving) => set({ isSaving: saving }),
+    markClean: () => set({ isDirty: false }),
 }));
 

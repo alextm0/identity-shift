@@ -27,25 +27,21 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard/planning', request.url));
     }
 
-    // TEMPORARY: Log all cookies to debug production issue
-    const allCookies = request.cookies.getAll();
-    console.log('[Middleware] Path:', request.nextUrl.pathname);
-    console.log('[Middleware] All cookies:', allCookies.map(c => `${c.name}=${c.value.substring(0, 20)}...`));
+    // Cookie logging removed for security
+
 
     // Check for session cookie existence only (no API calls)
     // Neon Auth uses Better Auth with custom prefix "neon-auth"
     // In production, it uses __Secure- prefix for secure cookies
-    const token =
-        request.cookies.get("__Secure-neon-auth.session_token")?.value ||
-        request.cookies.get("neon-auth.session_token")?.value; // fallback for local dev
+    const isProduction = process.env.NODE_ENV === 'production';
+    const token = isProduction
+        ? request.cookies.get("__Secure-neon-auth.session_token")?.value
+        : (request.cookies.get("__Secure-neon-auth.session_token")?.value || request.cookies.get("neon-auth.session_token")?.value);
 
     // If no session token exists, redirect to sign-in
     if (!token) {
-        console.log('[Middleware] No session token found, redirecting to sign-in');
         return NextResponse.redirect(new URL('/auth/sign-in', request.url));
     }
-
-    console.log('[Middleware] Session token found, allowing request');
 
     // Allow request to proceed - real authorization happens in page handlers
     // using verifySession() which properly validates the session via API

@@ -8,6 +8,7 @@ import { unstable_cache } from "next/cache";
 import { toPlanningWithTypedFields } from "@/lib/type-helpers";
 import { PlanningWithTypedFields } from "@/lib/types";
 import { NotFoundError } from "@/lib/errors";
+import { getCurrentReviewAndPlanningYears } from "@/lib/date-utils";
 
 /**
  * Data Access Layer for Planning
@@ -22,44 +23,66 @@ const _toTypedPlanning = (p: Planning): PlanningWithTypedFields => toPlanningWit
  * Get planning by user ID (returns the most recent/current year's plan)
  * @deprecated Use getPlanningByUserIdAndYear for explicit year handling
  */
-export const getPlanningByUserId = unstable_cache(
-    async (userId: string): Promise<PlanningWithTypedFields | undefined> => {
-        return await withDatabaseErrorHandling(
-            async () => {
-                const result = await db.select()
-                    .from(planning)
-                    .where(createOwnershipCondition(planning.userId, userId))
-                    .orderBy(desc(planning.year));
-                return result[0] ? _toTypedPlanning(result[0]) : undefined;
-            },
-            "Failed to fetch planning by user ID"
-        );
-    },
+const fetchPlanningByUserId = async (userId: string): Promise<PlanningWithTypedFields | undefined> => {
+    return await withDatabaseErrorHandling(
+        async () => {
+            const result = await db.select()
+                .from(planning)
+                .where(createOwnershipCondition(planning.userId, userId))
+                .orderBy(desc(planning.year));
+            return result[0] ? _toTypedPlanning(result[0]) : undefined;
+        },
+        "Failed to fetch planning by user ID"
+    );
+};
+
+const getPlanningByUserIdCached = unstable_cache(
+    fetchPlanningByUserId,
     ['planning-by-user-id'],
     { tags: ['planning'] }
 );
 
+export const getPlanningByUserId = async (userId: string): Promise<PlanningWithTypedFields | undefined> => {
+    try {
+        return await getPlanningByUserIdCached(userId);
+    } catch (error) {
+        console.warn("Cache failed for getPlanningByUserId, falling back to direct fetch", error);
+        return await fetchPlanningByUserId(userId);
+    }
+};
+
 /**
  * Get planning by user ID and year
  */
-export const getPlanningByUserIdAndYear = unstable_cache(
-    async (userId: string, year: number): Promise<PlanningWithTypedFields | undefined> => {
-        return await withDatabaseErrorHandling(
-            async () => {
-                const result = await db.select()
-                    .from(planning)
-                    .where(and(
-                        createOwnershipCondition(planning.userId, userId),
-                        eq(planning.year, year)
-                    ));
-                return result[0] ? _toTypedPlanning(result[0]) : undefined;
-            },
-            "Failed to fetch planning by user ID and year"
-        );
-    },
+const fetchPlanningByUserIdAndYear = async (userId: string, year: number): Promise<PlanningWithTypedFields | undefined> => {
+    return await withDatabaseErrorHandling(
+        async () => {
+            const result = await db.select()
+                .from(planning)
+                .where(and(
+                    createOwnershipCondition(planning.userId, userId),
+                    eq(planning.year, year)
+                ));
+            return result[0] ? _toTypedPlanning(result[0]) : undefined;
+        },
+        "Failed to fetch planning by user ID and year"
+    );
+};
+
+const getPlanningByUserIdAndYearCached = unstable_cache(
+    fetchPlanningByUserIdAndYear,
     ['planning-by-year'],
     { tags: ['planning'] }
 );
+
+export const getPlanningByUserIdAndYear = async (userId: string, year: number): Promise<PlanningWithTypedFields | undefined> => {
+    try {
+        return await getPlanningByUserIdAndYearCached(userId, year);
+    } catch (error) {
+        console.warn("Cache failed for getPlanningByUserIdAndYear, falling back to direct fetch", error);
+        return await fetchPlanningByUserIdAndYear(userId, year);
+    }
+};
 
 export async function getPlanningById(id: string, userId: string): Promise<PlanningWithTypedFields | undefined> {
     return await withDatabaseErrorHandling(
@@ -79,8 +102,9 @@ export async function getPlanningById(id: string, userId: string): Promise<Plann
  * Defaults to next year (planning is typically for the upcoming year)
  */
 export async function getOrCreatePlanning(userId: string, year?: number): Promise<PlanningWithTypedFields> {
-    // Default to next year for planning (e.g., in 2025, plan for 2026)
-    const planningYear = year ?? new Date().getFullYear() + 1;
+    // Default to the correct planning year based on current date
+    const { planningYear: defaultYear } = getCurrentReviewAndPlanningYears();
+    const planningYear = year ?? defaultYear;
 
     return await withDatabaseErrorHandling(
         async () => {
@@ -102,13 +126,13 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
 
             const defaultWheel = {
                 health: 5,
-                training: 5,
-                mental: 5,
-                learning: 5,
-                technical: 5,
-                creativity: 5,
-                relationships: 5,
-                income: 5
+                mental_clarity: 5,
+                career: 5,
+                learning_building: 5,
+                family_friends: 5,
+                romance: 5,
+                finances: 5,
+                recreation: 5
             };
 
             const seedWheel = previousReview?.wheelRatings || defaultWheel;
@@ -151,8 +175,26 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
                 updatedAt: new Date(),
             };
 
-            const result = await db.insert(planning).values(newPlanning).returning();
-            return _toTypedPlanning(result[0]);
+            // Try to insert with ON CONFLICT DO NOTHING to handle race conditions
+            const result = await db.insert(planning)
+                .values(newPlanning)
+                .onConflictDoNothing({
+                    target: [planning.userId, planning.year],
+                })
+                .returning();
+
+            if (result.length > 0) {
+                return _toTypedPlanning(result[0]);
+            }
+
+            // If we're here, it means the insert was skipped because of a conflict.
+            // This implies another request created the record concurrently.
+            // We should fetch and return that existing record.
+            const racedExisting = await getPlanningByUserIdAndYear(userId, planningYear);
+            if (!racedExisting) {
+                throw new Error("Failed to get or create planning: race condition detected but record not found.");
+            }
+            return racedExisting;
         },
         "Failed to get or create planning"
     );

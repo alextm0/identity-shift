@@ -5,16 +5,17 @@ interface SprintStatusProps {
   sprintProgress: number;
   currentDay: number;
   sprintDuration: number;
+  title?: string;
 }
 
-export function SprintStatus({ sprintProgress, currentDay, sprintDuration }: SprintStatusProps) {
+export function SprintStatus({ sprintProgress, currentDay, sprintDuration, title = "Sprint Velocity" }: SprintStatusProps) {
   return (
     <GlassPanel className="p-6 relative overflow-hidden flex flex-col justify-between min-h-[160px] border-white/5 shadow-none hover:bg-white/[0.02] transition-colors">
       <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
         <Clock className="h-24 w-24" />
       </div>
       <div>
-        <h3 className="metric-label mb-2">Sprint Velocity</h3>
+        <h3 className="metric-label mb-2">{title}</h3>
         <div className="flex items-baseline gap-2">
           <span className="metric-value">{Math.round(sprintProgress)}%</span>
           <span className="label text-white/40">Complete</span>

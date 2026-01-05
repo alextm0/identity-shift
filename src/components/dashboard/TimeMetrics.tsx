@@ -40,6 +40,11 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
             const isLow = metric.percentage <= 25;
             const isMedium = metric.percentage > 25 && metric.percentage <= 50;
 
+            // Differentiate by label
+            const isYear = metric.label.toLowerCase().includes('year');
+            const isQuarter = metric.label.toLowerCase().includes('quarter');
+            const isSprint = metric.label.toLowerCase().includes('sprint');
+
             return (
               <div
                 key={index}
@@ -49,11 +54,14 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                   <div className="flex items-center gap-2">
                     <Zap className={cn(
                       "h-3 w-3 transition-all duration-300",
-                      isLow ? "text-bullshit-crimson/60 animate-pulse" :
-                        isMedium ? "text-motion-amber/60" :
-                          "text-action-emerald/60"
+                      isSprint ? "text-focus-violet" :
+                        isQuarter ? "text-motion-amber" :
+                          isYear ? "text-action-emerald" :
+                            isLow ? "text-bullshit-crimson/60 animate-pulse" :
+                              isMedium ? "text-motion-amber/60" :
+                                "text-action-emerald/60"
                     )} />
-                    <span className="label text-white/60 group-hover/metric:text-white/80 transition-colors">
+                    <span className="label text-white/60 group-hover/metric:text-white/80 transition-colors capitalize">
                       {metric.label}
                     </span>
                   </div>
@@ -70,15 +78,23 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                   </div>
                 </div>
 
-                {/* Enhanced progress bar with glow */}
-                <div className="relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden group-hover/metric:h-2 transition-all duration-300">
+                {/* Enhanced progress bar with unique thickness and glow */}
+                <div className={cn(
+                  "relative w-full bg-white/5 rounded-full overflow-hidden transition-all duration-300",
+                  isYear ? "h-2 group-hover/metric:h-2.5" :
+                    isQuarter ? "h-1.5 group-hover/metric:h-2" :
+                      "h-1 group-hover/metric:h-1.5"
+                )}>
                   {/* Glow effect */}
                   <div
                     className={cn(
                       "absolute inset-0 blur-sm opacity-0 group-hover/metric:opacity-100 transition-opacity duration-300",
-                      metric.percentage > 50 ? "bg-action-emerald/30" :
-                        metric.percentage > 25 ? "bg-motion-amber/30" :
-                          "bg-bullshit-crimson/30"
+                      isSprint ? "bg-focus-violet/30" :
+                        isQuarter ? "bg-motion-amber/30" :
+                          isYear ? "bg-action-emerald/30" :
+                            metric.percentage > 50 ? "bg-action-emerald/30" :
+                              metric.percentage > 25 ? "bg-motion-amber/30" :
+                                "bg-bullshit-crimson/30"
                     )}
                     style={{ width: `${metric.percentage}%` }}
                   />
@@ -86,11 +102,14 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                   <div
                     className={cn(
                       "relative h-full rounded-full transition-all duration-700 ease-out",
-                      metric.percentage > 50
-                        ? "bg-gradient-to-r from-action-emerald/60 via-action-emerald to-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                        : metric.percentage > 25
-                          ? "bg-gradient-to-r from-motion-amber/60 via-motion-amber to-motion-amber shadow-[0_0_8px_rgba(245,158,11,0.3)]"
-                          : "bg-gradient-to-r from-bullshit-crimson/60 via-bullshit-crimson to-bullshit-crimson shadow-[0_0_8px_rgba(239,68,68,0.3)]"
+                      isSprint ? "bg-gradient-to-r from-focus-violet/60 via-focus-violet to-focus-violet shadow-[0_0_8px_rgba(139,92,246,0.5)]" :
+                        isQuarter ? "bg-gradient-to-r from-motion-amber/60 via-motion-amber to-motion-amber shadow-[0_0_8px_rgba(245,158,11,0.4)]" :
+                          isYear ? "bg-gradient-to-r from-action-emerald/60 via-action-emerald to-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
+                            metric.percentage > 50
+                              ? "bg-gradient-to-r from-action-emerald/60 via-action-emerald to-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                              : metric.percentage > 25
+                                ? "bg-gradient-to-r from-motion-amber/60 via-motion-amber to-motion-amber shadow-[0_0_8px_rgba(245,158,11,0.3)]"
+                                : "bg-gradient-to-r from-bullshit-crimson/60 via-bullshit-crimson to-bullshit-crimson shadow-[0_0_8px_rgba(239,68,68,0.3)]"
                     )}
                     style={{ width: `${metric.percentage}%` }}
                   />

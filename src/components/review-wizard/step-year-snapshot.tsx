@@ -3,7 +3,7 @@
 import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { Textarea } from "@/components/ui/textarea";
 import { WheelOfLife } from "@/components/ui/WheelOfLife";
-import { convertRatingsToWheelFormat } from "@/lib/utils/dimension-analysis";
+import { prepareWheelValues } from "@/lib/utils/dimension-analysis";
 import { useCallback, useMemo } from "react";
 
 interface StepYearSnapshotProps {
@@ -19,7 +19,7 @@ export function StepYearSnapshot({ year }: StepYearSnapshotProps) {
 
     // Convert wheelRatings to format expected by WheelOfLife component
     const wheelValues = useMemo(() => {
-        return convertRatingsToWheelFormat(wheelRatings);
+        return prepareWheelValues(wheelRatings);
     }, [wheelRatings]);
 
     // Filter out empty wins for display
@@ -48,6 +48,7 @@ export function StepYearSnapshot({ year }: StepYearSnapshotProps) {
                 <WheelOfLife
                     values={wheelValues}
                     showWeakStrong={false}
+                    useDimensionLabels={true}
                 />
             </div>
 

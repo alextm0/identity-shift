@@ -6,22 +6,19 @@ import { toYearlyReviewWithTypedFields } from "@/lib/type-helpers";
 import { ReviewWizardContainer } from "@/components/review-wizard/wizard-container";
 import { EditableWheelSection } from "@/components/review-wizard/editable-wheel-section";
 import { EditableWinsSection } from "@/components/review-wizard/editable-wins-section";
+import { EditableDetailsSection } from "@/components/review-wizard/editable-details-section";
+import { getCurrentReviewAndPlanningYears } from "@/lib/date-utils";
 
 export const metadata: Metadata = {
-  title: 'Yearly Review',
-  description: 'Review your year and plan for the next',
-  robots: {
-    index: false,
-    follow: false,
-  },
+    title: 'Yearly Review',
+    description: 'Review your year and plan for the next',
+    robots: {
+        index: false,
+        follow: false,
+    },
 };
 
-// Review year: Review the previous year (e.g., in Jan 2026, review 2025)
-// For now, default to 2025 as specified in the requirements
-const currentDate = new Date();
-const CURRENT_YEAR = currentDate.getMonth() === 0 && currentDate.getDate() <= 5
-    ? currentDate.getFullYear() - 1
-    : currentDate.getFullYear();
+
 
 interface ReviewPageProps {
     searchParams: Promise<{ edit?: string; year?: string }>;
@@ -31,6 +28,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     const session = await verifySession();
     const userId = session.user.id;
     const params = await searchParams;
+    const { reviewYear: CURRENT_YEAR } = getCurrentReviewAndPlanningYears();
     const editMode = params.edit === 'true';
     const yearParam = params.year ? parseInt(params.year, 10) : CURRENT_YEAR;
     const reviewYear = isNaN(yearParam) ? CURRENT_YEAR : yearParam;
@@ -57,7 +55,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
                     <div className="w-full max-w-4xl space-y-8">
                         <EditableWheelSection reviewId={serializableReview.id} initialRatings={serializableReview.wheelRatings} />
                         <EditableWinsSection reviewId={serializableReview.id} initialWins={serializableReview.wins} />
-                        {/* Potentially other editable sections here */}
+                        <EditableDetailsSection reviewId={serializableReview.id} initialDetails={serializableReview.otherDetails ?? null} />
                     </div>
                 </div>
             </div>
