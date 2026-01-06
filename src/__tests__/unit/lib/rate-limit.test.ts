@@ -38,13 +38,33 @@ vi.mock('@/lib/db', () => {
       }),
       insert: () => ({
         values: (vals: any) => ({
-          onConflictDoUpdate: async () => {
-            mockStore.set(vals.key, {
-              key: vals.key,
-              count: 1, // Reset to 1 on insert/upsert
-              resetAt: BigInt(vals.resetAt)
-            });
-          }
+          onConflictDoUpdate: (config: any) => ({
+            returning: async () => {
+              const now = Date.now();
+              const existing = mockStore.get(vals.key);
+
+              let entry;
+              if (existing) {
+                // Handle update case with CASE logic
+                const isExpired = existing.resetAt < now;
+                entry = {
+                  key: vals.key,
+                  count: isExpired ? 1 : existing.count + 1,
+                  resetAt: isExpired ? vals.resetAt : existing.resetAt
+                };
+              } else {
+                // Handle insert case
+                entry = {
+                  key: vals.key,
+                  count: vals.count,
+                  resetAt: vals.resetAt
+                };
+              }
+
+              mockStore.set(vals.key, entry);
+              return [entry];
+            }
+          })
         })
       }),
       update: () => ({

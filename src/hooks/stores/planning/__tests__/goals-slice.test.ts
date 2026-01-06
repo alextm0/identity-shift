@@ -77,9 +77,9 @@ describe('Planning Goals Slice', () => {
     });
 
     describe('Edge Cases and Errors', () => {
-        it('should handle adding goal with empty text', () => {
+        it('should not add goal with empty text', () => {
             usePlanningStore.getState().addGoal('');
-            expect(usePlanningStore.getState().goals[0].text).toBe('');
+            expect(usePlanningStore.getState().goals).toHaveLength(0);
         });
 
         it('should not crash when removing non-existent goal', () => {
