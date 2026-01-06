@@ -16,9 +16,12 @@ export const createPlanningGoalsSlice: StateCreator<
 
     // Step 4 Actions
     addGoal: (text) => {
+        const trimmedText = text.trim();
+        if (!trimmedText) return;
+
         const goal: SimplifiedGoal = {
             id: crypto.randomUUID(),
-            text,
+            text: trimmedText,
             createdAt: new Date(),
         };
         set((state) => ({
@@ -51,24 +54,9 @@ export const createPlanningGoalsSlice: StateCreator<
     setAnnualGoalIds: (ids) => {
         set((state) => {
             // Convert selected goals to annual goals with empty details
-            const newAnnualGoals: AnnualGoal[] = ids.map(goalId => {
-                const existing = state.annualGoals.find(ag => ag.id === goalId);
-                const goal = state.goals.find(g => g.id === goalId);
-                if (existing) return existing;
-                if (goal) {
-                    return {
-                        id: goal.id,
-                        text: goal.text,
-                        category: goal.category,
-                        definitionOfDone: "",
-                        progressSignal: "",
-                        whyMatters: undefined,
-                        createdAt: goal.createdAt,
-                        updatedAt: new Date(),
-                    };
-                }
-                return null;
-            }).filter((g): g is AnnualGoal => g !== null);
+            const newAnnualGoals: AnnualGoal[] = ids
+                .map(goalId => mapGoalToAnnualGoal(goalId, state.goals, state.annualGoals))
+                .filter((g): g is AnnualGoal => g !== null);
 
             return {
                 annualGoalIds: ids,
@@ -85,24 +73,9 @@ export const createPlanningGoalsSlice: StateCreator<
                 : [...state.annualGoalIds, id];
 
             // Update annual goals list
-            const newAnnualGoals: AnnualGoal[] = newIds.map(goalId => {
-                const existing = state.annualGoals.find(ag => ag.id === goalId);
-                const goal = state.goals.find(g => g.id === goalId);
-                if (existing) return existing;
-                if (goal) {
-                    return {
-                        id: goal.id,
-                        text: goal.text,
-                        category: goal.category,
-                        definitionOfDone: "",
-                        progressSignal: "",
-                        whyMatters: undefined,
-                        createdAt: goal.createdAt,
-                        updatedAt: new Date(),
-                    };
-                }
-                return null;
-            }).filter((g): g is AnnualGoal => g !== null);
+            const newAnnualGoals: AnnualGoal[] = newIds
+                .map(goalId => mapGoalToAnnualGoal(goalId, state.goals, state.annualGoals))
+                .filter((g): g is AnnualGoal => g !== null);
 
             return {
                 annualGoalIds: newIds,
@@ -133,3 +106,30 @@ export const createPlanningGoalsSlice: StateCreator<
         return state.goals.filter(g => !state.annualGoalIds.includes(g.id));
     },
 });
+
+/**
+ * Helper to map a goal ID to an AnnualGoal, preserving existing data if present
+ */
+function mapGoalToAnnualGoal(
+    goalId: string,
+    goals: SimplifiedGoal[],
+    annualGoals: AnnualGoal[]
+): AnnualGoal | null {
+    const existing = annualGoals.find(ag => ag.id === goalId);
+    if (existing) return existing;
+
+    const goal = goals.find(g => g.id === goalId);
+    if (goal) {
+        return {
+            id: goal.id,
+            text: goal.text,
+            category: goal.category,
+            definitionOfDone: "",
+            progressSignal: "",
+            whyMatters: undefined,
+            createdAt: goal.createdAt,
+            updatedAt: new Date(),
+        };
+    }
+    return null;
+}

@@ -5,7 +5,7 @@ import Link from "next/link";
 
 interface PlanningHeaderProps {
     year: number;
-    futureIdentity: string;
+    futureIdentity?: string;
 }
 
 export function PlanningHeader({ year, futureIdentity }: PlanningHeaderProps) {

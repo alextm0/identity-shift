@@ -84,6 +84,11 @@ export default async function SprintMetricsPage({
                                     {s.name}
                                 </Link>
                             ))}
+                            {allSprints.length > 3 && (
+                                <span className="flex items-center px-2 text-[10px] font-mono text-white/20 italic">
+                                    + {allSprints.length - 3} more in history
+                                </span>
+                            )}
                         </div>
                     </div>
                 )}

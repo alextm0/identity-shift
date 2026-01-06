@@ -12,6 +12,14 @@ interface TimeMetricsProps {
   metrics: TimeMetric[];
 }
 
+const getHorizonCategory = (label: string) => {
+  const l = label.toLowerCase();
+  if (l.includes('year')) return 'year';
+  if (l.includes('quarter')) return 'quarter';
+  if (l.includes('sprint')) return 'sprint';
+  return 'default';
+};
+
 export function TimeMetrics({ metrics }: TimeMetricsProps) {
   return (
     <GlassPanel className="group p-6 relative overflow-hidden border-white/5 shadow-none hover:bg-white/[0.02] hover:border-white/10 transition-all duration-500">
@@ -39,11 +47,7 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
           {metrics.map((metric, index) => {
             const isLow = metric.percentage <= 25;
             const isMedium = metric.percentage > 25 && metric.percentage <= 50;
-
-            // Differentiate by label
-            const isYear = metric.label.toLowerCase().includes('year');
-            const isQuarter = metric.label.toLowerCase().includes('quarter');
-            const isSprint = metric.label.toLowerCase().includes('sprint');
+            const category = getHorizonCategory(metric.label);
 
             return (
               <div
@@ -54,9 +58,9 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                   <div className="flex items-center gap-2">
                     <Zap className={cn(
                       "h-3 w-3 transition-all duration-300",
-                      isSprint ? "text-focus-violet" :
-                        isQuarter ? "text-motion-amber" :
-                          isYear ? "text-action-emerald" :
+                      category === 'sprint' ? "text-focus-violet" :
+                        category === 'quarter' ? "text-motion-amber" :
+                          category === 'year' ? "text-action-emerald" :
                             isLow ? "text-bullshit-crimson/60 animate-pulse" :
                               isMedium ? "text-motion-amber/60" :
                                 "text-action-emerald/60"
@@ -81,17 +85,17 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                 {/* Enhanced progress bar with unique thickness and glow */}
                 <div className={cn(
                   "relative w-full bg-white/5 rounded-full overflow-hidden transition-all duration-300",
-                  isYear ? "h-2 group-hover/metric:h-2.5" :
-                    isQuarter ? "h-1.5 group-hover/metric:h-2" :
+                  category === 'year' ? "h-2 group-hover/metric:h-2.5" :
+                    category === 'quarter' ? "h-1.5 group-hover/metric:h-2" :
                       "h-1 group-hover/metric:h-1.5"
                 )}>
                   {/* Glow effect */}
                   <div
                     className={cn(
                       "absolute inset-0 blur-sm opacity-0 group-hover/metric:opacity-100 transition-opacity duration-300",
-                      isSprint ? "bg-focus-violet/30" :
-                        isQuarter ? "bg-motion-amber/30" :
-                          isYear ? "bg-action-emerald/30" :
+                      category === 'sprint' ? "bg-focus-violet/30" :
+                        category === 'quarter' ? "bg-motion-amber/30" :
+                          category === 'year' ? "bg-action-emerald/30" :
                             metric.percentage > 50 ? "bg-action-emerald/30" :
                               metric.percentage > 25 ? "bg-motion-amber/30" :
                                 "bg-bullshit-crimson/30"
@@ -102,9 +106,9 @@ export function TimeMetrics({ metrics }: TimeMetricsProps) {
                   <div
                     className={cn(
                       "relative h-full rounded-full transition-all duration-700 ease-out",
-                      isSprint ? "bg-gradient-to-r from-focus-violet/60 via-focus-violet to-focus-violet shadow-[0_0_8px_rgba(139,92,246,0.5)]" :
-                        isQuarter ? "bg-gradient-to-r from-motion-amber/60 via-motion-amber to-motion-amber shadow-[0_0_8px_rgba(245,158,11,0.4)]" :
-                          isYear ? "bg-gradient-to-r from-action-emerald/60 via-action-emerald to-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
+                      category === 'sprint' ? "bg-gradient-to-r from-focus-violet/60 via-focus-violet to-focus-violet shadow-[0_0_8px_rgba(139,92,246,0.5)]" :
+                        category === 'quarter' ? "bg-gradient-to-r from-motion-amber/60 via-motion-amber to-motion-amber shadow-[0_0_8px_rgba(245,158,11,0.4)]" :
+                          category === 'year' ? "bg-gradient-to-r from-action-emerald/60 via-action-emerald to-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
                             metric.percentage > 50
                               ? "bg-gradient-to-r from-action-emerald/60 via-action-emerald to-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                               : metric.percentage > 25

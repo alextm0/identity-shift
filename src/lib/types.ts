@@ -41,6 +41,10 @@ export type NewPromiseLog = InferInsertModel<typeof promiseLog>;
 export type DailyLog = InferSelectModel<typeof dailyLog>;
 export type NewDailyLog = InferInsertModel<typeof dailyLog>;
 
+export type DailyLogWithRelations = DailyLog & {
+    promiseLogs: PromiseLog[];
+};
+
 export type WeeklyReview = InferSelectModel<typeof weeklyReview>;
 export type NewWeeklyReview = InferInsertModel<typeof weeklyReview>;
 

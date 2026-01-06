@@ -30,12 +30,31 @@ interface PriorityWithProgress {
   sprintName?: string;
 }
 
+const DEFAULT_SPRINT_NAME = "Main Project";
+
+function getPriorityProgressMessage(priority: PriorityWithProgress) {
+  if (priority.isComplete) {
+    return `Incredible! You've met your ${priority.type} commitment of ${priority.weeklyTarget} units. Keep the momentum!`;
+  }
+
+  const remaining = priority.weeklyTarget - priority.unitsThisWeek;
+  const suffix = priority.type === 'daily' ? 'Stay consistent every day.' : 'You can do it!';
+  return `You need ${remaining} more completions to reach your weekly target. ${suffix}`;
+}
+
 interface PrioritiesWorkflowProps {
   priorities: PriorityWithProgress[];
 }
 
 function CommitmentItem({ priority, index }: { priority: PriorityWithProgress, index: number }) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsExpanded(!isExpanded);
+    }
+  };
 
   return (
     <motion.div
@@ -44,8 +63,12 @@ function CommitmentItem({ priority, index }: { priority: PriorityWithProgress, i
       transition={{ delay: index * 0.05 }}
     >
       <GlassPanel
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        onKeyDown={handleKeyDown}
         className={cn(
-          "group flex flex-col border-white/5 shadow-none transition-all duration-500 overflow-hidden cursor-pointer relative",
+          "group flex flex-col border-white/5 shadow-none transition-all duration-500 overflow-hidden cursor-pointer relative focus-visible:ring-2 focus-visible:ring-focus-violet focus-visible:outline-none",
           priority.isComplete
             ? "hover:bg-action-emerald/[0.04] hover:border-action-emerald/30 bg-action-emerald/[0.01]"
             : "hover:bg-white/[0.04] hover:border-white/10",
@@ -185,7 +208,7 @@ function CommitmentItem({ priority, index }: { priority: PriorityWithProgress, i
                           <Flag className="h-3 w-3 text-focus-violet/60" />
                           <span className="text-[9px] font-mono uppercase tracking-widest text-white/20">Sprint</span>
                         </div>
-                        <p className="text-xs font-medium text-white/60">{priority.sprintName || "Main Project"}</p>
+                        <p className="text-xs font-medium text-white/60">{priority.sprintName || DEFAULT_SPRINT_NAME}</p>
                       </div>
                       <div className="p-3 rounded-lg bg-white/[0.01] border border-white/5">
                         <div className="flex items-center gap-2 mb-2">
@@ -232,9 +255,7 @@ function CommitmentItem({ priority, index }: { priority: PriorityWithProgress, i
                         </div>
 
                         <p className="text-xs text-white/40 leading-relaxed bg-white/[0.02] p-3 rounded-lg border border-white/5">
-                          {priority.isComplete
-                            ? `Incredible! You've met your ${priority.type} commitment of ${priority.weeklyTarget} units. Keep the momentum!`
-                            : `You need ${priority.weeklyTarget - priority.unitsThisWeek} more completions to reach your weekly target. ${priority.type === 'daily' ? 'Stay consistent every day.' : 'You can do it!'}`}
+                          {getPriorityProgressMessage(priority)}
                         </p>
                       </div>
                     </div>
@@ -277,13 +298,16 @@ export function PrioritiesWorkflow({ priorities }: PrioritiesWorkflowProps) {
 
       {/* Priority cards */}
       <div className="grid grid-cols-1 gap-4">
-        {priorities.map((priority, index) => (
-          <CommitmentItem
-            key={priority.key || index}
-            priority={priority}
-            index={index}
-          />
-        ))}
+        {priorities.map((priority, index) => {
+          const stableKey = priority.key || `${priority.label}-${priority.type}`;
+          return (
+            <CommitmentItem
+              key={stableKey}
+              priority={priority}
+              index={index}
+            />
+          );
+        })}
 
         {priorities.length === 0 && (
           <div className="py-20 text-center bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">

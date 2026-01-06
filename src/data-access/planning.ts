@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { planning, yearlyReview } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { NewPlanning, Planning } from "@/lib/types";
 import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
@@ -19,37 +19,6 @@ import { getCurrentReviewAndPlanningYears } from "@/lib/date-utils";
 
 const _toTypedPlanning = (p: Planning): PlanningWithTypedFields => toPlanningWithTypedFields(p);
 
-/**
- * Get planning by user ID (returns the most recent/current year's plan)
- * @deprecated Use getPlanningByUserIdAndYear for explicit year handling
- */
-const fetchPlanningByUserId = async (userId: string): Promise<PlanningWithTypedFields | undefined> => {
-    return await withDatabaseErrorHandling(
-        async () => {
-            const result = await db.select()
-                .from(planning)
-                .where(createOwnershipCondition(planning.userId, userId))
-                .orderBy(desc(planning.year));
-            return result[0] ? _toTypedPlanning(result[0]) : undefined;
-        },
-        "Failed to fetch planning by user ID"
-    );
-};
-
-const getPlanningByUserIdCached = unstable_cache(
-    fetchPlanningByUserId,
-    ['planning-by-user-id'],
-    { tags: ['planning'] }
-);
-
-export const getPlanningByUserId = async (userId: string): Promise<PlanningWithTypedFields | undefined> => {
-    try {
-        return await getPlanningByUserIdCached(userId);
-    } catch (error) {
-        console.warn("Cache failed for getPlanningByUserId, falling back to direct fetch", error);
-        return await fetchPlanningByUserId(userId);
-    }
-};
 
 /**
  * Get planning by user ID and year
@@ -200,11 +169,15 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
     );
 }
 
-export async function upsertPlanning(data: NewPlanning) {
+/**
+ * Upsert planning for a specific user and year.
+ * Uses getPlanningByUserIdAndYear to ensure we're updating the correct year's plan.
+ */
+export async function upsertPlanning(data: NewPlanning & { year: number }) {
     return await withDatabaseErrorHandling(
         async () => {
-            // Check if exists first (userId has a unique constraint in the schema - 1:1 relationship)
-            const existing = await getPlanningByUserId(data.userId);
+            // Check if exists for the specific year
+            const existing = await getPlanningByUserIdAndYear(data.userId, data.year);
 
             if (existing) {
                 const updated = await db.update(planning)

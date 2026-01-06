@@ -82,6 +82,7 @@ export async function getActiveSprints(userId: string): Promise<SprintWithDetail
                     createOwnershipCondition(sprint.userId, userId),
                     eq(sprint.active, true)
                 ),
+                orderBy: desc(sprint.startDate),
                 with: {
                     priorities: true,
                     goals: {
@@ -345,20 +346,6 @@ export async function updateSprint(id: string, userId: string, data: Partial<New
 }
 
 
-export async function deactivateAllSprints(userId: string) {
-    return await withDatabaseErrorHandling(
-        async () => {
-            return await db.update(sprint)
-                .set({ active: false, updatedAt: new Date() })
-                .where(and(
-                    createOwnershipCondition(sprint.userId, userId),
-                    eq(sprint.active, true)
-                ))
-                .returning();
-        },
-        "Failed to deactivate sprints"
-    );
-}
 
 export async function deleteSprint(id: string, userId: string) {
     return await withDatabaseErrorHandling(

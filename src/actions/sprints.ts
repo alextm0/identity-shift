@@ -12,7 +12,7 @@
  * - All data is filtered by authenticated userId
  */
 import { revalidateDashboard } from "@/lib/revalidate";
-import { createSprint, deactivateAllSprints, getSprintById, updateSprint, deleteSprint, closeSprintById, getActiveSprint } from "@/data-access/sprints";
+import { createSprint, getSprintById, updateSprint, deleteSprint, closeSprintById, getActiveSprint } from "@/data-access/sprints";
 import { SprintFormSchema, BaseSprintFormSchema } from "@/lib/validators";
 import { sanitizeText } from "@/lib/sanitize";
 import { NotFoundError, BusinessRuleError } from "@/lib/errors";
@@ -33,8 +33,6 @@ export const startSprintAction = createAction(
             throw new BusinessRuleError("At least one goal is required");
         }
 
-        // 1. Deactivate current active sprints - REMOVED to support multiple sprints
-        // await deactivateAllSprints(userId);
 
         // 2 & 3. Create new sprint with goals and promises
         const sprintId = randomUUID();
@@ -186,22 +184,13 @@ export const closeSprintAction = createActionWithoutValidation(
     }
 );
 
-export const getActiveSprintAction = createActionWithoutValidation(
-    async (userId) => {
-        const activeSprint = await getActiveSprint(userId);
-        return success({ sprint: activeSprint || null });
-    },
-    {
-        errorMessage: "Failed to get active sprint"
-    }
-);
 
 
 function revalidateSprintPaths() {
     revalidateDashboard();
     // Also revalidate the specialized sprint cache
     import('next/cache').then(({ revalidateTag }) => {
-        revalidateTag('sprints');
-        revalidateTag('active-sprint');
+        revalidateTag('sprints', 'max');
+        revalidateTag('active-sprint', 'max');
     });
 }

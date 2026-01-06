@@ -15,7 +15,7 @@
 import { revalidateTag } from "next/cache";
 import { getOrCreatePlanning, updatePlanning } from "@/data-access/planning";
 import { PlanningFormSchema, CompletePlanningSchema, type PlanningFormData, type CompletePlanningData, PlanningStatus, DraftAnnualGoalSchema, type DraftAnnualGoal, type SimplifiedGoal } from "@/lib/validators";
-import { success } from "@/lib/actions/result";
+import { success, failure } from "@/lib/actions/result";
 import { createActionWithParam, createActionWithoutValidation } from "@/lib/actions/middleware";
 import { z } from "zod";
 
@@ -139,7 +139,7 @@ export const updateGoalDetailsAction = createActionWithParam(
 
         const goalIndex = annualGoals.findIndex(g => g.id === goalId);
         if (goalIndex === -1) {
-            return { success: false, error: "Goal not found" };
+            return failure("Goal not found", "NOT_FOUND");
         }
 
         // Update the goal

@@ -49,12 +49,16 @@ export function createJsonParser<T>({
         }
 
         if (typeof input === 'object') {
-            // Even if already object, we should check depth if it came from untrusted source
-            // But usually input here is string. If it's object, it might be already parsed or from another code part.
-            // For safety, let's just valid type check.
-            if (isArray && !Array.isArray(input)) {
+            // Guard: Expected array but got object, or vice-versa
+            if (isArray && !Array.isArray(input)) return defaultValue;
+            if (!isArray && Array.isArray(input)) return defaultValue;
+
+            // Enforce depth limit even on pre-parsed objects to prevent bypasses
+            if (!checkDepth(input, 0, maxDepth)) {
+                console.error(`[${context}] Pre-parsed object too deeply nested (max ${maxDepth})`);
                 return defaultValue;
             }
+
             return input as T;
         }
 

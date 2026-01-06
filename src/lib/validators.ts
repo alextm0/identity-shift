@@ -228,7 +228,6 @@ export {
     CompleteYearlyReviewSchema,
     WheelRatingsSchema,
     WheelAuditSchema,
-    BigThreeWinsSchema,
     LIFE_DIMENSIONS,
     DIMENSION_LABELS,
     YearlyReviewStatus,
@@ -236,7 +235,6 @@ export {
     type CompleteYearlyReviewData,
     type WheelRatings,
     type WheelAudit,
-    type BigThreeWins,
     type LifeDimension,
 } from "./validators/yearly-review";
 

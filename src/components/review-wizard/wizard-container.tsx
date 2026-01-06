@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { saveYearlyReviewProgressAction } from "@/actions/yearly-reviews";
 import { WizardProgress } from "./wizard-progress";
@@ -21,7 +20,6 @@ interface ReviewWizardContainerProps {
 }
 
 export function ReviewWizardContainer({ initialReview, year, isEditMode = false }: ReviewWizardContainerProps) {
-    const router = useRouter(); // Kept if needed by other logic, though navigation hook handles it mostly
     const {
         currentStep,
         reviewId,

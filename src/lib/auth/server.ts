@@ -32,6 +32,8 @@ async function ensureUserExists(authUser: { id: string; name?: string | null; em
     } catch (error) {
         // Log error safely without exposing sensitive data
         console.error("Failed to ensure user exists:", error instanceof Error ? error.message : "Unknown error");
+        // Re-throw the error so that getSession knows the synchronization failed
+        throw error;
     }
 }
 

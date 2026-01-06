@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { handleReviewCompletion } from "@/lib/review/completion-handler";
 import { REVIEW_WIZARD_STEPS } from "@/lib/constants/review";
+import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
+import { toast } from "sonner";
 import { useCallback } from "react";
 import type { YearlyReviewWithTypedFields } from "@/lib/types";
 
@@ -64,7 +66,7 @@ export function useWizardNavigation({
     } else {
       // Complete review
       if (!effectiveReviewId) {
-        console.error("Cannot complete review: reviewId is missing.");
+        toast.error("Cannot complete review: reviewId is missing.");
         return;
       }
 
@@ -80,6 +82,7 @@ export function useWizardNavigation({
         },
         onError: (error) => {
           console.error("Failed to complete review:", error);
+          toast.error("Failed to complete review. Please try again.");
         },
         onSavingChange: markSaving,
       });
@@ -98,9 +101,15 @@ export function useWizardNavigation({
     markSaving
   ]);
 
-  const handleBack = useCallback(() => {
+  const handleBack = useCallback(async () => {
+    const effectiveReviewId = reviewId || initialReview.id;
+
+    // Auto-save before moving back
+    if (isDirty && effectiveReviewId) {
+      await autoSave();
+    }
     handleBackNavigation();
-  }, [handleBackNavigation]);
+  }, [handleBackNavigation, isDirty, reviewId, initialReview.id, autoSave]);
 
   const handleExit = useCallback(async () => {
     const effectiveReviewId = reviewId || initialReview.id;
@@ -126,7 +135,7 @@ export function useWizardNavigation({
     // For step 1 (Wheel of Life), check if all dimensions are rated
     if (currentStep === 1) {
       const ratings = getFormData().wheelRatings;
-      return !!(ratings && Object.keys(ratings).length === 8);
+      return !!(ratings && Object.keys(ratings).length === LIFE_DIMENSIONS.length);
     }
 
     return canGoNextNavigation();

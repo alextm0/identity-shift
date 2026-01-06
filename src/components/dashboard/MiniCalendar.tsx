@@ -175,15 +175,22 @@ export function MiniCalendar({ highlightedDates = [], sprintStart, sprintEnd, cl
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-black text-white/80 leading-none tabular-nums">
-                        {differenceInDays(sprintEnd, today) + 1} Days
+                        {Math.max(0, differenceInDays(sprintEnd, today) + 1)} Days
                       </span>
-                      <span className="text-[8px] font-mono font-black text-white/20 uppercase tracking-[0.2em] mt-1">Remaining</span>
+                      <span className="text-[8px] font-mono font-black text-white/20 uppercase tracking-[0.2em] mt-1">
+                        {differenceInDays(sprintEnd, today) + 1 <= 0 ? "Completed" : "Remaining"}
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/5 border border-white/5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-focus-violet animate-pulse" />
-                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-tighter">Active</span>
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full",
+                      differenceInDays(sprintEnd, today) + 1 <= 0 ? "bg-white/20" : "bg-focus-violet animate-pulse"
+                    )} />
+                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-tighter">
+                      {differenceInDays(sprintEnd, today) + 1 <= 0 ? "Ended" : "Active"}
+                    </span>
                   </div>
                 </div>
 

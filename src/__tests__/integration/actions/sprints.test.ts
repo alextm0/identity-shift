@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { startSprintAction, closeSprintAction } from '@/actions/sprints';
 import { getRequiredSession } from '@/lib/auth/server';
-import { createSprint, deactivateAllSprints, getSprintById, closeSprintById } from '@/data-access/sprints';
+import { createSprint, getSprintById, closeSprintById } from '@/data-access/sprints';
 import { createMockSprint, createMockSprintWithPriorities } from '@/__tests__/mocks/db';
 import { NotFoundError } from '@/lib/errors';
 import { SprintWithDetails } from '@/lib/types';

@@ -1,5 +1,5 @@
 import { DailyLog, SprintWithDetails, PromiseLog } from "@/lib/types";
-import { differenceInDays, isWithinInterval, startOfDay } from "date-fns";
+import { differenceInDays, startOfDay } from "date-fns";
 
 export interface SprintPromiseSummary {
     promiseId: string;

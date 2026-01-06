@@ -43,7 +43,7 @@ export function PlanningView({ planning }: PlanningViewProps) {
     const targetWheelOfLife = useMemo(() => planning.targetWheelOfLife || {}, [planning.targetWheelOfLife]);
     const antiVision = planning.antiVision || undefined;
     const antiGoals = planning.antiGoals || [];
-    const futureIdentity = planning.futureIdentity || "";
+    const futureIdentity = planning.futureIdentity || undefined;
     const commitmentStatement = planning.commitmentStatement || undefined;
     const signatureImage = planning.signatureImage || undefined;
     const signedAt = planning.signedAt ? new Date(planning.signedAt) : undefined;

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { DailyLog, SprintWithDetails, SprintGoal, SprintPromise } from "@/lib/types";
+import { DailyLog, SprintWithDetails, SprintGoal, SprintPromise, DailyLogWithRelations } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isPromiseScheduledForDay } from "@/lib/scoring";
@@ -21,7 +21,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface DailyLogFormProps {
   activeSprint?: SprintWithDetails;
-  initialData?: DailyLog;
+  initialData?: DailyLogWithRelations;
   targetDate?: Date;
 }
 
@@ -178,15 +178,19 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
     setIsPending(true);
     try {
       const result = await saveDailyAuditAction(data);
-      if (result?.data?.id) {
-        setSavedLogId(result.data.id);
+      if (result.success) {
+        if (result.data?.id) {
+          setSavedLogId(result.data.id);
+        }
         setLastSaved(new Date());
         // Update reference to prevent immediate auto-save trigger on state change
         previousDataRef.current = JSON.stringify(data);
+        toast.success("Daily audit saved successfully");
+        router.refresh();
+        router.push("/dashboard");
+      } else {
+        toast.error(result.error || "Failed to save audit");
       }
-      toast.success("Daily audit saved successfully");
-      router.refresh();
-      router.push("/dashboard");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save audit");
       console.error(error);
@@ -201,11 +205,16 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
 
     setIsDeleting(true);
     try {
-      await deleteDailyLogAction(currentLogId);
-      setSavedLogId(undefined); // Clear ID
-      toast.success("Daily audit deleted");
-      router.push("/dashboard");
-      router.refresh();
+      const result = await deleteDailyLogAction(currentLogId);
+      if (result.success) {
+        setSavedLogId(undefined); // Clear ID
+        toast.success("Daily audit deleted");
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Failed to delete audit");
+        setIsDeleting(false);
+      }
     } catch (error) {
       toast.error("Failed to delete audit");
       console.error(error);

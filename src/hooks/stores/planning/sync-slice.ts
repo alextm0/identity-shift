@@ -27,7 +27,7 @@ export const createPlanningSyncSlice: StateCreator<
             updatedAt: g.updatedAt ? new Date(g.updatedAt) : undefined,
         }));
 
-        const annualGoalIds = (data.annualGoalIds || []).map((id: string) => id);
+        const annualGoalIds = data.annualGoalIds || [];
 
         // Load annual goals with details
         const annualGoals: AnnualGoal[] = (data.annualGoals || []).map((ag) => ({
@@ -44,7 +44,7 @@ export const createPlanningSyncSlice: StateCreator<
         const antiGoals: AntiGoal[] = (data.antiGoals || []).map((ag) => ({
             id: ag.id,
             text: ag.text || "",
-            createdAt: ag.createdAt ? new Date(ag.createdAt) : undefined,
+            createdAt: ag.createdAt ? new Date(ag.createdAt) : new Date(),
         }));
 
         set({
@@ -108,7 +108,7 @@ export const createPlanningSyncSlice: StateCreator<
             futureYouLetter: state.futureYouLetter || undefined,
             goals: state.goals.length > 0 ? state.goals : undefined,
             annualGoalIds: state.annualGoalIds.length > 0 ? state.annualGoalIds : undefined,
-            annualGoals: state.annualGoals,
+            annualGoals: state.annualGoals.length > 0 ? state.annualGoals : undefined,
             antiVision: state.antiVision || undefined,
             antiGoals: state.antiGoals.length > 0 ? state.antiGoals : undefined,
             commitmentStatement: state.commitmentStatement || undefined,

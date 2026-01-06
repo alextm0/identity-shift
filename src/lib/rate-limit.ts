@@ -8,6 +8,7 @@ import { RateLimitError } from "@/lib/errors";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { env } from "@/env";
 
 /**
  * Checks if a request should be rate limited.
@@ -26,59 +27,61 @@ export async function checkRateLimit(
     const key = identifier;
 
     try {
-        // 1. Get current entry
-        const existing = await db.select().from(rateLimit).where(eq(rateLimit.key, key)).limit(1);
-        const entry = existing[0];
+        // Atomic UPSERT that handles both creation, reset (if expired), and incrementing
+        const result = await db.insert(rateLimit)
+            .values({
+                key,
+                count: 1,
+                resetAt: now + windowMs,
+            })
+            .onConflictDoUpdate({
+                target: rateLimit.key,
+                set: {
+                    count: sql`CASE 
+                        WHEN ${rateLimit.resetAt} < ${now} THEN 1 
+                        ELSE ${rateLimit.count} + 1 
+                    END`,
+                    resetAt: sql`CASE 
+                        WHEN ${rateLimit.resetAt} < ${now} THEN ${now + windowMs} 
+                        ELSE ${rateLimit.resetAt} 
+                    END`,
+                },
+            })
+            .returning();
 
-        // 2. If no entry or expired, reset
-        if (!entry || Number(entry.resetAt) < now) {
-            const resetAt = now + windowMs;
-
-            // Upsert mechanism
-            await db.insert(rateLimit)
-                .values({
-                    key,
-                    count: 1,
-                    resetAt: BigInt(resetAt),
-                })
-                .onConflictDoUpdate({
-                    target: rateLimit.key,
-                    set: {
-                        count: 1,
-                        resetAt: BigInt(resetAt),
-                    }
-                });
-
-            return {
-                allowed: true,
-                remaining: limit - 1,
-                resetAt,
-            };
-        }
-
-        // 3. If within window but limit reached
-        if (entry.count >= limit) {
-            return {
-                allowed: false,
-                remaining: 0,
-                resetAt: Number(entry.resetAt),
-            };
-        }
-
-        // 4. Increment count
-        await db.update(rateLimit)
-            .set({ count: sql`${rateLimit.count} + 1` })
-            .where(eq(rateLimit.key, key));
+        const entry = result[0];
+        const allowed = entry.count <= limit;
+        const remaining = Math.max(0, limit - entry.count);
 
         return {
-            allowed: true,
-            remaining: limit - (entry.count + 1),
-            resetAt: Number(entry.resetAt),
+            allowed,
+            remaining,
+            resetAt: entry.resetAt,
         };
     } catch (error) {
-        // Fallback for DB errors to allow traffic (fail open) but log error
-        console.error("Rate limit check failed:", error);
-        return { allowed: true, remaining: 1, resetAt: now + windowMs };
+        /**
+         * SECURITY TRADE-OFF: Fail-Closed (Default) vs Fail-Open
+         * 
+         * By default, we fail-closed (allowed: false) to prevent rate-limit bypass 
+         * during database outages. This is the more secure approach for production 
+         * systems.
+         * 
+         * Set RATE_LIMIT_FAIL_OPEN=true in your environment to allow traffic 
+         * even if the database is unavailable (use only if availability > security).
+         */
+        const failOpen = env.RATE_LIMIT_FAIL_OPEN;
+
+        console.error("[CRITICAL] Rate limit check failed. Database may be unavailable.", {
+            error: error instanceof Error ? error.message : "Unknown error",
+            stack: error instanceof Error ? error.stack : undefined,
+            failOpen
+        });
+
+        return {
+            allowed: failOpen,
+            remaining: 0,
+            resetAt: now + windowMs
+        };
     }
 }
 

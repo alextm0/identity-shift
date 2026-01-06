@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { createActionWithoutValidation } from "@/lib/actions/middleware";
 import { success } from "@/lib/actions/result";
 import { BusinessRuleError } from "@/lib/errors";
+import { getRequiredSession } from "@/lib/auth/server";
 
 /**
  * Get all active sessions for the current user
@@ -63,30 +64,27 @@ export const revokeSessionAction = createActionWithoutValidation<void, [string]>
 );
 
 /**
- * Revoke all active sessions (except the current one logic might need current session ID context, 
- * but `revokeAllOtherSessions` usually implies that. 
- * Better Auth usually handles current session via cookie. 
- * Here the original logic just deleted ALL sessions for userId, effectively logging them out everywhere including current device if the current session is DB backed? 
- * Actually better-auth probably uses the DB session, so deleting ALL logs them out completely. 
- * The naming `revokeAllOtherSessions` suggests keeping one, but the original implementation was `delete(session).where(eq(session.userId, userId))`.
- * I will stick to the original logic which wiped all sessions for the user.)
- * 
- * Wait, the original code in `revokeSession` claimed "except current one" in comment but code didn't check.
- * The original `revokeAllOtherSessions` name implies "Other", but implementation deleted ALL. 
- * 
- * I will implement strict "Revoke All" as per original code behavior, but call it `revokeAllSessionsAction`.
+ * Revoke all active sessions except the current one
  */
-export const revokeAllSessionsAction = createActionWithoutValidation(
+export const revokeOtherSessionsAction = createActionWithoutValidation(
     async (userId) => {
-        // Delete all sessions for the user
+        // Get current session to exclude it
+        const currentSession = await getRequiredSession();
+
+        // Delete all OTHER sessions for the user
         await db
             .delete(session)
-            .where(eq(session.userId, userId));
+            .where(
+                and(
+                    eq(session.userId, userId),
+                    ne(session.id, currentSession.id)
+                )
+            );
 
         revalidatePath("/account/settings");
-        return success(undefined, { message: "All sessions revoked successfully" });
+        return success(undefined, { message: "All other sessions revoked successfully" });
     },
     {
-        errorMessage: "Failed to revoke all sessions"
+        errorMessage: "Failed to revoke other sessions"
     }
 );

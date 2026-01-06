@@ -11,41 +11,9 @@ export enum PlanningStatus {
 }
 
 /**
- * Maps old dimension keys to new ones for backward compatibility
- */
-const DIMENSION_MAPPING: Record<string, string> = {
-    training: "health",
-    mental: "mental_clarity",
-    learning: "learning_building",
-    technical: "career",
-    creativity: "recreation",
-    relationships: "family_friends",
-    income: "finances",
-};
-
-/**
- * Migrates old dimension keys to new ones in an object
- */
-function migrateWheelKeys(data: unknown): unknown {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
-
-    const migrated: Record<string, unknown> = {};
-    Object.entries(data as Record<string, unknown>).forEach(([key, value]) => {
-        const newKey = DIMENSION_MAPPING[key] || key;
-        if (migrated[newKey] === undefined) {
-            migrated[newKey] = value;
-        }
-    });
-    return migrated;
-}
-
-/**
  * Wheel of Life Category (for goal categorization)
  */
-export const WheelOfLifeCategorySchema = z.preprocess(
-    (val) => typeof val === 'string' ? (DIMENSION_MAPPING[val] || val) : val,
-    z.enum(LIFE_DIMENSIONS as unknown as [LifeDimension, ...LifeDimension[]])
-);
+export const WheelOfLifeCategorySchema = z.enum(LIFE_DIMENSIONS as unknown as [LifeDimension, ...LifeDimension[]]);
 export type WheelOfLifeCategory = z.infer<typeof WheelOfLifeCategorySchema>;
 
 /**
@@ -131,7 +99,7 @@ export const PlanningFormSchema = z.object({
     futureIdentity: z.string().max(1000).optional().transform(val => val ? sanitizeText(val, 1000) : val),
 
     // Step 2: Wheel of Life Vision
-    targetWheelOfLife: z.preprocess(migrateWheelKeys, z.record(z.string(), z.number().min(1).max(10))).optional(),
+    targetWheelOfLife: z.record(z.string(), z.number().min(1).max(10)).optional(),
     wheelVisionStatements: z.record(z.string(), z.string().max(500)).optional().transform(val => {
         if (!val) return val;
         const sanitized: Record<string, string> = {};
@@ -168,7 +136,7 @@ export const PlanningFormSchema = z.object({
 
     // From Review (for reference)
     previousIdentity: z.string().max(2000).optional().transform(val => val ? sanitizeText(val, 2000) : val),
-    wheelOfLife: z.preprocess(migrateWheelKeys, z.record(z.string(), z.number().min(1).max(10))).optional(),
+    wheelOfLife: z.record(z.string(), z.number().min(1).max(10)).optional(),
 
     // Legacy fields (for backward compatibility)
     activeGoals: z.array(SimplifiedGoalSchema).optional(),

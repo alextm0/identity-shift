@@ -13,10 +13,7 @@ interface PlanningSummarySectionsProps {
 
 export function PlanningSummarySections({ antiVision, antiGoals, futureYouLetter, brainDump }: PlanningSummarySectionsProps) {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-        strategic_blueprint: false,
-        backlog: false,
         future_letter: false,
-        commitment: false,
         survival_guards: false,
         raw_context: false,
     });

@@ -1,7 +1,7 @@
 import { getRequiredSession } from "@/lib/auth/server";
 import { getActiveSprintCached, getActiveSprintsCached, getSprints } from "@/data-access/sprints";
 import { getDailyLogs, getTodayLogForUser } from "@/data-access/daily-logs";
-import { getPlanningByUserId } from "@/data-access/planning";
+import { getPlanningByUserIdAndYear } from "@/data-access/planning";
 import { getWeeklyReviews, getMonthlyReviews } from "@/data-access/reviews";
 import { getCompletedYearlyReview } from "@/data-access/yearly-reviews";
 import { differenceInDays, subDays, isSameDay, startOfYear, endOfYear, startOfQuarter, endOfQuarter, isFuture, isPast, isToday, format } from "date-fns";
@@ -51,13 +51,13 @@ const fetchDashboardData = async (userId: string) => {
     const activeSprintsPromise = getActiveSprintsCached(userId);
 
     // Review year logic based on date utility
-    const { reviewYear: CURRENT_YEAR } = getCurrentReviewAndPlanningYears();
+    const { reviewYear: CURRENT_YEAR, planningYear } = getCurrentReviewAndPlanningYears();
 
     // Fetch all dashboard data in parallel for better performance with graceful degradation
     const sevenDaysAgo = normalizeDate(subDays(new Date(), 7));
 
     const results = await Promise.allSettled([
-        getPlanningByUserId(userId), // Now cached with 'planning' tag
+        getPlanningByUserIdAndYear(userId, planningYear), // Now cached with 'planning' tag
         activeSprintsPromise,
         getSprints(userId).then(sprints => sprints.slice(0, 3)), // Last 3 sprints
         getTodayLogForUser(userId, new Date()),

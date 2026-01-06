@@ -7,6 +7,7 @@ export const env = createEnv({
         DATABASE_URL: z.string().url(),
         NEON_AUTH_BASE_URL: z.string().url(),
         NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+        RATE_LIMIT_FAIL_OPEN: z.string().transform((v) => v === 'true').default('false'),
     },
     client: {
         NEXT_PUBLIC_NEON_AUTH_BASE_URL: z.string().url(),
@@ -16,6 +17,7 @@ export const env = createEnv({
         DATABASE_URL: process.env.DATABASE_URL,
         NEON_AUTH_BASE_URL: process.env.NEON_AUTH_BASE_URL,
         NODE_ENV: process.env.NODE_ENV,
+        RATE_LIMIT_FAIL_OPEN: process.env.RATE_LIMIT_FAIL_OPEN,
         NEXT_PUBLIC_NEON_AUTH_BASE_URL: process.env.NEXT_PUBLIC_NEON_AUTH_BASE_URL,
         NEXT_PUBLIC_NEON_AUTH_URL: process.env.NEXT_PUBLIC_NEON_AUTH_URL,
     },

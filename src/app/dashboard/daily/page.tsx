@@ -6,7 +6,14 @@ import { getDashboardData } from "@/queries/dashboard";
 export default async function DailyPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const params = await searchParams;
   const dateParam = params?.date;
-  const targetDate = dateParam ? new Date(dateParam + 'T00:00:00') : new Date();
+
+  let targetDate = new Date();
+  if (dateParam) {
+    const parsed = new Date(dateParam + 'T00:00:00');
+    if (!isNaN(parsed.getTime())) {
+      targetDate = parsed;
+    }
+  }
 
   const [{ todayLog }, { activeSprint }] = await Promise.all([
     getDailyData(targetDate),

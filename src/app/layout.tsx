@@ -1,8 +1,9 @@
 import { authClient } from '@/lib/auth/client';
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui';
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,8 +15,6 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
-
-import { Instrument_Serif } from "next/font/google";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-serif",
@@ -62,11 +61,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} antialiased`}>
@@ -80,7 +81,12 @@ export default function RootLayout({
               {children}
             </main>
           </div>
-          <Toaster position="bottom-right" theme="dark" richColors closeButton />
+          <Toaster
+            position="bottom-right"
+            theme="dark"
+            richColors
+            closeButton
+          />
         </NeonAuthUIProvider>
       </body>
     </html>

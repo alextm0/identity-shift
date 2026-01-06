@@ -129,7 +129,7 @@ export const planning = pgTable('planning', {
 
     // From Review
     previousIdentity: text('previousIdentity'), // Identity from 2025 review
-    wheelOfLife: json('wheelOfLife'), // JSON: {healthEnergy, physical, mental, ...}
+    wheelOfLife: json('wheelOfLife'), // JSON: {health, mental_clarity, career, recreation, ...}
 
     // Step 1: Empty Your Head + Future Identity
     brainDump: text('brainDump'), // Free-form notes
@@ -308,13 +308,13 @@ export const yearlyReview = pgTable('yearlyReview', {
     currentStep: integer('currentStep').notNull().default(1), // 1-3 (updated from 1-6)
 
     // Step 2: Wheel ratings
-    wheelRatings: json('wheelRatings'), // {health: 4, training: 3, ...}
+    wheelRatings: json('wheelRatings'), // {health: 4, mental_clarity: 3, ...}
 
     // Step 3: What's working (wins per dimension)
-    wheelWins: json('wheelWins'), // {health: "text...", training: "text...", ...}
+    wheelWins: json('wheelWins'), // {health: "text...", mental_clarity: "text...", ...}
 
     // Step 4: What's missing (gaps per dimension)
-    wheelGaps: json('wheelGaps'), // {health: "text...", training: "text...", ...}
+    wheelGaps: json('wheelGaps'), // {health: "text...", mental_clarity: "text...", ...}
 
     // Wins and other details
     wins: json('wins'), // ["win1", "win2", ...] - flexible array

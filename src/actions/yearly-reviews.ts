@@ -73,7 +73,7 @@ export const saveYearlyReviewProgressAction = createActionWithParam(
 
         await updateYearlyReview(reviewId, userId, updateData);
 
-        revalidateTag("yearly-reviews");
+        revalidateTag("yearly-reviews", "max");
 
         return success(
             { reviewId },
@@ -111,9 +111,9 @@ export const completeYearlyReviewAction = createActionWithParam(
 
         await updateYearlyReview(reviewId, userId, updateData);
 
-        revalidateTag("yearly-reviews");
-        revalidateTag("dashboard");
-        revalidateTag("planning"); // Yearly review affects planning wheel seed
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
+        revalidateTag("planning", "max"); // Yearly review affects planning wheel seed
 
         return success(
             { reviewId },
@@ -164,8 +164,8 @@ export const editYearlyReviewAction = createActionWithoutValidation(
             updatedAt: new Date(),
         });
 
-        revalidateTag("yearly-reviews");
-        revalidateTag("dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
 
         return success(
             { reviewId },
@@ -194,8 +194,8 @@ export const updateWheelRatingsAction = createActionWithParam(
             updatedAt: new Date(),
         });
 
-        revalidateTag("yearly-reviews");
-        revalidateTag("dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
 
         return success(
             { reviewId },
@@ -224,8 +224,8 @@ export const updateWinsAction = createActionWithParam(
             updatedAt: new Date(),
         });
 
-        revalidateTag("yearly-reviews");
-        revalidateTag("dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
 
         return success(
             { reviewId },
@@ -254,8 +254,8 @@ export const updateOtherDetailsAction = createActionWithParam(
             updatedAt: new Date(),
         });
 
-        revalidateTag("yearly-reviews");
-        revalidateTag("dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
 
         return success(
             { reviewId },
@@ -281,8 +281,8 @@ export const deleteYearlyReviewAction = createActionWithoutValidation(
 
         await deleteYearlyReview(reviewId, userId);
 
-        revalidateTag("yearly-reviews");
-        revalidateTag("dashboard");
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
 
         return success(
             undefined,

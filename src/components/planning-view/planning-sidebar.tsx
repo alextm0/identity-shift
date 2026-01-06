@@ -1,4 +1,4 @@
-
+"use client";
 import { useState } from "react";
 import { Maximize2, ListTodo, ChevronDown, ScrollText, X } from "lucide-react";
 import { format } from "date-fns";
@@ -114,7 +114,7 @@ export function PlanningSidebar({
                             <div className="text-center space-y-1">
                                 <p className="text-[9px] font-mono text-white/20 uppercase tracking-[0.4em]">AUTHENTICATED</p>
                                 <p className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest font-bold">
-                                    {signedAt ? format(new Date(signedAt), "MMMM d, yyyy") : "SEALED"}
+                                    {signedAt ? format(signedAt, "MMMM d, yyyy") : "SEALED"}
                                 </p>
                             </div>
                         </div>
