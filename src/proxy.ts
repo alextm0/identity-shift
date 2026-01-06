@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/env";
 
 export function proxy(request: NextRequest) {
     // 1. Generate Nonce for CSP
-    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const nonce = btoa(crypto.randomUUID());
 
     // 2. Define CSP Header (Strict)
     // - Removed 'unsafe-eval'
@@ -31,7 +32,7 @@ export function proxy(request: NextRequest) {
     }
 
     // Check for session cookie existence only (no API calls)
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = env.NODE_ENV === 'production';
     const token = isProduction
         ? request.cookies.get("__Secure-neon-auth.session_token")?.value
         : (request.cookies.get("__Secure-neon-auth.session_token")?.value || request.cookies.get("neon-auth.session_token")?.value);

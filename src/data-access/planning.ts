@@ -159,7 +159,7 @@ export async function getOrCreatePlanning(userId: string, year?: number): Promis
             // If we're here, it means the insert was skipped because of a conflict.
             // This implies another request created the record concurrently.
             // We should fetch and return that existing record.
-            const racedExisting = await getPlanningByUserIdAndYear(userId, planningYear);
+            const racedExisting = await fetchPlanningByUserIdAndYear(userId, planningYear);
             if (!racedExisting) {
                 throw new Error("Failed to get or create planning: race condition detected but record not found.");
             }

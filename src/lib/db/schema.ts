@@ -114,7 +114,7 @@ export const projectConfig = authSchema.table('project_config', {
 export const planning = pgTable('planning', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().references(() => users.id),
-    year: integer('year').notNull().default(new Date().getFullYear()), // Planning year (e.g., 2026)
+    year: integer('year').notNull(), // Planning year (e.g., 2026)
 
     // Goal Collections (GPS-structured)
     activeGoals: json('activeGoals'),      // 2-3 PlanningGoal[] with full GPS structure

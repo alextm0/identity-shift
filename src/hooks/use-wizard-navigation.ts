@@ -60,7 +60,16 @@ export function useWizardNavigation({
     if (currentStep < REVIEW_WIZARD_STEPS) {
       // Save before moving to next step
       if (isDirty && effectiveReviewId) {
-        await autoSave();
+        try {
+          markSaving(true);
+          await autoSave();
+          markSaving(false);
+        } catch (error) {
+          markSaving(false);
+          console.error("Auto-save failed during navigation:", error);
+          toast.error("Auto-save failed. Please try again.");
+          return; // Abort navigation
+        }
       }
       handleNextNavigation();
     } else {
