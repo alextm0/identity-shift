@@ -7,18 +7,20 @@
  */
 
 import { getRequiredSession } from "@/lib/auth/server";
-import { getPlanningByUserId } from "@/data-access/planning";
+import { getPlanningByUserIdAndYear } from "@/data-access/planning";
 import { getSprints } from "@/data-access/sprints";
 import { getDailyLogs } from "@/data-access/daily-logs";
 import { getWeeklyReviews, getMonthlyReviews } from "@/data-access/reviews";
+import { getCurrentReviewAndPlanningYears } from "@/lib/date-utils";
 
 export async function exportUserDataAction() {
     const session = await getRequiredSession();
     const userId = session.user.id;
+    const { planningYear } = getCurrentReviewAndPlanningYears();
 
     // Fetch all user data
     const [planning, sprints, dailyLogs, weeklyReviews, monthlyReviews] = await Promise.all([
-        getPlanningByUserId(userId),
+        getPlanningByUserIdAndYear(userId, planningYear),
         getSprints(userId),
         getDailyLogs(userId, 10000), // Get all logs (large limit)
         getWeeklyReviews(userId),

@@ -165,7 +165,7 @@ export const CompletePlanningSchema = PlanningFormSchema.extend({
     signatureImage: z.string().min(1, "Signature is required"),
     signedAt: z.date().or(z.string().transform(str => new Date(str))),
     status: z.literal(PlanningStatus.COMPLETED),
-    // Enforce strict annual goal validation only on completion
-    annualGoals: z.array(AnnualGoalSchema).optional(),
+    // Enforce strict annual goal validation - all selected goals must have definitionOfDone
+    annualGoals: z.array(AnnualGoalSchema).min(1, "At least one annual goal with details required"),
 });
 export type CompletePlanningData = z.infer<typeof CompletePlanningSchema>;

@@ -155,14 +155,16 @@ export const CreateSprintGoalSchema = SprintGoalSchema; // ID is now optional
 export type CreateSprintGoalData = z.infer<typeof CreateSprintGoalSchema>;
 
 // Sprint Form
-export const SprintFormSchema = z.object({
+export const BaseSprintFormSchema = z.object({
     name: z.string().min(3, "Sprint name is required"),
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().min(1, "End date is required"),
     goals: z.array(CreateSprintGoalSchema)
         .min(1, "At least one goal is required")
         .max(3, "Focus on no more than 3 goals per sprint"),
-}).refine(
+});
+
+export const SprintFormSchema = BaseSprintFormSchema.refine(
     (data) => {
         // Ensure endDate is after startDate
         if (!data.startDate || !data.endDate) return true;
@@ -226,7 +228,6 @@ export {
     CompleteYearlyReviewSchema,
     WheelRatingsSchema,
     WheelAuditSchema,
-    BigThreeWinsSchema,
     LIFE_DIMENSIONS,
     DIMENSION_LABELS,
     YearlyReviewStatus,
@@ -234,7 +235,6 @@ export {
     type CompleteYearlyReviewData,
     type WheelRatings,
     type WheelAudit,
-    type BigThreeWins,
     type LifeDimension,
 } from "./validators/yearly-review";
 
@@ -249,6 +249,7 @@ export {
     CommitmentSchema,
     PlanningStatus,
     WheelOfLifeCategorySchema,
+    DraftAnnualGoalSchema,
     type PlanningFormData,
     type CompletePlanningData,
     type PlanningGoal,

@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { WheelOfLife } from "@/components/ui/WheelOfLife";
 import { Button } from "@/components/ui/button";
 import { Edit2, Save, X } from "lucide-react";
 import { updateWheelRatingsAction } from "@/actions/yearly-reviews";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
-import { DEFAULT_RATING } from "@/lib/constants/review";
+import { useEditableSection } from "@/hooks/use-editable-section";
+import { prepareWheelValues } from "@/lib/utils/dimension-analysis";
 import type { WheelRatings } from "@/lib/validators/yearly-review";
 
 interface EditableWheelSectionProps {
@@ -28,44 +25,22 @@ export function EditableWheelSection({
     weakDimensions = [],
     strongDimensions = []
 }: EditableWheelSectionProps) {
-    const router = useRouter();
-    const [isEditing, setIsEditing] = useState(false);
-    const [ratings, setRatings] = useState<WheelRatings>(initialRatings);
-    const [isSaving, setIsSaving] = useState(false);
-
-    // Sync with prop changes
-    useEffect(() => {
-        setRatings(initialRatings);
-    }, [initialRatings]);
-
-    // Ensure all dimensions are present
-    const wheelValues: Record<string, number> = {};
-    LIFE_DIMENSIONS.forEach(dim => {
-        wheelValues[dim] = ratings[dim] || DEFAULT_RATING;
+    const {
+        isEditing,
+        setIsEditing,
+        isSaving,
+        value: ratings,
+        setValue: setRatings,
+        handleSave,
+        handleCancel
+    } = useEditableSection({
+        initialValue: initialRatings,
+        onSave: async (val) => updateWheelRatingsAction(reviewId, val),
+        successMessage: "Wheel ratings updated",
+        errorMessage: "Failed to update ratings"
     });
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            const result = await updateWheelRatingsAction(reviewId, ratings);
-            if (result.success) {
-                toast.success("Wheel ratings updated");
-                setIsEditing(false);
-                router.refresh();
-            } else {
-                toast.error(result.error || "Failed to update ratings");
-            }
-        } catch {
-            toast.error("Failed to update ratings");
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleCancel = () => {
-        setRatings(initialRatings);
-        setIsEditing(false);
-    };
+    const wheelValues = prepareWheelValues(ratings);
 
     return (
         <div className="space-y-6">

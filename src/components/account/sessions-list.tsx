@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { getUserSessions, revokeSession } from "@/app/account/actions";
+import { getUserSessionsAction, revokeSessionAction } from "@/app/account/actions";
 import { Button } from "@/components/ui/button";
 import { Trash2, Loader2, Monitor } from "lucide-react";
 import { toast } from "sonner";
@@ -25,23 +25,23 @@ export function SessionsList() {
 
     const loadSessions = async () => {
         setLoading(true);
-        const { sessions: data, error } = await getUserSessions();
-        if (error) {
-            toast.error(error);
-        } else if (data) {
-            setSessions(data);
+        const result = await getUserSessionsAction();
+        if (result.success) {
+            setSessions(result.data.sessions);
+        } else {
+            toast.error(result.error);
         }
         setLoading(false);
     };
 
     const handleRevokeSession = async (sessionId: string) => {
         startTransition(async () => {
-            const { error } = await revokeSession(sessionId);
-            if (error) {
-                toast.error(error);
-            } else {
+            const result = await revokeSessionAction(sessionId);
+            if (result.success) {
                 toast.success("Session revoked successfully");
                 await loadSessions();
+            } else {
+                toast.error(result.error);
             }
         });
     };

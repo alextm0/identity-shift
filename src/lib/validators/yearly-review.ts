@@ -6,13 +6,13 @@ import { sanitizeText } from "@/lib/sanitize";
  */
 export const LIFE_DIMENSIONS = [
     "health",
-    "training",
-    "mental",
-    "learning",
-    "technical",
-    "creativity",
-    "relationships",
-    "income",
+    "mental_clarity",
+    "career",
+    "learning_building",
+    "family_friends",
+    "romance",
+    "finances",
+    "recreation",
 ] as const;
 
 export type LifeDimension = typeof LIFE_DIMENSIONS[number];
@@ -21,14 +21,14 @@ export type LifeDimension = typeof LIFE_DIMENSIONS[number];
  * Dimension labels for display
  */
 export const DIMENSION_LABELS: Record<LifeDimension, string> = {
-    health: "Health & Energy",
-    training: "Physical Training",
-    mental: "Mental Wellbeing",
-    learning: "Learning & Growth",
-    technical: "Technical Depth",
-    creativity: "Creativity & Joy",
-    relationships: "Relationships",
-    income: "Income & Security",
+    health: "Health",
+    mental_clarity: "Mental Clarity",
+    career: "Career",
+    learning_building: "Learning & Building",
+    family_friends: "Family & Friends",
+    romance: "Romance",
+    finances: "Finances",
+    recreation: "Recreation",
 };
 
 /**
@@ -73,14 +73,6 @@ export const WheelAuditSchema = z.record(
 );
 
 export type WheelAudit = z.infer<typeof WheelAuditSchema>;
-
-/**
- * Big Three Wins schema - array of 3 strings (deprecated, kept for migration)
- * Made lenient for partial saves - allows empty strings
- */
-export const BigThreeWinsSchema = z.array(z.string().max(1000)).max(3);
-
-export type BigThreeWins = z.infer<typeof BigThreeWinsSchema>;
 
 /**
  * Wins schema - flexible array of strings (no hard cap)

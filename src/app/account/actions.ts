@@ -1,18 +1,19 @@
-"use server";
+'use server';
 
 import { db } from "@/lib/db";
 import { session } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { getUserId } from "@/lib/auth/server";
+import { eq, ne, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { createActionWithoutValidation } from "@/lib/actions/middleware";
+import { success } from "@/lib/actions/result";
+import { BusinessRuleError } from "@/lib/errors";
+import { getRequiredSession } from "@/lib/auth/server";
 
 /**
  * Get all active sessions for the current user
  */
-export async function getUserSessions() {
-    try {
-        const userId = await getUserId();
-
+export const getUserSessionsAction = createActionWithoutValidation(
+    async (userId) => {
         const sessions = await db
             .select({
                 id: session.id,
@@ -25,20 +26,29 @@ export async function getUserSessions() {
             .where(eq(session.userId, userId))
             .orderBy(session.createdAt);
 
-        return { sessions, error: null };
-    } catch (error) {
-        console.error("Failed to get user sessions:", error);
-        return { sessions: null, error: "Failed to load sessions" };
+        return success({ sessions });
+    },
+    {
+        errorMessage: "Failed to fetch user sessions"
     }
-}
+);
 
 /**
- * Revoke a specific session (except current one)
+ * Revoke a specific session
  */
-export async function revokeSession(sessionId: string) {
-    try {
-        // Verify user is authenticated
-        await getUserId();
+export const revokeSessionAction = createActionWithoutValidation<void, [string]>(
+    async (userId, sessionId) => {
+        // Ensure user owns the session
+        const existingSession = await db.query.session.findFirst({
+            where: and(
+                eq(session.id, sessionId),
+                eq(session.userId, userId)
+            )
+        });
+
+        if (!existingSession) {
+            throw new BusinessRuleError("Session not found or not owned by user");
+        }
 
         // Delete the session
         await db
@@ -46,29 +56,35 @@ export async function revokeSession(sessionId: string) {
             .where(eq(session.id, sessionId));
 
         revalidatePath("/account/settings");
-        return { success: true, error: null };
-    } catch (error) {
-        console.error("Failed to revoke session:", error);
-        return { success: false, error: "Failed to revoke session" };
+        return success(undefined, { message: "Session revoked successfully" });
+    },
+    {
+        errorMessage: "Failed to revoke session"
     }
-}
+);
 
 /**
- * Revoke all sessions for the current user
+ * Revoke all active sessions except the current one
  */
-export async function revokeAllOtherSessions() {
-    try {
-        const userId = await getUserId();
+export const revokeOtherSessionsAction = createActionWithoutValidation(
+    async (userId) => {
+        // Get current session to exclude it
+        const currentSession = await getRequiredSession();
 
-        // Delete all sessions for the user
+        // Delete all OTHER sessions for the user
         await db
             .delete(session)
-            .where(eq(session.userId, userId));
+            .where(
+                and(
+                    eq(session.userId, userId),
+                    ne(session.id, currentSession.id)
+                )
+            );
 
         revalidatePath("/account/settings");
-        return { success: true, error: null };
-    } catch (error) {
-        console.error("Failed to revoke sessions:", error);
-        return { success: false, error: "Failed to revoke sessions" };
+        return success(undefined, { message: "All other sessions revoked successfully" });
+    },
+    {
+        errorMessage: "Failed to revoke other sessions"
     }
-}
+);

@@ -14,7 +14,13 @@ export function WheelVisionStep() {
 
     // Initialize target scores from current wheel or defaults
     const getTargetScore = (dimension: string): number => {
-        return targetWheelOfLife[dimension] || wheelOfLife[dimension] || 5;
+        if (targetWheelOfLife && typeof targetWheelOfLife[dimension] === 'number') {
+            return targetWheelOfLife[dimension];
+        }
+        if (wheelOfLife && typeof wheelOfLife[dimension] === 'number') {
+            return wheelOfLife[dimension];
+        }
+        return 5;
     };
 
     // Ensure all dimensions have values for display

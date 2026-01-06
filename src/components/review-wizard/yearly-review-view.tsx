@@ -10,6 +10,8 @@ import type { YearlyReviewWithTypedFields } from "@/lib/types";
 import { format } from "date-fns";
 import { analyzeDimensions } from "@/lib/utils/dimension-analysis";
 import { EditableWheelSection } from "./editable-wheel-section";
+import { EditableWinsSection } from "./editable-wins-section";
+import { EditableDetailsSection } from "./editable-details-section";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 
@@ -94,43 +96,17 @@ export function YearlyReviewView({ review, year }: YearlyReviewViewProps) {
                     />
                 </div>
 
-                {/* Wins - New format */}
-                {review.wins && review.wins.length > 0 && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-2">
-                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
-                                Wins
-                            </h2>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {review.wins.map((win, i) => (
-                                <div key={i} className="glass-pane p-6 relative group border-white/[0.05] hover:border-white/10 transition-all">
-                                    <div className="absolute top-4 right-4 flex-shrink-0 w-6 h-6 rounded-full bg-action-emerald/10 border border-action-emerald/20 flex items-center justify-center">
-                                        <span className="text-action-emerald text-[10px] font-mono">{i + 1}</span>
-                                    </div>
-                                    <p className="text-white/80 text-sm leading-relaxed pr-6">{win}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* Wins */}
+                <EditableWinsSection
+                    reviewId={review.id}
+                    initialWins={review.wins || []}
+                />
 
                 {/* Other Details */}
-                {review.otherDetails && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-2">
-                            <h2 className="text-sm font-mono text-white/40 uppercase tracking-widest">
-                                Other Details
-                            </h2>
-                        </div>
-                        <div className="glass-pane p-8 relative border-white/[0.05] bg-action-emerald/[0.01]">
-                            <div className="absolute top-0 left-8 w-px h-full bg-gradient-to-b from-transparent via-action-emerald/20 to-transparent opacity-50" />
-                            <p className="text-white/90 text-sm leading-relaxed pl-4 italic">
-                                &quot;{review.otherDetails}&quot;
-                            </p>
-                        </div>
-                    </div>
-                )}
+                <EditableDetailsSection
+                    reviewId={review.id}
+                    initialDetails={review.otherDetails ?? null}
+                />
             </div>
 
             <ConfirmDialog

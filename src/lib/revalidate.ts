@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
  * Common revalidation paths for the dashboard and sprint-related data
  */
 export function revalidateDashboard() {
-    // Tags-based revalidation for Next.js 16
+    // Tags-based revalidation (Standard Next.js API)
     revalidateTag("active-sprint", "max");
     revalidateTag("planning", "max");
     revalidateTag("dashboard", "max");

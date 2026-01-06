@@ -1,6 +1,7 @@
 import { type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 import {
-    user,
+    users,
+    authUser,
     session,
     planning,
     sprint,
@@ -12,10 +13,12 @@ import {
     promise,
     promiseLog
 } from '@/lib/db/schema';
-import type { WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, AnnualGoal, AntiGoal } from '@/lib/validators';
+import type { WheelOfLife, SprintPriority, DailyPriorityLog, ProofOfWork, PlanningGoal, SimplifiedGoal, AnnualGoal, AntiGoal } from '@/lib/validators';
 
 // --- DB Types ---
-export type User = InferSelectModel<typeof user>;
+export type User = InferSelectModel<typeof users>;
+export type AuthUser = InferSelectModel<typeof authUser>;
+export type NewUser = InferInsertModel<typeof users>;
 export type Session = InferSelectModel<typeof session>;
 
 export type Planning = InferSelectModel<typeof planning>;
@@ -37,6 +40,10 @@ export type NewPromiseLog = InferInsertModel<typeof promiseLog>;
 
 export type DailyLog = InferSelectModel<typeof dailyLog>;
 export type NewDailyLog = InferInsertModel<typeof dailyLog>;
+
+export type DailyLogWithRelations = DailyLog & {
+    promiseLogs: PromiseLog[];
+};
 
 export type WeeklyReview = InferSelectModel<typeof weeklyReview>;
 export type NewWeeklyReview = InferInsertModel<typeof weeklyReview>;
@@ -60,7 +67,7 @@ export interface PlanningWithTypedFields extends Omit<Planning, 'wheelOfLife' | 
     annualGoals: AnnualGoal[];
     targetWheelOfLife: WheelOfLife | null;
     wheelVisionStatements: Record<string, string> | null;
-    goals: PlanningGoal[] | null;
+    goals: SimplifiedGoal[] | null;
     annualGoalIds: string[] | null;
     antiGoals: AntiGoal[] | null;
 }

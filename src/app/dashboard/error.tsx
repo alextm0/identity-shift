@@ -20,9 +20,9 @@ export default function DashboardError({
     const router = useRouter();
 
     // Check if error is an authorization error
-    const isUnauthorized = error.message === 'Unauthorized' || 
-                          error.message.includes('Unauthorized') ||
-                          error.message.includes('session');
+    const isUnauthorized = error.message === 'Unauthorized' ||
+        error.message.includes('Unauthorized') ||
+        error.message.includes('session');
 
     useEffect(() => {
         // If unauthorized, redirect to sign-in after a brief delay
@@ -52,7 +52,7 @@ export default function DashboardError({
                             <p className="text-sm text-muted-foreground">
                                 Redirecting you to the sign-in page...
                             </p>
-                            <Button 
+                            <Button
                                 onClick={() => router.push('/auth/sign-in')}
                                 className="w-full"
                             >
@@ -81,11 +81,11 @@ export default function DashboardError({
                     <div className="space-y-4">
                         <div className="p-3 bg-destructive/10 rounded-md">
                             <p className="text-sm text-destructive font-mono">
-                                {error.message || 'An unexpected error occurred'}
+                                {process.env.NODE_ENV === 'development' ? error.message : 'An error occurred. Please try again or contact support.'}
                             </p>
                         </div>
                         <div className="flex gap-2">
-                            <Button 
+                            <Button
                                 onClick={reset}
                                 variant="outline"
                                 className="flex-1"
@@ -93,7 +93,7 @@ export default function DashboardError({
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 Try Again
                             </Button>
-                            <Button 
+                            <Button
                                 onClick={() => router.push('/')}
                                 variant="outline"
                                 className="flex-1"

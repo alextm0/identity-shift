@@ -231,9 +231,9 @@ describe('PlanningFormSchema', () => {
         },
       ],
       wheelOfLife: {
-        healthEnergy: 5,
-        physical: 5,
-        mental: 5,
+        health: 5,
+        mental_clarity: 5,
+        career: 5,
       },
     };
     expect(() => PlanningFormSchema.parse(planning)).not.toThrow();

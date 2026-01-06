@@ -50,6 +50,14 @@ vi.mock('@neondatabase/neon-js/auth/next/server', () => ({
 
 // Mock environment variables
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
+process.env.NEON_AUTH_BASE_URL = process.env.NEON_AUTH_BASE_URL || 'https://auth.test.local';
+process.env.NEXT_PUBLIC_NEON_AUTH_BASE_URL = process.env.NEXT_PUBLIC_NEON_AUTH_BASE_URL || 'https://auth.test.local';
+process.env.NEXT_PUBLIC_NEON_AUTH_URL = process.env.NEXT_PUBLIC_NEON_AUTH_URL || 'https://auth.test.local';
+
+// Mock the environment module to bypass client-side checks in JSDOM
+vi.mock('@/env', () => ({
+  env: process.env,
+}));
 
 // Suppress console errors in tests (optional - remove if you want to see them)
 // global.console = {

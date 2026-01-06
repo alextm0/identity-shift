@@ -12,7 +12,7 @@ export default function DashboardLayout({
   return (
     <DashboardShell>
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* The shared Command Center header and content */}
+        {/* The shared Identity Shift header and content */}
         {children}
       </div>
     </DashboardShell>

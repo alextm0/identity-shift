@@ -9,8 +9,8 @@ export default async function AuditPage() {
       {/* The shared Command Center header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8">
         <div>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white mb-2 uppercase">
-            Command Center <span className="text-white/20 font-light">{"//"}</span> <span className="text-action-emerald">2026</span>
+          <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter mb-4 text-white leading-none">
+            Identity <span className="text-white/20 font-light ml-1">{" // "}</span> <span className="text-action-emerald">Shift</span>
           </h1>
           <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-telemetry-slate">
             Subject: <span className="text-white/80 tracking-widest">{dashboardData.user.name || dashboardData.user.email}</span> {"//"} 24_HOUR_REALITY: ACTIVE

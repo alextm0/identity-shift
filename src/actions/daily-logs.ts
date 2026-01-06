@@ -12,7 +12,7 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { revalidateDashboard } from "@/lib/revalidate";
 import { getDailyLogById, deleteDailyLog, saveDailyAudit } from "@/data-access/daily-logs";
 import { logPromiseCompletion } from "@/data-access/promises";
@@ -38,8 +38,6 @@ export const deleteDailyLogAction = createActionWithoutValidation(
 
         revalidateTag("daily-logs", "max");
         revalidateTag("dashboard", "max");
-        updateTag("daily-logs");
-        updateTag("dashboard");
 
         return success(
             { deleted: true },
@@ -91,8 +89,6 @@ export const saveDailyAuditAction = createAction(
         revalidateDashboard();
         revalidateTag("daily-logs", "max");
         revalidateTag("active-sprint", "max");
-        updateTag("daily-logs");
-        updateTag("active-sprint");
 
         return success(
             { id: logId },
@@ -168,8 +164,6 @@ export const updateDailyLogByIdAction = createAction(
 
         revalidateTag("daily-logs", "max");
         revalidateTag("dashboard", "max");
-        updateTag("daily-logs");
-        updateTag("dashboard");
 
         return success(
             { updated: true },

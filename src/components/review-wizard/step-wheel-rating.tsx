@@ -2,21 +2,16 @@
 
 import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { WheelOfLife } from "@/components/ui/WheelOfLife";
-import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
-import { DEFAULT_RATING } from "@/lib/constants/review";
 import { useMemo } from "react";
+
+import { prepareWheelValues } from "@/lib/utils/dimension-analysis";
 
 export function StepWheelRating() {
     const { wheelRatings, setWheelRating } = useReviewStore();
-    
+
     // Convert wheelRatings to format expected by WheelOfLife
-    // Use dimension keys as labels, but ensure all dimensions are present
     const wheelValues = useMemo(() => {
-        const values: Record<string, number> = {};
-        LIFE_DIMENSIONS.forEach(dim => {
-            values[dim] = wheelRatings[dim] || DEFAULT_RATING;
-        });
-        return values;
+        return prepareWheelValues(wheelRatings);
     }, [wheelRatings]);
 
     const handleChange = (dimension: string, value: number) => {

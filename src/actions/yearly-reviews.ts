@@ -12,12 +12,14 @@
  * - All data is filtered by authenticated userId
  */
 
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { getOrCreateYearlyReview, getYearlyReviewById, updateYearlyReview, getCompletedYearlyReview, deleteYearlyReview } from "@/data-access/yearly-reviews";
-import { YearlyReviewFormSchema, CompleteYearlyReviewSchema, WheelRatingsSchema } from "@/lib/validators/yearly-review";
+import { YearlyReviewFormSchema, CompleteYearlyReviewSchema, WheelRatingsSchema, WinsSchema } from "@/lib/validators/yearly-review";
 import { NotFoundError } from "@/lib/errors";
 import { success } from "@/lib/actions/result";
 import { createActionWithParam, createActionWithoutValidation } from "@/lib/actions/middleware";
+import { z } from "zod";
+import { sanitizeText } from "@/lib/sanitize";
 
 /**
  * Get or create a yearly review for a specific year
@@ -72,7 +74,6 @@ export const saveYearlyReviewProgressAction = createActionWithParam(
         await updateYearlyReview(reviewId, userId, updateData);
 
         revalidateTag("yearly-reviews", "max");
-        updateTag("yearly-reviews");
 
         return success(
             { reviewId },
@@ -113,9 +114,6 @@ export const completeYearlyReviewAction = createActionWithParam(
         revalidateTag("yearly-reviews", "max");
         revalidateTag("dashboard", "max");
         revalidateTag("planning", "max"); // Yearly review affects planning wheel seed
-        updateTag("yearly-reviews");
-        updateTag("dashboard");
-        updateTag("planning");
 
         return success(
             { reviewId },
@@ -168,8 +166,6 @@ export const editYearlyReviewAction = createActionWithoutValidation(
 
         revalidateTag("yearly-reviews", "max");
         revalidateTag("dashboard", "max");
-        updateTag("yearly-reviews");
-        updateTag("dashboard");
 
         return success(
             { reviewId },
@@ -200,8 +196,6 @@ export const updateWheelRatingsAction = createActionWithParam(
 
         revalidateTag("yearly-reviews", "max");
         revalidateTag("dashboard", "max");
-        updateTag("yearly-reviews");
-        updateTag("dashboard");
 
         return success(
             { reviewId },
@@ -211,6 +205,66 @@ export const updateWheelRatingsAction = createActionWithParam(
     {
         rateLimit: { key: 'update-wheel-ratings', limit: 20, windowMs: 60000 },
         errorMessage: "Failed to update wheel ratings. Please try again."
+    }
+);
+
+/**
+ * Update wins for a review
+ */
+export const updateWinsAction = createActionWithParam(
+    WinsSchema,
+    async (userId, reviewId: string, validated) => {
+        const review = await getYearlyReviewById(reviewId, userId);
+        if (!review) {
+            throw new NotFoundError("Yearly review not found");
+        }
+
+        await updateYearlyReview(reviewId, userId, {
+            wins: validated,
+            updatedAt: new Date(),
+        });
+
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
+
+        return success(
+            { reviewId },
+            { message: "Wins updated" }
+        );
+    },
+    {
+        rateLimit: { key: 'update-wins', limit: 20, windowMs: 60000 },
+        errorMessage: "Failed to update wins. Please try again."
+    }
+);
+
+/**
+ * Update other details for a review
+ */
+export const updateOtherDetailsAction = createActionWithParam(
+    z.string().max(5000).transform(val => sanitizeText(val, 5000)),
+    async (userId, reviewId: string, validated) => {
+        const review = await getYearlyReviewById(reviewId, userId);
+        if (!review) {
+            throw new NotFoundError("Yearly review not found");
+        }
+
+        await updateYearlyReview(reviewId, userId, {
+            otherDetails: validated,
+            updatedAt: new Date(),
+        });
+
+        revalidateTag("yearly-reviews", "max");
+        revalidateTag("dashboard", "max");
+
+        return success(
+            { reviewId },
+            { message: "Details updated" }
+        );
+    },
+    {
+        rateLimit: { key: 'update-details', limit: 20, windowMs: 60000 },
+        errorMessage: "Failed to update details. Please try again."
     }
 );
 
@@ -229,8 +283,6 @@ export const deleteYearlyReviewAction = createActionWithoutValidation(
 
         revalidateTag("yearly-reviews", "max");
         revalidateTag("dashboard", "max");
-        updateTag("yearly-reviews");
-        updateTag("dashboard");
 
         return success(
             undefined,

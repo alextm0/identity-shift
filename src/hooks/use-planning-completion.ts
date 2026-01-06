@@ -19,19 +19,23 @@ export function usePlanningCompletion({
 }: UsePlanningCompletionOptions) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const {
-    futureIdentity,
-    annualGoalIds,
-    antiGoals,
-    signatureImage,
-    getFormData,
-    markSaving,
-    setSignedAt,
-  } = usePlanningStore();
+  const futureIdentity = usePlanningStore(state => state.futureIdentity);
+  const annualGoalIds = usePlanningStore(state => state.annualGoalIds);
+  const antiGoals = usePlanningStore(state => state.antiGoals);
+  const signatureImage = usePlanningStore(state => state.signatureImage);
+  const getFormData = usePlanningStore(state => state.getFormData);
+  const markSaving = usePlanningStore(state => state.markSaving);
+  const setSignedAt = usePlanningStore(state => state.setSignedAt);
+
+  const targetWheelOfLife = usePlanningStore(state => state.targetWheelOfLife);
 
   const validateCompletion = useCallback((): string | null => {
     if (!futureIdentity || futureIdentity.trim().length === 0) {
       return "Please complete your future identity in Step 2.";
+    }
+
+    if (!targetWheelOfLife || Object.keys(targetWheelOfLife).length === 0) {
+      return "Please set your Wheel of Life targets in Step 3.";
     }
 
     if (!annualGoalIds || annualGoalIds.length === 0) {
@@ -47,7 +51,7 @@ export function usePlanningCompletion({
     }
 
     return null;
-  }, [futureIdentity, annualGoalIds, antiGoals, signatureImage]);
+  }, [futureIdentity, targetWheelOfLife, annualGoalIds, antiGoals, signatureImage]);
 
   const complete = useCallback(async (): Promise<boolean> => {
     const activeId = planningId || initialPlanningId;

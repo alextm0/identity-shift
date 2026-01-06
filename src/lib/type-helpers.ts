@@ -5,30 +5,18 @@
  */
 
 import type { DailyLog, Planning, WeeklyReview, MonthlyReview, YearlyReview, Sprint } from '@/lib/types';
-import type { DailyPriorityLog, ProofOfWork, WheelOfLife, PlanningGoal, AnnualGoal, SprintPriority, AntiGoal } from '@/lib/validators';
+import type { DailyPriorityLog, ProofOfWork, WheelOfLife, PlanningGoal, SimplifiedGoal, AnnualGoal, SprintPriority, AntiGoal } from '@/lib/validators';
 import type { DailyLogWithTypedFields, PlanningWithTypedFields, WeeklyReviewWithTypedFields, MonthlyReviewWithTypedFields, YearlyReviewWithTypedFields, SprintWithPriorities } from '@/lib/types';
+import { createJsonParser } from '@/lib/utils/json-parser';
 
 
 /**
  * Safely parses sprint priorities from JSON field.
  */
+const parseSprintPrioritiesInternal = createJsonParser<SprintPriority[]>({ defaultValue: [], context: 'parseSprintPriorities', isArray: true });
 export function parseSprintPriorities(sprint: { priorities?: unknown } | null | undefined): SprintPriority[] {
-    if (!sprint || !sprint.priorities) return [];
-
-    if (Array.isArray(sprint.priorities)) {
-        return sprint.priorities as SprintPriority[];
-    }
-
-    if (typeof sprint.priorities === 'string') {
-        try {
-            return JSON.parse(sprint.priorities) as SprintPriority[];
-        } catch (error) {
-            console.error('[parseSprintPriorities] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    if (!sprint) return [];
+    return parseSprintPrioritiesInternal(sprint.priorities);
 }
 
 /**
@@ -44,45 +32,17 @@ export function toSprintWithPriorities(sprint: Sprint & { priorities?: unknown }
 /**
  * Safely parses daily log priorities from JSON field.
  */
+const parseDailyLogPrioritiesInternal = createJsonParser<Record<string, DailyPriorityLog>>({ defaultValue: {}, context: 'parseDailyLogPriorities' });
 export function parseDailyLogPriorities(log: DailyLog): Record<string, DailyPriorityLog> {
-    if (!log.priorities) return {};
-
-    if (typeof log.priorities === 'object' && !Array.isArray(log.priorities)) {
-        return log.priorities as Record<string, DailyPriorityLog>;
-    }
-
-    if (typeof log.priorities === 'string') {
-        try {
-            return JSON.parse(log.priorities) as Record<string, DailyPriorityLog>;
-        } catch (error) {
-            console.error('[parseDailyLogPriorities] Failed to parse JSON:', error);
-            return {};
-        }
-    }
-
-    return {};
+    return parseDailyLogPrioritiesInternal(log.priorities);
 }
 
 /**
  * Safely parses proof of work from JSON field.
  */
+const parseProofOfWorkInternal = createJsonParser<ProofOfWork[]>({ defaultValue: [], context: 'parseProofOfWork', isArray: true });
 export function parseProofOfWork(log: DailyLog): ProofOfWork[] {
-    if (!log.proofOfWork) return [];
-
-    if (Array.isArray(log.proofOfWork)) {
-        return log.proofOfWork as ProofOfWork[];
-    }
-
-    if (typeof log.proofOfWork === 'string') {
-        try {
-            return JSON.parse(log.proofOfWork) as ProofOfWork[];
-        } catch (error) {
-            console.error('[parseProofOfWork] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    return parseProofOfWorkInternal(log.proofOfWork);
 }
 
 /**
@@ -99,133 +59,50 @@ export function toDailyLogWithTypedFields(log: DailyLog): DailyLogWithTypedField
 /**
  * Safely parses wheel of life from JSON field.
  */
+const parseWheelOfLifeInternal = createJsonParser<WheelOfLife>({ defaultValue: {}, context: 'parseWheelOfLife' });
 export function parseWheelOfLife(planning: Planning): WheelOfLife {
-    if (!planning.wheelOfLife) return {};
-
-    if (typeof planning.wheelOfLife === 'object' && !Array.isArray(planning.wheelOfLife)) {
-        return planning.wheelOfLife as WheelOfLife;
-    }
-
-    if (typeof planning.wheelOfLife === 'string') {
-        try {
-            return JSON.parse(planning.wheelOfLife) as WheelOfLife;
-        } catch (error) {
-            console.error('[parseWheelOfLife] Failed to parse JSON:', error);
-            return {};
-        }
-    }
-
-    return {};
+    return parseWheelOfLifeInternal(planning.wheelOfLife);
 }
 
 /**
  * Safely parses active goals from JSON field.
  */
+const parseActiveGoalsInternal = createJsonParser<PlanningGoal[]>({ defaultValue: [], context: 'parseActiveGoals', isArray: true });
 export function parseActiveGoals(planning: Planning): PlanningGoal[] {
-    if (!planning.activeGoals) return [];
-
-    if (Array.isArray(planning.activeGoals)) {
-        return planning.activeGoals as PlanningGoal[];
-    }
-
-    if (typeof planning.activeGoals === 'string') {
-        try {
-            return JSON.parse(planning.activeGoals) as PlanningGoal[];
-        } catch (error) {
-            console.error('[parseActiveGoals] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    return parseActiveGoalsInternal(planning.activeGoals);
 }
 
 /**
  * Safely parses backlog goals from JSON field (legacy - deprecated).
  */
+const parseBacklogGoalsInternal = createJsonParser<unknown[]>({ defaultValue: [], context: 'parseBacklogGoals', isArray: true });
 export function parseBacklogGoals(planning: Planning): unknown[] {
-    if (!planning.backlogGoals) return [];
-
-    if (Array.isArray(planning.backlogGoals)) {
-        return planning.backlogGoals;
-    }
-
-    if (typeof planning.backlogGoals === 'string') {
-        try {
-            return JSON.parse(planning.backlogGoals);
-        } catch (error) {
-            console.error('[parseBacklogGoals] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    return parseBacklogGoalsInternal(planning.backlogGoals);
 }
 
 /**
  * Safely parses archived goals from JSON field (legacy - deprecated).
  */
+const parseArchivedGoalsInternal = createJsonParser<unknown[]>({ defaultValue: [], context: 'parseArchivedGoals', isArray: true });
 export function parseArchivedGoals(planning: Planning): unknown[] {
-    if (!planning.archivedGoals) return [];
-
-    if (Array.isArray(planning.archivedGoals)) {
-        return planning.archivedGoals;
-    }
-
-    if (typeof planning.archivedGoals === 'string') {
-        try {
-            return JSON.parse(planning.archivedGoals);
-        } catch (error) {
-            console.error('[parseArchivedGoals] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    return parseArchivedGoalsInternal(planning.archivedGoals);
 }
 
 /**
  * Safely parses annual goals from JSON field.
  */
+const parseAnnualGoalsInternal = createJsonParser<AnnualGoal[]>({ defaultValue: [], context: 'parseAnnualGoals', isArray: true });
 export function parseAnnualGoals(planning: { annualGoals?: unknown } | null | undefined): AnnualGoal[] {
-    if (!planning || !planning.annualGoals) return [];
-
-    if (Array.isArray(planning.annualGoals)) {
-        return planning.annualGoals as AnnualGoal[];
-    }
-
-    if (typeof planning.annualGoals === 'string') {
-        try {
-            return JSON.parse(planning.annualGoals) as AnnualGoal[];
-        } catch (error) {
-            console.error('[parseAnnualGoals] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    if (!planning) return [];
+    return parseAnnualGoalsInternal(planning.annualGoals);
 }
 
 /**
  * Safely parses target wheel of life from JSON field.
  */
+const parseTargetWheelOfLifeInternal = createJsonParser<WheelOfLife | null>({ defaultValue: null, context: 'parseTargetWheelOfLife' });
 export function parseTargetWheelOfLife(planning: Planning): WheelOfLife | null {
-    if (!planning.targetWheelOfLife) return null;
-
-    if (typeof planning.targetWheelOfLife === 'object' && !Array.isArray(planning.targetWheelOfLife)) {
-        return planning.targetWheelOfLife as WheelOfLife;
-    }
-
-    if (typeof planning.targetWheelOfLife === 'string') {
-        try {
-            return JSON.parse(planning.targetWheelOfLife) as WheelOfLife;
-        } catch (error) {
-            console.error('[parseTargetWheelOfLife] Failed to parse JSON:', error);
-            return null;
-        }
-    }
-
-    return null;
+    return parseTargetWheelOfLifeInternal(planning.targetWheelOfLife);
 }
 
 /**
@@ -241,7 +118,7 @@ export function toPlanningWithTypedFields(planning: Planning): PlanningWithTyped
         annualGoals: parseAnnualGoals(planning),
         targetWheelOfLife: parseTargetWheelOfLife(planning),
         wheelVisionStatements: planning.wheelVisionStatements as Record<string, string> | null,
-        goals: planning.goals as PlanningGoal[] | null,
+        goals: planning.goals as SimplifiedGoal[] | null,
         annualGoalIds: planning.annualGoalIds as string[] | null,
         antiGoals: planning.antiGoals as AntiGoal[] | null,
     };
@@ -250,45 +127,17 @@ export function toPlanningWithTypedFields(planning: Planning): PlanningWithTyped
 /**
  * Safely parses weekly review progress ratios from JSON field.
  */
+const parseProgressRatiosInternal = createJsonParser<Record<string, number>>({ defaultValue: {}, context: 'parseProgressRatios' });
 export function parseProgressRatios(review: WeeklyReview): Record<string, number> {
-    if (!review.progressRatios) return {};
-
-    if (typeof review.progressRatios === 'object' && !Array.isArray(review.progressRatios)) {
-        return review.progressRatios as Record<string, number>;
-    }
-
-    if (typeof review.progressRatios === 'string') {
-        try {
-            return JSON.parse(review.progressRatios) as Record<string, number>;
-        } catch (error) {
-            console.error('[parseProgressRatios] Failed to parse JSON:', error);
-            return {};
-        }
-    }
-
-    return {};
+    return parseProgressRatiosInternal(review.progressRatios);
 }
 
 /**
  * Safely parses weekly review alerts from JSON field.
  */
+const parseAlertsInternal = createJsonParser<string[]>({ defaultValue: [], context: 'parseAlerts', isArray: true });
 export function parseAlerts(review: WeeklyReview): string[] {
-    if (!review.alerts) return [];
-
-    if (Array.isArray(review.alerts)) {
-        return review.alerts as string[];
-    }
-
-    if (typeof review.alerts === 'string') {
-        try {
-            return JSON.parse(review.alerts) as string[];
-        } catch (error) {
-            console.error('[parseAlerts] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    return parseAlertsInternal(review.alerts);
 }
 
 /**
@@ -305,55 +154,22 @@ export function toWeeklyReviewWithTypedFields(review: WeeklyReview): WeeklyRevie
 /**
  * Safely parses monthly review perceived progress from JSON field.
  */
+const parsePerceivedProgressInternal = createJsonParser<Record<string, number>>({ defaultValue: {}, context: 'parsePerceivedProgress' });
 export function parsePerceivedProgress(review: MonthlyReview): Record<string, number> {
-    if (!review.perceivedProgress) return {};
-
-    if (typeof review.perceivedProgress === 'object' && !Array.isArray(review.perceivedProgress)) {
-        return review.perceivedProgress as Record<string, number>;
-    }
-
-    if (typeof review.perceivedProgress === 'string') {
-        try {
-            return JSON.parse(review.perceivedProgress) as Record<string, number>;
-        } catch (error) {
-            console.error('[parsePerceivedProgress] Failed to parse JSON:', error);
-            return {};
-        }
-    }
-
-    return {};
+    return parsePerceivedProgressInternal(review.perceivedProgress);
 }
 
 /**
  * Safely parses monthly review actual progress from JSON field.
  */
+const parseActualProgressInternal = createJsonParser<{ progressRatio: number; evidenceRatio: number }>({ defaultValue: { progressRatio: 0, evidenceRatio: 0 }, context: 'parseActualProgress' });
 export function parseActualProgress(review: MonthlyReview): { progressRatio: number; evidenceRatio: number } {
-    if (!review.actualProgress) {
-        return { progressRatio: 0, evidenceRatio: 0 };
-    }
-
-    if (typeof review.actualProgress === 'object' && !Array.isArray(review.actualProgress)) {
-        const progress = review.actualProgress as { progressRatio?: number; evidenceRatio?: number };
-        return {
-            progressRatio: progress.progressRatio ?? 0,
-            evidenceRatio: progress.evidenceRatio ?? 0,
-        };
-    }
-
-    if (typeof review.actualProgress === 'string') {
-        try {
-            const parsed = JSON.parse(review.actualProgress) as { progressRatio?: number; evidenceRatio?: number };
-            return {
-                progressRatio: parsed.progressRatio ?? 0,
-                evidenceRatio: parsed.evidenceRatio ?? 0,
-            };
-        } catch (error) {
-            console.error('[parseActualProgress] Failed to parse JSON:', error);
-            return { progressRatio: 0, evidenceRatio: 0 };
-        }
-    }
-
-    return { progressRatio: 0, evidenceRatio: 0 };
+    const result = parseActualProgressInternal(review.actualProgress);
+    // Ensure structure if the parser returns the object but properties are missing
+    return {
+        progressRatio: result.progressRatio ?? 0,
+        evidenceRatio: result.evidenceRatio ?? 0,
+    };
 }
 
 /**
@@ -370,89 +186,33 @@ export function toMonthlyReviewWithTypedFields(review: MonthlyReview): MonthlyRe
 /**
  * Safely parses yearly review wheel ratings from JSON field.
  */
+const parseWheelRatingsInternal = createJsonParser<Record<string, number>>({ defaultValue: {}, context: 'parseWheelRatings' });
 export function parseWheelRatings(review: YearlyReview): Record<string, number> {
-    if (!review.wheelRatings) return {};
-
-    if (typeof review.wheelRatings === 'object' && !Array.isArray(review.wheelRatings)) {
-        return review.wheelRatings as Record<string, number>;
-    }
-
-    if (typeof review.wheelRatings === 'string') {
-        try {
-            return JSON.parse(review.wheelRatings) as Record<string, number>;
-        } catch (error) {
-            console.error('[parseWheelRatings] Failed to parse JSON:', error);
-            return {};
-        }
-    }
-
-    return {};
+    return parseWheelRatingsInternal(review.wheelRatings);
 }
 
 /**
  * Safely parses yearly review wheel wins from JSON field.
  */
+const parseWheelWinsInternal = createJsonParser<Record<string, string>>({ defaultValue: {}, context: 'parseWheelWins' });
 export function parseWheelWins(review: YearlyReview): Record<string, string> {
-    if (!review.wheelWins) return {};
-
-    if (typeof review.wheelWins === 'object' && !Array.isArray(review.wheelWins)) {
-        return review.wheelWins as Record<string, string>;
-    }
-
-    if (typeof review.wheelWins === 'string') {
-        try {
-            return JSON.parse(review.wheelWins) as Record<string, string>;
-        } catch (error) {
-            console.error('[parseWheelWins] Failed to parse JSON:', error);
-            return {};
-        }
-    }
-
-    return {};
+    return parseWheelWinsInternal(review.wheelWins);
 }
 
 /**
  * Safely parses yearly review wheel gaps from JSON field.
  */
+const parseWheelGapsInternal = createJsonParser<Record<string, string>>({ defaultValue: {}, context: 'parseWheelGaps' });
 export function parseWheelGaps(review: YearlyReview): Record<string, string> {
-    if (!review.wheelGaps) return {};
-
-    if (typeof review.wheelGaps === 'object' && !Array.isArray(review.wheelGaps)) {
-        return review.wheelGaps as Record<string, string>;
-    }
-
-    if (typeof review.wheelGaps === 'string') {
-        try {
-            return JSON.parse(review.wheelGaps) as Record<string, string>;
-        } catch (error) {
-            console.error('[parseWheelGaps] Failed to parse JSON:', error);
-            return {};
-        }
-    }
-
-    return {};
+    return parseWheelGapsInternal(review.wheelGaps);
 }
 
 /**
  * Safely parses yearly review big wins from JSON field.
  */
+const parseWinsInternal = createJsonParser<string[]>({ defaultValue: [], context: 'parseWins', isArray: true });
 export function parseWins(review: YearlyReview): string[] {
-    if (!review.wins) return [];
-
-    if (Array.isArray(review.wins)) {
-        return review.wins as string[];
-    }
-
-    if (typeof review.wins === 'string') {
-        try {
-            return JSON.parse(review.wins) as string[];
-        } catch (error) {
-            console.error('[parseWins] Failed to parse JSON:', error);
-            return [];
-        }
-    }
-
-    return [];
+    return parseWinsInternal(review.wins);
 }
 
 /**
@@ -477,7 +237,7 @@ export function getTotalUnits(log: DailyLog | null | undefined): number {
     if (!log) return 0;
 
     const priorities = parseDailyLogPriorities(log);
-    if (!priorities || typeof priorities !== 'object') return 0;
+    if (!priorities) return 0;
 
     const prioritiesRecord = priorities as Record<string, { units?: number }>;
     return Object.values(prioritiesRecord).reduce((sum: number, p) => sum + (p?.units ?? 0), 0);

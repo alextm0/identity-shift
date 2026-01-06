@@ -12,8 +12,8 @@
  * - All data is filtered by authenticated userId
  */
 import { revalidateDashboard } from "@/lib/revalidate";
-import { createSprint, deactivateAllSprints, getSprintById, updateSprint, deleteSprint, closeSprintById, getActiveSprint } from "@/data-access/sprints";
-import { SprintFormSchema } from "@/lib/validators";
+import { createSprint, getSprintById, updateSprint, deleteSprint, closeSprintById } from "@/data-access/sprints";
+import { SprintFormSchema, BaseSprintFormSchema } from "@/lib/validators";
 import { sanitizeText } from "@/lib/sanitize";
 import { NotFoundError, BusinessRuleError } from "@/lib/errors";
 import { success } from "@/lib/actions/result";
@@ -33,8 +33,6 @@ export const startSprintAction = createAction(
             throw new BusinessRuleError("At least one goal is required");
         }
 
-        // 1. Deactivate current active sprints
-        await deactivateAllSprints(userId);
 
         // 2 & 3. Create new sprint with goals and promises
         const sprintId = randomUUID();
@@ -74,7 +72,7 @@ export const startSprintAction = createAction(
 );
 
 export const updateSprintAction = createActionWithParam(
-    SprintFormSchema.partial(),
+    BaseSprintFormSchema.partial(),
     async (userId, sprintId: string, validated) => {
         // Verify ownership
         const sprint = await getSprintById(sprintId, userId);
@@ -138,11 +136,6 @@ export const deleteSprintAction = createActionWithoutValidation(
             throw new NotFoundError("Sprint not found");
         }
 
-        // Prevent deleting active sprint
-        if (sprint.active) {
-            throw new BusinessRuleError("Cannot delete an active sprint. Deactivate it first.");
-        }
-
         await deleteSprint(sprintId, userId);
 
         revalidateSprintPaths();
@@ -151,7 +144,7 @@ export const deleteSprintAction = createActionWithoutValidation(
             { deleted: true },
             {
                 message: "Sprint deleted successfully",
-                redirect: "dashboard"
+                redirect: "dashboard/sprint" // Redirect back to sprint control
             }
         );
     },
@@ -181,7 +174,7 @@ export const closeSprintAction = createActionWithoutValidation(
             { id: sprintId },
             {
                 message: "Sprint closed successfully",
-                redirect: "dashboard"
+                redirect: "dashboard/sprint"
             }
         );
     },
@@ -191,17 +184,13 @@ export const closeSprintAction = createActionWithoutValidation(
     }
 );
 
-export const getActiveSprintAction = createActionWithoutValidation(
-    async (userId) => {
-        const activeSprint = await getActiveSprint(userId);
-        return success({ sprint: activeSprint || null });
-    },
-    {
-        errorMessage: "Failed to get active sprint"
-    }
-);
 
 
 function revalidateSprintPaths() {
     revalidateDashboard();
+    // Also revalidate the specialized sprint cache
+    import('next/cache').then(({ revalidateTag }) => {
+        revalidateTag('sprints', 'max');
+        revalidateTag('active-sprint', 'max');
+    });
 }

@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { dailyLog, promiseLog } from "@/lib/db/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
-import { DailyLog } from "@/lib/types";
+import { DailyLog, DailyLogWithRelations } from "@/lib/types";
 import { ProofOfWork } from "@/lib/validators";
 import { normalizeDate, getDayRange, createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
@@ -32,17 +32,19 @@ export const getDailyLogs = unstable_cache(
 );
 
 export const getDailyLogByDate = unstable_cache(
-    async (userId: string, date: Date): Promise<DailyLog | undefined> => {
+    async (userId: string, date: Date): Promise<DailyLogWithRelations | undefined> => {
         return await withDatabaseErrorHandling(
             async () => {
                 const normalizedDate = normalizeDate(date);
-                return (await db.select()
-                    .from(dailyLog)
-                    .where(and(
+                return await db.query.dailyLog.findFirst({
+                    where: and(
                         createOwnershipCondition(dailyLog.userId, userId),
                         eq(dailyLog.date, normalizedDate)
-                    ))
-                    .limit(1))[0];
+                    ),
+                    with: {
+                        promiseLogs: true
+                    }
+                });
             },
             "Failed to fetch daily log by date"
         );
@@ -52,13 +54,15 @@ export const getDailyLogByDate = unstable_cache(
 );
 
 export const getDailyLogById = unstable_cache(
-    async (id: string, userId: string): Promise<DailyLog | undefined> => {
+    async (id: string, userId: string): Promise<DailyLogWithRelations | undefined> => {
         return await withDatabaseErrorHandling(
             async () => {
-                return (await db.select()
-                    .from(dailyLog)
-                    .where(createOwnershipAndIdCondition(dailyLog.id, id, dailyLog.userId, userId))
-                    .limit(1))[0];
+                return await db.query.dailyLog.findFirst({
+                    where: createOwnershipAndIdCondition(dailyLog.id, id, dailyLog.userId, userId),
+                    with: {
+                        promiseLogs: true
+                    }
+                });
             },
             "Failed to fetch daily log by ID"
         );
@@ -68,17 +72,19 @@ export const getDailyLogById = unstable_cache(
 );
 
 export const getTodayLogForUser = unstable_cache(
-    async (userId: string, date: Date): Promise<DailyLog | undefined> => {
+    async (userId: string, date: Date): Promise<DailyLogWithRelations | undefined> => {
         return await withDatabaseErrorHandling(
             async () => {
                 const normalizedDate = normalizeDate(date);
-                return (await db.select()
-                    .from(dailyLog)
-                    .where(and(
+                return await db.query.dailyLog.findFirst({
+                    where: and(
                         eq(dailyLog.userId, userId),
                         eq(dailyLog.date, normalizedDate)
-                    ))
-                    .limit(1))[0];
+                    ),
+                    with: {
+                        promiseLogs: true
+                    }
+                });
             },
             "Failed to fetch daily log by user ID and date"
         );

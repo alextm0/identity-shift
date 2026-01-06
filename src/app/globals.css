@@ -56,9 +56,17 @@
   /* Transitions & Animations */
   --transition-liquid: cubic-bezier(0.4, 0, 0.2, 1);
 
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-fade-blur: fade-blur 0.4s var(--transition-liquid);
+  --animate-scan: scan 3s linear infinite;
+
+  @keyframes scan {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
 
   @keyframes fade-blur {
     from {

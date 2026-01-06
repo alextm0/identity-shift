@@ -10,20 +10,20 @@ export function DashboardHeader({ sprintName }: DashboardHeaderProps) {
   const weekNumber = getISOWeek(currentDate);
 
   return (
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/5">
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-white/5">
       <div>
-        <h1 className="heading-1 uppercase mb-4">
-          Command Center <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">{currentDate.getFullYear()}</span>
+        <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter mb-4 text-white/90">
+          Identity <span className="text-white/10 font-thin ml-1">{" // "}</span> <span className="text-action-emerald">Shift</span>
         </h1>
         <div className="flex flex-wrap items-center gap-6 label">
           <span className="flex items-center gap-2">
             <Calendar className="h-3 w-3" />
-            {format(currentDate, "EEEE, MMMM d")}
+            {format(currentDate, "EEEE, MMMM d, yyyy")}
           </span>
           <span className="h-3 w-[1px] bg-white/10" />
           <span>Week {weekNumber}</span>
           <span className="h-3 w-[1px] bg-white/10" />
-          <span className="text-action-emerald">{sprintName}</span>
+          <span className="text-action-emerald border-l border-white/10 pl-6 ml-auto md:ml-0">{sprintName}</span>
         </div>
       </div>
     </div>

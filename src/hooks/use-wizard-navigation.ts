@@ -1,114 +1,164 @@
-import { useState, useCallback } from "react";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useReviewStore } from "@/hooks/stores/use-review-store";
+import { handleReviewCompletion } from "@/lib/review/completion-handler";
+import { REVIEW_WIZARD_STEPS } from "@/lib/constants/review";
 import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
+import { toast } from "sonner";
+import { useCallback } from "react";
+import type { YearlyReviewWithTypedFields } from "@/lib/types";
 
-interface UseWizardNavigationOptions {
-  totalSteps: number;
-  currentStep: number;
-  onStepChange: (step: number) => void;
-  multiStepIndices?: readonly number[];
-  itemsPerMultiStep?: number;
+interface UseWizardNavigationProps {
+  initialReview: YearlyReviewWithTypedFields;
+  year: number;
+  isEditMode: boolean;
+  autoSave: () => Promise<void>;
 }
 
-interface WizardNavigationReturn {
-  currentStep: number;
-  subStepIndex: number;
-  handleNext: () => void;
-  handleBack: () => void;
-  canGoNext: () => boolean;
-  canGoBack: () => boolean;
-  isLastSubStep: boolean;
-  isFirstSubStep: boolean;
-}
-
-/**
- * Custom hook for wizard navigation with support for multi-step items
- * 
- * Handles navigation between steps and sub-steps (e.g., dimensions within a step).
- * Automatically manages sub-step index resets when changing steps.
- */
 export function useWizardNavigation({
-  totalSteps,
-  currentStep,
-  onStepChange,
-  multiStepIndices = [],
-  itemsPerMultiStep = LIFE_DIMENSIONS.length,
-}: UseWizardNavigationOptions): WizardNavigationReturn {
-  const [prevStep, setPrevStep] = useState(currentStep);
-  const [subStepIndex, setSubStepIndex] = useState(0);
+  initialReview,
+  year,
+  isEditMode,
+  autoSave
+}: UseWizardNavigationProps) {
+  const router = useRouter();
+  const {
+    currentStep,
+    setStep,
+    markSaving,
+    getFormData,
+    reviewId,
+    isDirty
+  } = useReviewStore();
 
-  if (currentStep !== prevStep) {
-    setPrevStep(currentStep);
-    setSubStepIndex(0);
-  }
-
-  const isMultiStep = useCallback(
-    (step: number) => (multiStepIndices as number[]).includes(step),
-    [multiStepIndices]
-  );
-
-  const isLastSubStep = isMultiStep(currentStep) && subStepIndex >= itemsPerMultiStep - 1;
-  const isFirstSubStep = subStepIndex === 0;
-
-  const handleNext = useCallback(() => {
-    if (isMultiStep(currentStep)) {
-      if (subStepIndex < itemsPerMultiStep - 1) {
-        // Move to next sub-step within current step
-        setSubStepIndex(subStepIndex + 1);
-        return;
-      } else {
-        // Finished all sub-steps, move to next step
-        setSubStepIndex(0);
-      }
+  const handleNextNavigation = useCallback(() => {
+    if (currentStep < REVIEW_WIZARD_STEPS) {
+      setStep(currentStep + 1);
     }
+  }, [currentStep, setStep]);
 
-    if (currentStep < totalSteps) {
-      onStepChange(currentStep + 1);
-    }
-  }, [currentStep, subStepIndex, totalSteps, itemsPerMultiStep, isMultiStep, onStepChange]);
-
-  const handleBack = useCallback(() => {
-    if (isMultiStep(currentStep)) {
-      if (subStepIndex > 0) {
-        // Move to previous sub-step within current step
-        setSubStepIndex(subStepIndex - 1);
-        return;
-      } else {
-        // Go back to previous step
-        setSubStepIndex(0);
-      }
-    }
-
+  const handleBackNavigation = useCallback(() => {
     if (currentStep > 1) {
-      onStepChange(currentStep - 1);
+      setStep(currentStep - 1);
     }
-  }, [currentStep, subStepIndex, isMultiStep, onStepChange]);
+  }, [currentStep, setStep]);
 
-  const canGoNext = useCallback(() => {
-    // For multi-step, can always navigate between sub-steps
-    if (isMultiStep(currentStep)) {
+  const canGoNextNavigation = useCallback(() => {
+    return currentStep < REVIEW_WIZARD_STEPS;
+  }, [currentStep]);
+
+  const canGoBackNavigation = useCallback(() => {
+    return currentStep > 1;
+  }, [currentStep]);
+
+  const handleNext = useCallback(async () => {
+    // Use getState to ensure we have the absolute latest state if needed
+    const effectiveReviewId = reviewId || initialReview.id;
+
+    // If not on last step, move to next step
+    if (currentStep < REVIEW_WIZARD_STEPS) {
+      // Save before moving to next step
+      if (isDirty && effectiveReviewId) {
+        try {
+          markSaving(true);
+          await autoSave();
+          markSaving(false);
+        } catch (error) {
+          markSaving(false);
+          console.error("Auto-save failed during navigation:", error);
+          toast.error("Auto-save failed. Please try again.");
+          return; // Abort navigation
+        }
+      }
+      handleNextNavigation();
+    } else {
+      // Complete review
+      if (!effectiveReviewId) {
+        toast.error("Cannot complete review: reviewId is missing.");
+        return;
+      }
+
+      const formData = getFormData();
+      await handleReviewCompletion({
+        reviewId: effectiveReviewId,
+        formData,
+        year,
+        currentStep,
+        isEditMode,
+        onSuccess: (redirectPath) => {
+          router.push(redirectPath);
+        },
+        onError: (error) => {
+          console.error("Failed to complete review:", error);
+          toast.error("Failed to complete review. Please try again.");
+        },
+        onSavingChange: markSaving,
+      });
+    }
+  }, [
+    currentStep,
+    reviewId,
+    initialReview.id,
+    isDirty,
+    autoSave,
+    handleNextNavigation,
+    getFormData,
+    year,
+    isEditMode,
+    router,
+    markSaving
+  ]);
+
+  const handleBack = useCallback(async () => {
+    const effectiveReviewId = reviewId || initialReview.id;
+
+    // Auto-save before moving back
+    if (isDirty && effectiveReviewId) {
+      await autoSave();
+    }
+    handleBackNavigation();
+  }, [handleBackNavigation, isDirty, reviewId, initialReview.id, autoSave]);
+
+  const handleExit = useCallback(async () => {
+    const effectiveReviewId = reviewId || initialReview.id;
+
+    // Auto-save before exiting
+    if (isDirty && effectiveReviewId) {
+      await autoSave();
+    }
+    router.push("/dashboard");
+  }, [reviewId, initialReview.id, isDirty, autoSave, router]);
+
+  const canGoNext = useCallback((): boolean => {
+    // For step 3 (Year Snapshot), always allow completion
+    if (currentStep === REVIEW_WIZARD_STEPS) {
       return true;
     }
-    // For regular steps, check if not on last step
-    return currentStep < totalSteps;
-  }, [currentStep, totalSteps, isMultiStep]);
+
+    // For step 2 (Wins), always allow proceeding (0 wins allowed - hard years happen)
+    if (currentStep === 2) {
+      return true;
+    }
+
+    // For step 1 (Wheel of Life), check if all dimensions are rated
+    if (currentStep === 1) {
+      const ratings = getFormData().wheelRatings;
+      return !!(ratings && Object.keys(ratings).length === LIFE_DIMENSIONS.length);
+    }
+
+    return canGoNextNavigation();
+  }, [currentStep, canGoNextNavigation, getFormData]);
 
   const canGoBack = useCallback(() => {
-    // For multi-step, can go back if not on first sub-step or not on first step
-    if (isMultiStep(currentStep)) {
-      return subStepIndex > 0 || currentStep > 1;
-    }
-    return currentStep > 1;
-  }, [currentStep, subStepIndex, isMultiStep]);
+    return canGoBackNavigation();
+  }, [canGoBackNavigation]);
 
   return {
-    currentStep,
-    subStepIndex,
     handleNext,
     handleBack,
+    handleExit,
     canGoNext,
-    canGoBack,
-    isLastSubStep,
-    isFirstSubStep,
+    canGoBack
   };
 }
-

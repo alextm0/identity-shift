@@ -1,9 +1,12 @@
 import { getRequiredSession } from "@/lib/auth/server";
-import { getPlanningByUserId } from "@/data-access/planning";
+import { getPlanningByUserIdAndYear } from "@/data-access/planning";
+import { getCurrentReviewAndPlanningYears } from "@/lib/date-utils";
 
 export async function getPlanningData() {
     const session = await getRequiredSession();
-    const planning = await getPlanningByUserId(session.user.id);
+    const userId = session.user.id;
+    const { planningYear } = getCurrentReviewAndPlanningYears();
+    const planning = await getPlanningByUserIdAndYear(userId, planningYear);
 
     return {
         planning,
