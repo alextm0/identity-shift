@@ -7,7 +7,7 @@
 import { RateLimitError } from "@/lib/errors";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { env } from "@/env";
 
 /**

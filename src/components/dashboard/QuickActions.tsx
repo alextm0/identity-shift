@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Flame, Layout, TrendingUp, Calendar, FileText, Target, BarChart3 } from 'lucide-react';
+import { Flame, Layout, TrendingUp, Calendar, FileText, Target, BarChart3 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { getCurrentReviewAndPlanningYears } from "@/lib/date-utils";
 
@@ -11,7 +11,7 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ completedYearlyReview, hasCompletedPlanning }: Omit<QuickActionsProps, 'todayStatus'>) {
-  const { reviewYear, planningYear } = getCurrentReviewAndPlanningYears();
+  const { planningYear } = getCurrentReviewAndPlanningYears();
 
   return (
     <div className="space-y-6">

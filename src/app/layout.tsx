@@ -3,7 +3,6 @@ import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui';
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
-import { headers } from "next/headers";
 import "./globals.css";
 
 const inter = Inter({
@@ -66,8 +65,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nonce = (await headers()).get('x-nonce') ?? undefined;
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} antialiased`}>

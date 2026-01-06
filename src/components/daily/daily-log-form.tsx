@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { DailyLog, SprintWithDetails, SprintGoal, SprintPromise, DailyLogWithRelations } from "@/lib/types";
+import { SprintWithDetails, SprintGoal, SprintPromise, DailyLogWithRelations } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isPromiseScheduledForDay } from "@/lib/scoring";

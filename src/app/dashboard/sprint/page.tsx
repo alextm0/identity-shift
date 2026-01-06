@@ -42,6 +42,8 @@ export default async function SprintControlPage() {
         text: g.text,
         category: g.category,
         definitionOfDone: "Migrated goal",
+        progressSignal: undefined,
+        whyMatters: undefined,
         createdAt: g.createdAt || new Date(),
         updatedAt: g.updatedAt
       }));

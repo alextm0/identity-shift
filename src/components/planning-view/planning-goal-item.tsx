@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronUp, ChevronDown, Edit2, Save, X, Target } from "lucide-react";
+import { ChevronUp, ChevronDown, Edit2, Save, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SimplifiedGoal, AnnualGoal } from "@/lib/validators";
 import { DIMENSION_LABELS } from "@/lib/validators/yearly-review";

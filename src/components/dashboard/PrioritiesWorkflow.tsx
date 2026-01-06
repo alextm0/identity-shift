@@ -4,11 +4,9 @@ import { GlassPanel } from '@/components/dashboard/glass-panel';
 import {
   CheckCircle2,
   Target,
-  Zap,
   Sparkles,
   Activity,
   ChevronDown,
-  Calendar,
   Flag,
   Info,
   Clock,

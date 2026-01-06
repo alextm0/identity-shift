@@ -12,7 +12,7 @@
  * - All data is filtered by authenticated userId
  */
 import { revalidateDashboard } from "@/lib/revalidate";
-import { createSprint, getSprintById, updateSprint, deleteSprint, closeSprintById, getActiveSprint } from "@/data-access/sprints";
+import { createSprint, getSprintById, updateSprint, deleteSprint, closeSprintById } from "@/data-access/sprints";
 import { SprintFormSchema, BaseSprintFormSchema } from "@/lib/validators";
 import { sanitizeText } from "@/lib/sanitize";
 import { NotFoundError, BusinessRuleError } from "@/lib/errors";

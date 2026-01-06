@@ -2,8 +2,6 @@
 
 import { useReviewStore } from "@/hooks/stores/use-review-store";
 import { WheelOfLife } from "@/components/ui/WheelOfLife";
-import { LIFE_DIMENSIONS } from "@/lib/validators/yearly-review";
-import { DEFAULT_RATING } from "@/lib/constants/review";
 import { useMemo } from "react";
 
 import { prepareWheelValues } from "@/lib/utils/dimension-analysis";

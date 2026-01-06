@@ -6,12 +6,8 @@ import { ConsistencyGrid } from '@/components/dashboard/ConsistencyGrid';
 import { DailyLogCTA } from '@/components/dashboard/DailyLogCTA';
 import { PrioritiesWorkflow } from '@/components/dashboard/PrioritiesWorkflow';
 import { QuickActions } from '@/components/dashboard/QuickActions';
-import { TimeMetrics } from '@/components/dashboard/TimeMetrics';
 import { MiniCalendar } from '@/components/dashboard/MiniCalendar';
-import { format } from 'date-fns';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { BarChart3, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { GlassPanel } from '@/components/dashboard/glass-panel';
 
 export const metadata: Metadata = {
@@ -32,7 +28,6 @@ async function DashboardContent() {
     planning,
     consistencyData,
     prioritiesWithProgress,
-    timeMetrics,
     datesWithLogs,
   } = await getDashboardData();
 

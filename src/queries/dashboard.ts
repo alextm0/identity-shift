@@ -1,5 +1,5 @@
 import { getRequiredSession } from "@/lib/auth/server";
-import { getActiveSprintCached, getActiveSprintsCached, getSprints } from "@/data-access/sprints";
+import { getActiveSprintsCached, getSprints } from "@/data-access/sprints";
 import { getDailyLogs, getTodayLogForUser } from "@/data-access/daily-logs";
 import { getPlanningByUserIdAndYear } from "@/data-access/planning";
 import { getWeeklyReviews, getMonthlyReviews } from "@/data-access/reviews";

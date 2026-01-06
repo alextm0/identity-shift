@@ -2,7 +2,6 @@ import { neonAuth } from "@neondatabase/neon-js/auth/next/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 
 /**
  * Ensures the user exists in the application database.

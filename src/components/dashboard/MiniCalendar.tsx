@@ -2,7 +2,7 @@
 
 import { GlassPanel } from '@/components/dashboard/glass-panel';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addDays, subDays, isWithinInterval, differenceInDays } from 'date-fns';
-import { CheckCircle2, TrendingUp, Zap, Flame, Calendar } from 'lucide-react';
+import { CheckCircle2, Zap, Flame } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
 
@@ -45,7 +45,6 @@ export function MiniCalendar({ highlightedDates = [], sprintStart, sprintEnd, cl
   // Calculate stats
   const daysWithLogs = daysInMonth.filter(day => isHighlighted(day)).length;
   const daysPassed = daysInMonth.filter(day => day <= today).length;
-  const targetRate = daysPassed > 0 ? Math.round((daysWithLogs / daysPassed) * 100) : 0;
 
   const handleDateClick = (date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd');
@@ -97,7 +96,6 @@ export function MiniCalendar({ highlightedDates = [], sprintStart, sprintEnd, cl
               const isToday = isSameDay(date, today);
               const isCurrentMonth = date >= monthStart && date <= monthEnd;
               const highlighted = isHighlighted(date);
-              const isPast = date < today && !isToday;
               const isInSprint = sprintStart && sprintEnd && isWithinInterval(date, { start: sprintStart, end: sprintEnd });
               const isClickable = date <= today;
 
