@@ -105,7 +105,7 @@ export function WeeklyReviewPanel({ activeSprint, weeklyLogs, promiseLogs }: Wee
           <Calendar className="h-4 w-4 text-white/20" />
           <h3 className="font-mono text-xs uppercase tracking-widest text-white/40">Daily Entries</h3>
         </div>
-        <WeeklyEntriesTable weeklyLogs={weeklyLogs} promiseLogs={promiseLogs} activeSprint={activeSprint} />
+        <WeeklyEntriesTable weeklyLogs={weeklyLogs} promiseLogs={promiseLogs} />
       </div>
     </div>
   );

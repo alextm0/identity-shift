@@ -2,7 +2,6 @@ import { db } from "@/lib/db";
 import { dailyLog, promiseLog } from "@/lib/db/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { DailyLog, DailyLogWithRelations } from "@/lib/types";
-import { ProofOfWork } from "@/lib/validators";
 import { normalizeDate, getDayRange, createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
 import { unstable_cache } from "next/cache";

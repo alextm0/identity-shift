@@ -5,7 +5,7 @@ import { format, startOfWeek } from "date-fns";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
 import { Edit2, Calendar, Zap, Trophy } from "lucide-react";
-import { DailyLog, SprintWithDetails, PromiseLog } from "@/lib/types";
+import { DailyLog, PromiseLog } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getTotalUnits } from "@/lib/type-helpers";
 import { DailyLogEditModal } from "./daily-log-edit-modal";
@@ -13,10 +13,9 @@ import { DailyLogEditModal } from "./daily-log-edit-modal";
 interface WeeklyEntriesTableProps {
   weeklyLogs: DailyLog[];
   promiseLogs: PromiseLog[];
-  activeSprint?: SprintWithDetails;
 }
 
-export function WeeklyEntriesTable({ weeklyLogs, promiseLogs, activeSprint }: WeeklyEntriesTableProps) {
+export function WeeklyEntriesTable({ weeklyLogs, promiseLogs }: WeeklyEntriesTableProps) {
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
 
   // Create a map of logs by date for quick lookup
@@ -140,7 +139,6 @@ export function WeeklyEntriesTable({ weeklyLogs, promiseLogs, activeSprint }: We
       {editingLog && (
         <DailyLogEditModal
           log={editingLog}
-          activeSprint={activeSprint}
           open={!!editingLog}
           onOpenChange={(open) => !open && setEditingLog(null)}
         />
