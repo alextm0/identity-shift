@@ -1,0 +1,30 @@
+{
+    "name": "Identity Shifter",
+    "short_name": "Identity",
+    "description": "Track daily evidence. Measure your real impact. Shift your identity from planning to doing.",
+    "start_url": "/dashboard",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0a0a0f",
+    "theme_color": "#6366f1",
+    "lang": "en",
+    "categories": [
+        "productivity",
+        "lifestyle"
+    ],
+    "icons": [
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

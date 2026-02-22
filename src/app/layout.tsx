@@ -1,9 +1,10 @@
 import { authClient } from '@/lib/auth/client';
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui';
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import { headers } from "next/headers";
 import { Toaster } from "sonner";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import "./globals.css";
 
 const inter = Inter({
@@ -33,6 +34,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Identity Shifter' }],
   creator: 'Identity Shifter',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  manifest: '/manifest.json',
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -58,7 +60,22 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: '/favicon.ico',
+    apple: '/icons/icon-192x192.png',
   },
+  appleWebApp: {
+    capable: true,
+    title: 'Identity Shifter',
+    statusBarStyle: 'black-translucent',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#6366f1',
 };
 
 // Force dynamic rendering: this layout reads request headers (nonce) which
@@ -96,6 +113,7 @@ export default async function RootLayout({
             closeButton
           />
         </NeonAuthUIProvider>
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );
