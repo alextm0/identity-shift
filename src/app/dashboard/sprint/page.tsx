@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { getSprintsData } from "@/queries/sprints";
-import { getPlanningData } from "@/queries/planning";
 import { SprintForm } from "@/components/sprints/sprint-form";
 import { CloseSprintButton } from "@/components/sprints/close-sprint-button";
 import { GlassPanel } from "@/components/dashboard/glass-panel";
@@ -8,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Target, ArrowLeft, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { parseAnnualGoals } from "@/lib/type-helpers";
 import { SprintPromise } from "@/lib/types";
 
 import { DeleteSprintButton } from "@/components/sprints/delete-sprint-button";
@@ -25,31 +23,6 @@ export const metadata: Metadata = {
 
 export default async function SprintControlPage() {
   const { activeSprints, allSprints } = await getSprintsData();
-  const { planning } = await getPlanningData();
-  // Combine all goal sources to ensure legacy data is available
-  let annualGoals = parseAnnualGoals(planning);
-
-  // Fallback to activeGoals/goals if annualGoals is empty (migration path)
-  if (annualGoals.length === 0) {
-    const legacyGoals = [
-      ...(planning?.activeGoals || []),
-      ...(planning?.goals || [])
-    ];
-
-    if (legacyGoals.length > 0) {
-      annualGoals = legacyGoals.map(g => ({
-        id: g.id,
-        text: g.text,
-        category: g.category,
-        definitionOfDone: "Migrated goal",
-        progressSignal: undefined,
-        whyMatters: undefined,
-        createdAt: g.createdAt || new Date(),
-        updatedAt: g.updatedAt
-      }));
-    }
-  }
-
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 md:px-0">
@@ -81,7 +54,7 @@ export default async function SprintControlPage() {
       </div>
 
       <div className="flex justify-end mb-8">
-        <SprintForm annualGoals={annualGoals} />
+        <SprintForm />
       </div>
 
       {activeSprints && activeSprints.length > 0 ? (
@@ -113,47 +86,52 @@ export default async function SprintControlPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <SprintForm activeSprint={sprint} sprintToEdit={sprint} annualGoals={annualGoals} />
+                      <SprintForm sprintToEdit={sprint} />
                       <CloseSprintButton sprintId={sprint.id} />
                       <DeleteSprintButton sprintId={sprint.id} sprintName={sprint.name} />
                     </div>
                   </div>
 
-                  {/* ... goals section ... */}
                   <div className="pt-6 border-t border-white/5">
                     <h3 className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-4">
                       Commitment Goals & Promises
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {sprint.goals?.map((goal) => (
-                        <div key={goal.id} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-                          <div className="flex items-start gap-2 mb-4">
-                            <div className="h-2 w-2 rounded-full bg-focus-violet mt-1.5 shrink-0" />
-                            <p className="text-sm font-bold text-white uppercase tracking-tight leading-tight">{goal.goalText}</p>
-                          </div>
+                    {sprint.goals && sprint.goals.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {sprint.goals.map((goal) => (
+                          <div key={goal.id} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                            <div className="flex items-start gap-2 mb-4">
+                              <div className="h-2 w-2 rounded-full bg-focus-violet mt-1.5 shrink-0" />
+                              <p className="text-sm font-bold text-white uppercase tracking-tight leading-tight">{goal.goalText}</p>
+                            </div>
 
-                          <div className="space-y-3">
-                            {goal.promises?.map((promise: SprintPromise) => (
-                              <div key={promise.id} className="pl-4 border-l border-white/10">
-                                <p className="text-xs text-telemetry-slate leading-relaxed">
-                                  {promise.text}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-[8px] font-mono uppercase tracking-tighter px-1.5 py-0.5 rounded bg-white/[0.03] text-white/40">
-                                    {promise.type}
-                                  </span>
-                                  {promise.type === 'weekly' && promise.weeklyTarget && (
-                                    <span className="text-[8px] font-mono text-action-emerald uppercase tracking-tighter">
-                                      Target: {promise.weeklyTarget}x
+                            <div className="space-y-3">
+                              {goal.promises && goal.promises.length > 0 ? goal.promises.map((promise: SprintPromise) => (
+                                <div key={promise.id} className="pl-4 border-l border-white/10">
+                                  <p className="text-xs text-telemetry-slate leading-relaxed">
+                                    {promise.text}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[8px] font-mono uppercase tracking-tighter px-1.5 py-0.5 rounded bg-white/[0.03] text-white/40">
+                                      {promise.type}
                                     </span>
-                                  )}
+                                    {promise.type === 'weekly' && promise.weeklyTarget && (
+                                      <span className="text-[8px] font-mono text-action-emerald uppercase tracking-tighter">
+                                        Target: {promise.weeklyTarget}x
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              )) : (
+                                <p className="text-xs text-white/20 italic pl-2">No protocols defined.</p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-white/30 italic">No goals set for this sprint.</p>
+                    )}
                   </div>
                 </div>
               </GlassPanel>
@@ -169,9 +147,9 @@ export default async function SprintControlPage() {
                 No Active Sprint
               </h2>
               <p className="text-sm text-telemetry-slate mb-8">
-                Initialize a sprint to begin tracking your progress. You need an active sprint to log daily progress.
+                Launch a sprint to start tracking your focus and commitments. You can log daily entries even without one.
               </p>
-              <SprintForm annualGoals={annualGoals} />
+              <SprintForm />
             </div>
           </div>
         </GlassPanel>
@@ -184,5 +162,3 @@ export default async function SprintControlPage() {
     </div>
   );
 }
-
-

@@ -55,34 +55,35 @@ export const saveDailyAuditAction = createAction(
     DailyAuditSchema,
     async (userId, validated) => {
         const activeSprint = await getActiveSprint(userId);
-        if (!activeSprint) {
-            // Plan says "Without Active Sprint ... Allow logging energy, blocker, note only, no promise tracking"
-            // But DailyAuditSchema requires mainGoalId, which comes from sprint.
-            // If freestyling, mainGoalId might be optional or handled differently?
-            // Plan says "Freestyle Day ... No promise tracking, no scoring".
-            // The simplified schema has mainGoalId required.
-            // Maybe for freestyle day we use a different action or handle mainGoalId as optional?
-            // Or allow null mainGoalId? UUID schema forbids null.
-            // If no sprint, we should probably throw basic error for now as v1 focuses on sprint.
-            throw new BusinessRuleError("No active sprint found. Please start a sprint to log an audit.");
-        }
 
-        // Validate that mainGoalId belongs to the active sprint
-        const goalExists = activeSprint.goals.some(goal => goal.id === validated.mainGoalId);
-        if (!goalExists) {
-            throw new BusinessRuleError("Selected goal does not belong to the active sprint.");
+        let sprintId: string | null = null;
+
+        if (activeSprint) {
+            sprintId = activeSprint.id;
+
+            // If a mainGoalId is provided, validate it belongs to the active sprint
+            if (validated.mainGoalId) {
+                const goalExists = activeSprint.goals.some(goal => goal.id === validated.mainGoalId);
+                if (!goalExists) {
+                    throw new BusinessRuleError("Selected goal does not belong to the active sprint.");
+                }
+            }
         }
 
         const logId = await saveDailyAudit(
             userId,
-            activeSprint.id,
+            sprintId,
             {
                 date: validated.date,
                 mainGoalId: validated.mainGoalId,
                 energy: validated.energy,
+                sleepHours: validated.sleepHours,
+                exerciseMinutes: validated.exerciseMinutes,
                 blockerTag: validated.blockerTag ?? undefined,
+                win: validated.win,
+                drain: validated.drain,
                 note: validated.note,
-                promiseCompletions: validated.promiseCompletions
+                promiseCompletions: validated.promiseCompletions,
             }
         );
 
@@ -93,14 +94,14 @@ export const saveDailyAuditAction = createAction(
         return success(
             { id: logId },
             {
-                message: "Daily audit saved successfully",
+                message: "Daily log saved successfully",
                 redirect: "dashboard"
             }
         );
     },
     {
         rateLimit: { key: 'save-daily-audit', limit: 20, windowMs: 60000 },
-        errorMessage: "Failed to save daily audit"
+        errorMessage: "Failed to save daily log"
     }
 );
 
@@ -147,11 +148,7 @@ export const updateDailyLogByIdAction = createAction(
             .set({
                 energy: validated.energy,
                 sleepHours: validated.sleepHours,
-                mainFocusCompleted: validated.mainFocusCompleted,
-                morningGapMin: validated.morningGapMin,
-                distractionMin: validated.distractionMin,
-                priorities: validated.priorities,
-                proofOfWork: validated.proofOfWork,
+                exerciseMinutes: validated.exerciseMinutes,
                 win: validated.win,
                 drain: validated.drain,
                 note: validated.note,

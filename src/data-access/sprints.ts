@@ -209,10 +209,10 @@ export async function createSprint(data: NewSprintWithPriorities): Promise<Sprin
                     for (const goal of data.goals) {
                         await createSprintGoalWithPromises(
                             newSprint.id,
-                            goal.goalId,
+                            goal.goalId ?? null,
                             goal.goalText,
                             sortOrder++,
-                            goal.promises.map(p => ({
+                            (goal.promises || []).map(p => ({
                                 text: p.text,
                                 type: p.type,
                                 scheduleDays: p.scheduleDays,

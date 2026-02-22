@@ -8,6 +8,7 @@ import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SprintWithDetails, SprintGoal, SprintPromise, DailyLogWithRelations } from "@/lib/types";
@@ -16,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isPromiseScheduledForDay } from "@/lib/scoring";
 import { useMemo, useEffect, useState, useRef } from "react";
 import { Controller } from "react-hook-form";
-import { CheckCircle2, Trophy, AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { CheckCircle2, Trophy, AlertTriangle, Loader2, Trash2, Zap, Moon, Activity, FileText } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface DailyLogFormProps {
@@ -41,7 +42,7 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
     return new Date();
   }, [initialData?.date, targetDate]);
 
-  // Filter scheduled promises for today
+  const hasActiveSprint = !!activeSprint;
   const goals = useMemo(() => activeSprint?.goals || [], [activeSprint?.goals]);
 
   const scheduledPromises = useMemo(() => goals.flatMap((goal) =>
@@ -49,12 +50,17 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
   ), [goals, today]);
 
   const form = useForm<DailyAuditData>({
-    resolver: zodResolver(DailyAuditSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(DailyAuditSchema) as any,
     defaultValues: {
       date: today,
       mainGoalId: initialData?.mainGoalId || (goals.length > 0 ? goals[0].id : undefined),
       energy: initialData?.energy ?? 3,
+      sleepHours: initialData?.sleepHours ?? undefined,
+      exerciseMinutes: (initialData as unknown as { exerciseMinutes?: number })?.exerciseMinutes ?? undefined,
       blockerTag: (initialData?.blockerTag as BlockerTag) || null,
+      win: initialData?.win || "",
+      drain: initialData?.drain || "",
       note: initialData?.note || "",
       promiseCompletions: initialData?.promiseLogs?.reduce((acc, log) => ({
         ...acc,
@@ -63,74 +69,38 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
     },
   });
 
-  // Note: initializing promiseCompletions from initialData.promiseLogs if available 
-  // (though initialData type might need check, assuming it joins logs or we just default)
-  // Actually DailyLog type usually doesn't nest promiseLogs deeply in 'getDailyLogByDate'?
-  // Let's assume the previous default logic was fine for new, but for edit we might ideally load them.
-  // The current code used: `promiseCompletions: scheduledPromises.reduce...` which ignores existing checks!
-  // I must fix this if we want "Edit" to work properly.
-  // However, for this specific task (Delete/Create), I'll stick close to original but try to respect initialData if it had completions.
-  // Since `initialData` structure in `getDailyLogByDate` might not include promiseLogs joined, the user might rely on refetching?
-  // Let's assume standard defaultValues logic for now to avoid scope creep, but fixed the prop usage.
-
   const saveLockRef = useRef<boolean>(false);
-  // Initialize previousDataRef with the CURRENT default values to prevent on-mount auto-save
   const previousDataRef = useRef<string>(JSON.stringify(form.getValues()));
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const isMountedRef = useRef<boolean>(true);
 
-  // Auto-save logic hooks
   useEffect(() => {
     isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
+    return () => { isMountedRef.current = false; };
   }, []);
 
   const watchedData = form.watch();
-
-  // Determine if we have a persisted ID
   const currentLogId = savedLogId || initialData?.id;
   const isNewEntry = !currentLogId;
 
-  // Track changes for auto-save
+  // Auto-save for existing entries
   useEffect(() => {
-    // AUTO-SAVE RULE: Only auto-save if the entry ALREADY EXISTS (was manually created or loaded).
-    // This prevents accidental creation of logs just by visiting the page.
     if (isNewEntry) return;
+    if (isPending || isSaving) return;
 
-    // Don't auto-save if manual submission is pending or already saving or if no active data
-    if (!activeSprint || goals.length === 0 || isPending || isSaving) return;
-
-    // Only auto-save if we have the minimum required data
-    if (!watchedData.mainGoalId) return;
-
-    // Compare stringified data to detect actual changes
     const currentDataString = JSON.stringify(watchedData);
     if (currentDataString === previousDataRef.current) return;
 
-    // Clear any existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
-    // Set new timeout for auto-save
     saveTimeoutRef.current = setTimeout(async () => {
-      // Atomic check-and-set lock to prevent race condition
       if (saveLockRef.current || isPending || isSaving) return;
       saveLockRef.current = true;
-
-      // Check if component is still mounted before setting state
-      if (!isMountedRef.current) {
-        saveLockRef.current = false;
-        return;
-      }
+      if (!isMountedRef.current) { saveLockRef.current = false; return; }
 
       setIsSaving(true);
       try {
         await saveDailyAuditAction(watchedData as DailyAuditData);
-
-        // Only update state if component is still mounted
         if (isMountedRef.current) {
           setLastSaved(new Date());
           previousDataRef.current = currentDataString;
@@ -138,61 +108,32 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
       } catch (e) {
         console.error("Auto-save failed", e);
       } finally {
-        // Only update state if component is still mounted
-        if (isMountedRef.current) {
-          setIsSaving(false);
-        }
+        if (isMountedRef.current) setIsSaving(false);
         saveLockRef.current = false;
       }
     }, 2000);
 
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [watchedData, isPending, isSaving, activeSprint, goals.length, isNewEntry]);
-
-  // Handle early returns AFTER hooks
-  if (!activeSprint) {
-    return (
-      <GlassPanel className="p-8 text-center border-dashed border-white/10">
-        <p className="text-white/40">No active sprint found. Start a sprint to track progress.</p>
-      </GlassPanel>
-    );
-  }
-
-  if (goals.length === 0) {
-    return (
-      <GlassPanel className="p-8 text-center border-dashed border-white/10">
-        <p className="text-white/40">No goals found in active sprint. Please add goals to your sprint before creating a daily audit.</p>
-      </GlassPanel>
-    );
-  }
+    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
+  }, [watchedData, isPending, isSaving, isNewEntry]);
 
   async function onSubmit(data: DailyAuditData) {
-    // Acquire lock to prevent concurrent auto-save
     if (saveLockRef.current) return;
     saveLockRef.current = true;
-
     setIsPending(true);
     try {
       const result = await saveDailyAuditAction(data);
       if (result.success) {
-        if (result.data?.id) {
-          setSavedLogId(result.data.id);
-        }
+        if (result.data?.id) setSavedLogId(result.data.id);
         setLastSaved(new Date());
-        // Update reference to prevent immediate auto-save trigger on state change
         previousDataRef.current = JSON.stringify(data);
-        toast.success("Daily audit saved successfully");
+        toast.success("Daily log saved!");
         router.refresh();
         router.push("/dashboard");
       } else {
-        toast.error(result.error || "Failed to save audit");
+        toast.error(result.error || "Failed to save log");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save audit");
+      toast.error(error instanceof Error ? error.message : "Failed to save log");
       console.error(error);
     } finally {
       setIsPending(false);
@@ -202,21 +143,20 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
 
   async function handleDelete() {
     if (!currentLogId) return;
-
     setIsDeleting(true);
     try {
       const result = await deleteDailyLogAction(currentLogId);
       if (result.success) {
-        setSavedLogId(undefined); // Clear ID
-        toast.success("Daily audit deleted");
+        setSavedLogId(undefined);
+        toast.success("Daily log deleted");
         router.push("/dashboard");
         router.refresh();
       } else {
-        toast.error(result.error || "Failed to delete audit");
+        toast.error(result.error || "Failed to delete log");
         setIsDeleting(false);
       }
     } catch (error) {
-      toast.error("Failed to delete audit");
+      toast.error("Failed to delete log");
       console.error(error);
       setIsDeleting(false);
     }
@@ -228,35 +168,41 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
 
   return (
     <>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-24 md:pb-12">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-28 md:pb-10">
+
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between mb-6">
           <div className="space-y-1">
             <h1 className="heading-2 uppercase">
-              Daily <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">Audit</span>
+              Daily <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">Log</span>
             </h1>
-            <div className="flex items-center gap-3 mt-3">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <div className={cn(
-                "h-1.5 w-1.5 rounded-full transition-all duration-500",
+                "h-1.5 w-1.5 rounded-full transition-all duration-500 shrink-0",
                 lastSaved ? "bg-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse" : "bg-white/10"
               )} />
-              <p className="label-sm text-white/30">
+              <p className="label-sm text-white/30 text-xs">
                 {isSaving ? "Saving..." : lastSaved ? `Saved ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Draft"}
               </p>
-              <span className="text-white/20">•</span>
-              <p className="label-sm text-white/40">
-                {today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              <span className="text-white/20 text-xs">·</span>
+              <p className="label-sm text-white/40 text-xs">
+                {today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
+              {!hasActiveSprint && (
+                <>
+                  <span className="text-white/20 text-xs">·</span>
+                  <p className="label-sm text-white/30 italic text-xs">Free day</p>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Delete Button (Only visible if log exists) */}
           {currentLogId && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="text-white/20 hover:text-bullshit-crimson hover:bg-bullshit-crimson/10 transition-colors"
+              className="text-white/20 hover:text-bullshit-crimson hover:bg-bullshit-crimson/10 transition-colors shrink-0"
               onClick={() => setShowDeleteConfirm(true)}
               disabled={isPending || isSaving || isDeleting}
             >
@@ -265,26 +211,33 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
           )}
         </div>
 
-        {/* Top Row: Main Focus + Promises */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 1. Main Focus Goal */}
-          <GlassPanel className="p-6 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="metric-label">Main Focus</Label>
-                <Trophy className="h-4 w-4 text-action-emerald/40 group-hover:text-action-emerald/60 transition-colors" />
+        {/* ── Sprint section: Focus Goal ── */}
+        {hasActiveSprint && (
+          <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-3.5 w-3.5 text-action-emerald/50 group-hover:text-action-emerald/70 transition-colors" />
+                <Label className="metric-label text-white/40 group-hover:text-white/50 transition-colors text-xs uppercase tracking-widest">
+                  Today&apos;s Focus
+                </Label>
               </div>
+            </div>
+            {goals.length > 0 ? (
               <Controller
                 control={form.control}
                 name="mainGoalId"
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-full bg-white/5 border-white/5 h-12 text-sm text-white focus:ring-0 focus:ring-offset-0 hover:bg-white/[0.07] transition-colors">
+                    <SelectTrigger className="w-full bg-white/5 border-white/8 h-11 text-sm text-white focus:ring-0 focus:ring-offset-0 hover:bg-white/[0.07] transition-colors rounded-xl">
                       <SelectValue placeholder="Select today's focus..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0c0c0e] border-white/10">
+                    <SelectContent className="bg-[#1a1a1e] border-white/15 shadow-xl">
                       {goals.map((g: SprintGoal) => (
-                        <SelectItem key={g.id} value={g.id} className="text-sm focus:bg-white/5 hover:bg-white/5">
+                        <SelectItem
+                          key={g.id}
+                          value={g.id}
+                          className="text-sm text-white focus:bg-white/10 focus:text-white hover:bg-white/10 cursor-pointer"
+                        >
                           {g.goalText}
                         </SelectItem>
                       ))}
@@ -292,76 +245,101 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
                   </Select>
                 )}
               />
-            </div>
+            ) : (
+              <p className="text-sm text-white/30 italic">No goals in this sprint yet.</p>
+            )}
           </GlassPanel>
+        )}
 
-          {/* 2. Promises Kept */}
-          <GlassPanel className="p-6 space-y-5 border-white/10 ring-1 ring-white/5 hover:border-white/[0.15] transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                Promises <span className="text-action-emerald font-mono text-xs">({keptCount}/{totalCount})</span>
-              </h3>
-            </div>
-
-            <div className="grid gap-2 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-              {scheduledPromises.length > 0 ? scheduledPromises.map((promise: SprintPromise) => (
-                <Controller
-                  key={promise.id}
-                  control={form.control}
-                  name={`promiseCompletions.${promise.id}`}
-                  render={({ field }) => (
-                    <div
-                      onClick={() => field.onChange(!field.value)}
-                      className={cn(
-                        "p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all duration-200 active:scale-[0.98]",
-                        field.value
-                          ? "bg-action-emerald/[0.08] border-action-emerald/30 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
-                          : "bg-white/[0.03] border-white/5 hover:border-white/10 hover:bg-white/[0.05]"
-                      )}
-                    >
-                      <div className={cn(
-                        "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all duration-200",
-                        field.value ? "bg-action-emerald border-action-emerald text-[#09090b] scale-110" : "border-white/20 bg-white/5"
-                      )}>
-                        {field.value && <CheckCircle2 className="h-3 w-3 fill-current" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn("text-xs font-medium truncate transition-colors", field.value ? "text-white" : "text-zinc-500")}>{promise.text}</p>
-                      </div>
-                    </div>
-                  )}
-                />
-              )) : (
-                <div className="p-8 text-center border border-dashed border-white/5 rounded-2xl">
-                  <p className="text-xs text-white/20 italic">No protocols scheduled</p>
-                </div>
+        {/* ── Protocols Checklist ── */}
+        {hasActiveSprint && (
+          <GlassPanel className="p-5 border-white/8 hover:border-white/[0.12] transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-action-emerald/50" />
+                <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Protocols</h3>
+              </div>
+              {totalCount > 0 && (
+                <span className={cn(
+                  "text-xs font-mono px-2.5 py-0.5 rounded-full border transition-all duration-300",
+                  keptCount === totalCount && totalCount > 0
+                    ? "bg-action-emerald/15 border-action-emerald/30 text-action-emerald"
+                    : "bg-white/5 border-white/10 text-white/30"
+                )}>
+                  {keptCount}/{totalCount}
+                </span>
               )}
             </div>
-          </GlassPanel>
-        </div>
 
-        {/* 3. Energy & Blocker Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {scheduledPromises.length > 0 ? (
+              <div className="grid gap-2">
+                {scheduledPromises.map((promise: SprintPromise) => (
+                  <Controller
+                    key={promise.id}
+                    control={form.control}
+                    name={`promiseCompletions.${promise.id}`}
+                    render={({ field }) => (
+                      <div
+                        onClick={() => field.onChange(!field.value)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-all duration-200 active:scale-[0.98]",
+                          field.value
+                            ? "bg-action-emerald/[0.07] border-action-emerald/25"
+                            : "bg-white/[0.02] border-white/[0.06] hover:border-white/10 hover:bg-white/[0.04]"
+                        )}
+                      >
+                        {/* Custom checkbox */}
+                        <div className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border transition-all duration-200",
+                          field.value ? "bg-action-emerald border-action-emerald" : "border-white/20 bg-transparent"
+                        )}>
+                          {field.value && (
+                            <svg className="h-2.5 w-2.5 text-black" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
+                            </svg>
+                          )}
+                        </div>
+                        <p className={cn(
+                          "text-xs font-medium transition-colors leading-snug",
+                          field.value ? "text-white/80" : "text-white/35"
+                        )}>{promise.text}</p>
+                      </div>
+                    )}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center border border-dashed border-white/[0.06] rounded-xl">
+                <p className="text-xs text-white/20 italic">No protocols scheduled for today</p>
+              </div>
+            )}
+          </GlassPanel>
+        )}
+
+        {/* ── Vitals Row: Energy / Sleep / Exercise ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Energy */}
-          <GlassPanel className="p-6 space-y-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
-            <Label className="metric-label text-white/30 group-hover:text-white/40 transition-colors block">
-              Energy Level <span className="text-white/20">· Optional</span>
-            </Label>
+          <GlassPanel className="p-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap className="h-3 w-3 text-white/30 group-hover:text-white/45 transition-colors shrink-0" />
+              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Energy</Label>
+              <span className="ml-auto text-[10px] text-white/20">Required</span>
+            </div>
             <Controller
               control={form.control}
               name="energy"
               render={({ field }) => (
-                <div className="flex gap-3 justify-between">
+                <div className="flex gap-2 justify-between">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <button
                       key={i}
                       type="button"
                       onClick={() => field.onChange(i)}
                       className={cn(
-                        "h-9 w-9 rounded-full border transition-all duration-200 flex items-center justify-center font-mono text-xs hover:scale-110",
+                        "h-9 w-9 rounded-lg border transition-all duration-150 flex items-center justify-center font-mono text-xs hover:scale-105 active:scale-95",
                         field.value === i
-                          ? "bg-white border-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-110"
-                          : "border-white/10 bg-white/5 text-white/30 hover:border-white/20 hover:bg-white/10"
+                          ? "bg-white border-white text-black shadow-[0_0_16px_rgba(255,255,255,0.25)] scale-105"
+                          : "border-white/8 bg-white/[0.03] text-white/25 hover:border-white/15 hover:bg-white/[0.06]"
                       )}
                     >
                       {i}
@@ -372,75 +350,114 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
             />
           </GlassPanel>
 
-          {/* Blocker */}
-          <GlassPanel className="p-6 space-y-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
-            <div className="flex items-center justify-between">
-              <Label className="metric-label text-white/30 group-hover:text-white/40 transition-colors">
-                Primary Blocker <span className="text-white/20">· Optional</span>
-              </Label>
-              <AlertTriangle className="h-4 w-4 text-bullshit-crimson/30 group-hover:text-bullshit-crimson/40 transition-colors" />
+          {/* Sleep */}
+          <GlassPanel className="p-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-4">
+              <Moon className="h-3 w-3 text-white/30 group-hover:text-white/45 transition-colors shrink-0" />
+              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Sleep</Label>
             </div>
-            <Controller
-              control={form.control}
-              name="blockerTag"
-              render={({ field }) => (
-                <Select
-                  onValueChange={(val) => field.onChange(val !== "NONE" ? val as BlockerTag : undefined)}
-                  value={field.value || "NONE"}
-                >
-                  <SelectTrigger className="w-full bg-white/5 border-white/5 h-12 text-sm text-white hover:bg-white/[0.07] transition-colors">
-                    <SelectValue placeholder="No Blocker" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#0c0c0e] border-white/10">
-                    <SelectItem value="NONE" className="text-sm">No Blocker</SelectItem>
-                    <SelectItem value={BlockerTag.ENERGY} className="text-sm">Energy</SelectItem>
-                    <SelectItem value={BlockerTag.TIME} className="text-sm">Time</SelectItem>
-                    <SelectItem value={BlockerTag.MOTIVATION} className="text-sm">Motivation</SelectItem>
-                    <SelectItem value={BlockerTag.EXTERNAL} className="text-sm">External</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+            <div className="relative">
+              <Input
+                type="number"
+                step="0.5"
+                min={0}
+                max={24}
+                {...form.register("sleepHours", { valueAsNumber: true })}
+                placeholder="7.5"
+                className="bg-white/[0.04] border-white/8 h-10 text-sm text-white placeholder:text-white/15 focus:border-white/15 focus:bg-white/[0.06] pr-10 rounded-lg"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 pointer-events-none">h</span>
+            </div>
+          </GlassPanel>
+
+          {/* Exercise */}
+          <GlassPanel className="p-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="h-3 w-3 text-white/30 group-hover:text-white/45 transition-colors shrink-0" />
+              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Exercise</Label>
+            </div>
+            <div className="relative">
+              <Input
+                type="number"
+                min={0}
+                max={480}
+                {...form.register("exerciseMinutes", { valueAsNumber: true })}
+                placeholder="30"
+                className="bg-white/[0.04] border-white/8 h-10 text-sm text-white placeholder:text-white/15 focus:border-white/15 focus:bg-white/[0.06] pr-12 rounded-lg"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 pointer-events-none">min</span>
+            </div>
+          </GlassPanel>
+        </div>
+
+        {/* ── Small Wins + Drain ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Small Wins */}
+          <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle2 className="h-3.5 w-3.5 text-action-emerald/40 group-hover:text-action-emerald/60 transition-colors shrink-0" />
+              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Small Wins</Label>
+            </div>
+            <Textarea
+              {...form.register("win")}
+              placeholder="What went well today?"
+              maxLength={300}
+              className="bg-white/[0.03] border-white/[0.06] min-h-[64px] focus:min-h-[96px] transition-all duration-300 text-sm text-white resize-none focus:ring-0 focus:border-white/10 focus:bg-white/[0.06] rounded-xl py-3 px-4 placeholder:text-white/15"
+            />
+          </GlassPanel>
+
+          {/* Drain */}
+          <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-3.5 w-3.5 text-bullshit-crimson/40 group-hover:text-bullshit-crimson/60 transition-colors shrink-0" />
+              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Drain</Label>
+            </div>
+            <Textarea
+              {...form.register("drain")}
+              placeholder="What drained or blocked you?"
+              maxLength={300}
+              className="bg-white/[0.03] border-white/[0.06] min-h-[64px] focus:min-h-[96px] transition-all duration-300 text-sm text-white resize-none focus:ring-0 focus:border-white/10 focus:bg-white/[0.06] rounded-xl py-3 px-4 placeholder:text-white/15"
             />
           </GlassPanel>
         </div>
 
-        {/* 4. Field Notes */}
-        <GlassPanel className="p-6 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
-          <div className="flex justify-between items-center mb-4">
-            <Label className="metric-label text-white/30 group-hover:text-white/40 transition-colors">
-              Field Notes <span className="text-white/20">· Optional</span>
-            </Label>
-            <span className="label-sm text-white/20 italic">Progression Log</span>
+        {/* ── Field Notes ── */}
+        <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="h-3.5 w-3.5 text-white/25 group-hover:text-white/40 transition-colors shrink-0" />
+            <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Field Notes</Label>
+            <span className="ml-auto text-[10px] text-white/15 italic">Optional</span>
           </div>
           <Textarea
             {...form.register("note")}
-            placeholder="Brief insights, observations, or notes about today's work..."
-            maxLength={140}
-            className="bg-white/5 border-white/5 min-h-[60px] focus:min-h-[120px] transition-all duration-300 text-sm text-white resize-none focus:ring-0 focus:border-white/10 focus:bg-white/[0.07] rounded-xl py-3 px-4"
+            placeholder="Insights, observations, anything that doesn't fit elsewhere..."
+            maxLength={500}
+            className="bg-white/[0.03] border-white/[0.06] min-h-[72px] focus:min-h-[120px] transition-all duration-300 text-sm text-white resize-none focus:ring-0 focus:border-white/10 focus:bg-white/[0.06] rounded-xl py-3 px-4 placeholder:text-white/15"
           />
         </GlassPanel>
 
-        {/* Submit Button - Sticky on mobile, aligned on desktop */}
-        <div className="flex justify-end pt-8 md:relative fixed bottom-0 left-0 right-0 md:p-0 p-4 bg-transparent z-10">
+        {/* ── Submit ── */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 z-10 md:relative md:p-0 md:flex md:justify-end md:pt-4">
+          <div className="md:hidden absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent pointer-events-none -z-[1]" />
           <Button
             type="submit"
             disabled={isPending}
             className={cn(
-              "h-14 px-12 button-text font-bold rounded-2xl transition-all duration-300 active:scale-95 w-full md:w-auto shadow-lg",
+              "w-full md:w-auto h-13 px-10 button-text font-bold rounded-2xl transition-all duration-300 active:scale-95 shadow-lg",
               "bg-action-emerald hover:bg-action-emerald/90 text-[#09090b]",
-              "hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]",
+              "hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]",
               "border border-action-emerald/20"
             )}
           >
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Processing...
+                Saving...
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Log Entry
+                {isNewEntry ? "Save Log" : "Update Log"}
               </>
             )}
           </Button>
@@ -450,9 +467,9 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
       <ConfirmDialog
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
-        title="Delete Daily Audit?"
+        title="Delete Daily Log?"
         description="This action cannot be undone. This daily log will be permanently removed."
-        confirmText="Delete Audit"
+        confirmText="Delete Log"
         variant="destructive"
         onConfirm={handleDelete}
         isLoading={isDeleting}

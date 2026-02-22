@@ -48,7 +48,7 @@ export const getSprintGoals = unstable_cache(
  */
 export async function createSprintGoalWithPromises(
     sprintId: string,
-    goalId: string,
+    goalId: string | null,
     goalText: string,
     sortOrder: number,
     promisesData: {

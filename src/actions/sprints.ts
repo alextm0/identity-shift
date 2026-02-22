@@ -45,10 +45,10 @@ export const startSprintAction = createAction(
             active: true,
             createdAt: new Date(),
             updatedAt: new Date(),
-            goals: validated.goals.map(g => ({
+            goals: (validated.goals || []).map(g => ({
                 ...g,
-                goalText: sanitizeText(g.goalText, 500),
-                promises: g.promises.map(p => ({
+                goalText: sanitizeText(g.goalText || "", 500),
+                promises: (g.promises || []).map(p => ({
                     ...p,
                     text: sanitizeText(p.text, 200)
                 }))
@@ -102,8 +102,8 @@ export const updateSprintAction = createActionWithParam(
         if (validated.goals) {
             updateData.goals = validated.goals.map(g => ({
                 ...g,
-                goalText: sanitizeText(g.goalText, 500),
-                promises: g.promises.map(p => ({
+                goalText: sanitizeText(g.goalText || "", 500),
+                promises: (g.promises || []).map(p => ({
                     ...p,
                     text: sanitizeText(p.text, 200)
                 }))

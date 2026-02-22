@@ -98,9 +98,9 @@ export type PromiseData = z.infer<typeof PromiseSchema>;
 // Sprint Goal schema
 export const SprintGoalSchema = z.object({
     id: z.string().uuid().optional(),
-    goalId: z.string().uuid(),       // References annualGoals[].id from planning
-    goalText: z.string(),
-    promises: z.array(PromiseSchema).min(1).max(4),
+    goalId: z.string().uuid().optional(), // Optional: link to planning goals (legacy/future use)
+    goalText: z.string().min(1, "Goal text is required"),
+    promises: z.array(PromiseSchema).max(4).default([]),
 });
 export type SprintGoalData = z.infer<typeof SprintGoalSchema>;
 
@@ -115,11 +115,15 @@ export type PromiseLogData = z.infer<typeof PromiseLogSchema>;
 // Daily Audit schema
 export const DailyAuditSchema = z.object({
     date: z.date(),
-    mainGoalId: z.string().uuid(),  // Required: today's focus goal
-    promiseCompletions: z.record(z.string(), z.boolean()), // {promiseId: completed}
+    mainGoalId: z.string().uuid().optional(),             // Optional: today's sprint focus goal
+    promiseCompletions: z.record(z.string(), z.boolean()).optional().default({}), // {promiseId: completed}
     energy: z.number().min(1).max(5).optional(),
+    sleepHours: z.number().min(0).max(24).optional(),
+    exerciseMinutes: z.number().min(0).max(480).optional(),
     blockerTag: z.nativeEnum(BlockerTag).nullish(),
-    note: z.string().max(140).optional(),
+    win: z.string().max(300).optional(),   // One win today
+    drain: z.string().max(300).optional(), // One thing that drained you
+    note: z.string().max(500).optional(),
 });
 export type DailyAuditData = z.infer<typeof DailyAuditSchema>;
 
@@ -128,11 +132,7 @@ export const UpdateDailyLogSchema = z.object({
     logId: z.string().uuid(),
     energy: z.number().min(1).max(5).optional(),
     sleepHours: z.number().min(0).max(24).optional(),
-    mainFocusCompleted: z.boolean().optional(),
-    morningGapMin: z.number().min(0).max(1440).optional(),
-    distractionMin: z.number().min(0).max(1440).optional(),
-    priorities: z.record(z.string(), DailyPriorityLogSchema).optional(),
-    proofOfWork: z.array(ProofOfWorkSchema).optional(),
+    exerciseMinutes: z.number().min(0).max(480).optional(),
     win: z.string().max(500).optional(),
     drain: z.string().max(500).optional(),
     note: z.string().max(500).optional(),
@@ -160,8 +160,8 @@ export const BaseSprintFormSchema = z.object({
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().min(1, "End date is required"),
     goals: z.array(CreateSprintGoalSchema)
-        .min(1, "At least one goal is required")
-        .max(3, "Focus on no more than 3 goals per sprint"),
+        .max(3, "Focus on no more than 3 goals per sprint")
+        .default([]),
 });
 
 export const SprintFormSchema = BaseSprintFormSchema.refine(

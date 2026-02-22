@@ -186,8 +186,8 @@ export const sprint = pgTable('sprint', {
 export const sprintGoal = pgTable('sprintGoal', {
     id: text('id').primaryKey(),
     sprintId: text('sprintId').notNull().references(() => sprint.id, { onDelete: 'cascade' }),
-    goalId: text('goalId').notNull(),           // References annualGoals[].id from planning
-    goalText: text('goalText').notNull(),         // Denormalized for display
+    goalId: text('goalId'),                  // Optional: references annualGoals from planning (legacy/future)
+    goalText: text('goalText').notNull(),     // Denormalized for display
     sortOrder: integer('sortOrder').notNull(),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
@@ -223,7 +223,7 @@ export const sprintPriority = pgTable('sprintPriority', {
 export const dailyLog = pgTable('dailyLog', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().references(() => users.id),
-    sprintId: text('sprintId').references(() => sprint.id),
+    sprintId: text('sprintId').references(() => sprint.id, { onDelete: 'set null' }),
     date: timestamp('date').notNull(), // format: YYYY-MM-DD
     energy: integer('energy').notNull(), // 1-5
     sleepHours: integer('sleepHours'), // optional: hours or null
@@ -239,13 +239,15 @@ export const dailyLog = pgTable('dailyLog', {
     priorities: json('priorities'), // made optional
     proofOfWork: json('proofOfWork'), // made optional
 
-    win: text('win'), // optional: one-liner
-    drain: text('drain'), // optional: one-liner
+    win: text('win'), // optional: one-liner win
+    drain: text('drain'), // optional: one-liner drain/blocker
     note: text('note'), // optional: general note
+    progressRating: integer('progressRating'), // optional: 1-5 self-assessed progress
+    exerciseMinutes: integer('exerciseMinutes'), // optional: exercise minutes
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => ({
-    uniqueUserSprintDate: uniqueIndex('dailyLog_userId_sprintId_date_idx').on(table.userId, table.sprintId, table.date),
+    uniqueUserDate: uniqueIndex('dailyLog_userId_date_idx').on(table.userId, table.date),
     dailyLogSprintDateIdx: index('dailyLog_sprintId_date_idx').on(table.sprintId, table.date),
 }));
 
@@ -268,7 +270,7 @@ export const promiseLog = pgTable('promiseLog', {
 export const weeklyReview = pgTable('weeklyReview', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().references(() => users.id),
-    sprintId: text('sprintId').references(() => sprint.id),
+    sprintId: text('sprintId').references(() => sprint.id, { onDelete: 'set null' }),
     weekEndDate: timestamp('weekEndDate').notNull(),
     progressRatios: json('progressRatios').notNull(), // JSON: {priorityKey: ratio}
     evidenceRatio: integer('evidenceRatio').notNull(), // 0-100 %
@@ -286,7 +288,7 @@ export const weeklyReview = pgTable('weeklyReview', {
 export const monthlyReview = pgTable('monthlyReview', {
     id: text('id').primaryKey(),
     userId: text('userId').notNull().references(() => users.id),
-    sprintId: text('sprintId').references(() => sprint.id),
+    sprintId: text('sprintId').references(() => sprint.id, { onDelete: 'set null' }),
     month: text('month').notNull(), // YYYY-MM
     whoWereYou: text('whoWereYou'), // optional: identity description
     desiredIdentity: text('desiredIdentity'), // 'yes'|'partially'|'no'

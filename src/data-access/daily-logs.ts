@@ -169,15 +169,18 @@ export const getCurrentWeekLogs = unstable_cache(
 
 export async function saveDailyAudit(
     userId: string,
-    sprintId: string,
+    sprintId: string | null,
     data: {
         date: Date;
-        mainGoalId: string;
+        mainGoalId?: string;
         energy?: number;
+        sleepHours?: number;
+        exerciseMinutes?: number;
         blockerTag?: string;
+        win?: string;
+        drain?: string;
         note?: string;
-        promiseCompletions: Record<string, boolean>;
-        proofOfWork?: ProofOfWork[];
+        promiseCompletions?: Record<string, boolean>;
     }
 ) {
     return await withDatabaseErrorHandling(
@@ -200,9 +203,12 @@ export async function saveDailyAudit(
                     await tx.update(dailyLog).set({
                         mainGoalId: data.mainGoalId,
                         energy: data.energy !== undefined ? data.energy : 3,
+                        sleepHours: data.sleepHours,
+                        exerciseMinutes: data.exerciseMinutes,
                         blockerTag: data.blockerTag,
+                        win: data.win,
+                        drain: data.drain,
                         note: data.note,
-                        proofOfWork: data.proofOfWork,
                         updatedAt: new Date(),
                     }).where(eq(dailyLog.id, dailyLogId));
                 } else {
@@ -213,17 +219,20 @@ export async function saveDailyAudit(
                         date: normalizedDate,
                         mainGoalId: data.mainGoalId,
                         energy: data.energy !== undefined ? data.energy : 3,
+                        sleepHours: data.sleepHours,
+                        exerciseMinutes: data.exerciseMinutes,
                         blockerTag: data.blockerTag,
+                        win: data.win,
+                        drain: data.drain,
                         note: data.note,
-                        proofOfWork: data.proofOfWork,
                     }).returning();
 
                     if (!newLog) throw new Error("Failed to create daily log");
                     dailyLogId = newLog.id;
                 }
 
-                // 2. Upsert Promise Logs
-                const promiseIds = Object.keys(data.promiseCompletions);
+                // 2. Upsert Promise Logs (only when promise completions are provided)
+                const promiseIds = Object.keys(data.promiseCompletions || {});
 
                 if (promiseIds.length > 0) {
                     // We can use a batch insert or sequential. 
@@ -238,11 +247,11 @@ export async function saveDailyAudit(
                             promiseId: pid,
                             date: normalizedDate,
                             dailyLogId: dailyLogId,
-                            completed: data.promiseCompletions[pid],
+                            completed: data.promiseCompletions![pid],
                         }).onConflictDoUpdate({
                             target: [promiseLog.promiseId, promiseLog.date],
                             set: {
-                                completed: data.promiseCompletions[pid],
+                                completed: data.promiseCompletions![pid],
                                 dailyLogId: dailyLogId,
                             }
                         });

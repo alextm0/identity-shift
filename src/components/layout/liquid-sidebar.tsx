@@ -16,7 +16,8 @@ import {
   MoreVertical,
   Activity,
   X,
-  ChevronRight
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import {
   Dialog,
@@ -37,11 +38,14 @@ const isItemActive = (href: string, pathname: string) => {
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 
-const navItems: NavItem[] = [
+const coreNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Identity Shift", shortLabel: "Home", href: "/dashboard" },
-  { icon: Sparkles, label: "Planning", shortLabel: "Plan", href: "/dashboard/planning" },
   { icon: Target, label: "Sprint", shortLabel: "Sprint", href: "/dashboard/sprint" },
-  { icon: Calendar, label: "Daily Audit", shortLabel: "Daily", href: "/dashboard/daily" },
+  { icon: Calendar, label: "Daily Log", shortLabel: "Daily", href: "/dashboard/daily" },
+];
+
+const advancedNavItems: NavItem[] = [
+  { icon: Sparkles, label: "Planning", shortLabel: "Plan", href: "/dashboard/planning" },
   { icon: CalendarDays, label: "Weekly Review", shortLabel: "Weekly", href: "/dashboard/weekly" },
   { icon: CalendarRange, label: "Monthly Review", shortLabel: "Monthly", href: "/dashboard/monthly" },
 ];
@@ -220,6 +224,7 @@ function MobileMoreMenu({ pathname, navItems }: { pathname: string; navItems: Na
 
 export function LiquidSidebar() {
   const pathname = usePathname();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   return (
     <>
@@ -252,7 +257,7 @@ export function LiquidSidebar() {
 
         {/* Navigation Items - Liquid Pods */}
         <nav className="flex-1 flex flex-col gap-4 w-full px-3">
-          {navItems.map((item) => {
+          {coreNavItems.map((item) => {
             const isActive = isItemActive(item.href, pathname);
             return (
               <Link
@@ -303,12 +308,66 @@ export function LiquidSidebar() {
                   <div className="flex flex-col gap-0.5 relative z-10">
                     <div className="label text-[13px] text-white tracking-wider font-semibold">{item.label}</div>
                   </div>
-
-                  {/* Tooltip glow */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-focus-violet/10 to-transparent opacity-40" />
-
-                  {/* Decorative corner accent */}
                   <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent rounded-tr-2xl" />
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Separator + Advanced toggle */}
+          <div className="w-10 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mx-auto my-2" />
+
+          {/* Advanced toggle button */}
+          <button
+            onClick={() => setAdvancedOpen(v => !v)}
+            className="group relative flex justify-center w-full"
+            aria-label="Advanced features"
+            title="Advanced"
+          >
+            <div className={cn(
+              "relative p-3 rounded-2xl transition-all duration-500 flex items-center justify-center overflow-hidden",
+              advancedOpen
+                ? "bg-white/[0.07] text-white/60 border border-white/10"
+                : "text-white/20 hover:text-white/50 hover:bg-white/[0.04] border border-transparent hover:border-white/[0.08]"
+            )}>
+              <ChevronDown className={cn(
+                "h-4 w-4 transition-all duration-300",
+                advancedOpen ? "rotate-180 text-white/60" : "text-white/20"
+              )} />
+            </div>
+            {/* Tooltip */}
+            <div className="absolute left-full ml-5 px-5 py-3.5 bg-[#0C0C12]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none whitespace-nowrap z-[100] shadow-[0_15px_45px_rgba(0,0,0,0.7)] group-hover:translate-x-0 -translate-x-4">
+              <div className="label text-[13px] text-white/60 tracking-wider">Advanced</div>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/5 to-transparent opacity-40" />
+            </div>
+          </button>
+
+          {/* Advanced nav items - shown when expanded */}
+          {advancedOpen && advancedNavItems.map((item) => {
+            const isActive = isItemActive(item.href, pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group relative flex justify-center"
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {isActive && (
+                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-white/30 rounded-r-full z-20" />
+                )}
+                <div className={cn(
+                  "relative p-3.5 rounded-2xl transition-all duration-500 flex items-center justify-center overflow-hidden",
+                  isActive
+                    ? "bg-white/10 text-white/70 border border-white/20"
+                    : "text-white/30 hover:text-white/60 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08] active:scale-90"
+                )}>
+                  <item.icon className="h-4.5 w-4.5 transition-all duration-500 relative z-10" />
+                </div>
+                <div className="absolute left-full ml-5 px-5 py-3.5 bg-[#0C0C12]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none whitespace-nowrap z-[100] shadow-[0_15px_45px_rgba(0,0,0,0.7)] group-hover:translate-x-0 -translate-x-4">
+                  <div className="label text-[12px] text-white/60 tracking-wider">{item.label}</div>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/5 to-transparent opacity-40" />
                 </div>
               </Link>
             );
@@ -365,8 +424,8 @@ export function LiquidSidebar() {
         {/* Superior reflection highlight */}
         <div className="absolute top-0 inset-x-10 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-        {/* Core navigation items - first 4 */}
-        {navItems.slice(0, 4).map((item) => {
+        {/* Core navigation items (all 3 core) */}
+        {coreNavItems.map((item) => {
           const isActive = isItemActive(item.href, pathname);
           return (
             <Link
@@ -413,8 +472,8 @@ export function LiquidSidebar() {
           );
         })}
 
-        {/* More Menu Module */}
-        <MobileMoreMenu pathname={pathname} navItems={navItems.slice(4)} />
+        {/* More Menu Module with advanced items only */}
+        <MobileMoreMenu pathname={pathname} navItems={advancedNavItems} />
       </nav>
     </>
   );

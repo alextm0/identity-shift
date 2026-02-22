@@ -16,87 +16,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ProgressBar } from "@/components/daily/progress-bar";
-import { ProofInput } from "@/components/daily/proof-input";
 import { toast } from "sonner";
-import { Save, Loader2, Trophy, Flame } from "lucide-react";
+import { Save, Loader2, Zap, Moon, Activity, Trophy, AlertTriangle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DailyLog, SprintWithPriorities } from "@/lib/types";
+import { DailyLog } from "@/lib/types";
 import { useRouter } from "next/navigation";
-import { toDailyLogWithTypedFields } from "@/lib/type-helpers";
 
-// Legacy schema for editing existing daily logs with all fields
-const LegacyDailyLogEditSchema = z.object({
-  date: z.date(),
-  energy: z.number().min(1).max(10),
-  sleepHours: z.number().optional(),
-  mainFocusCompleted: z.boolean().optional(),
-  morningGapMin: z.number().optional(),
-  distractionMin: z.number().optional(),
-  priorities: z.record(z.string(), z.object({
-    done: z.boolean(),
-    units: z.number()
-  })).optional(),
-  proofOfWork: z.array(z.object({
-    type: z.string(),
-    value: z.string(),
-    url: z.string().optional()
-  })).optional(),
-  win: z.string().optional(),
-  drain: z.string().optional(),
-  note: z.string().optional(),
+// Minimalist schema for editing daily logs
+const DailyLogEditSchema = z.object({
+  energy: z.number().min(1).max(5),
+  sleepHours: z.number().min(0).max(24).optional(),
+  exerciseMinutes: z.number().min(0).max(480).optional(),
+  win: z.string().max(300).optional(),
+  drain: z.string().max(300).optional(),
+  note: z.string().max(500).optional(),
 });
 
-type LegacyDailyLogEditData = z.infer<typeof LegacyDailyLogEditSchema>;
+type DailyLogEditData = z.infer<typeof DailyLogEditSchema>;
 
 interface DailyLogEditModalProps {
   log: DailyLog;
-  activeSprint?: SprintWithPriorities;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: DailyLogEditModalProps) {
+export function DailyLogEditModal({ log, open, onOpenChange }: DailyLogEditModalProps) {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
-  const priorities = activeSprint?.priorities || [];
-  const typedLog = toDailyLogWithTypedFields(log);
 
-  const form = useForm<LegacyDailyLogEditData>({
-    resolver: zodResolver(LegacyDailyLogEditSchema),
+  const form = useForm<DailyLogEditData>({
+    resolver: zodResolver(DailyLogEditSchema),
     defaultValues: {
-      date: new Date(log.date),
-      energy: log.energy,
-      sleepHours: log.sleepHours || 7,
-      mainFocusCompleted: log.mainFocusCompleted ?? undefined,
-      morningGapMin: log.morningGapMin || 0,
-      distractionMin: log.distractionMin || 0,
-      priorities: typedLog.priorities || priorities.reduce((acc, p) => ({
-        ...acc,
-        [p.key]: { done: false, units: 0 }
-      }), {}),
-      proofOfWork: typedLog.proofOfWork || [],
+      energy: log.energy || 3,
+      sleepHours: log.sleepHours || undefined,
+      exerciseMinutes: (log as any).exerciseMinutes || undefined,
       win: log.win || "",
       drain: log.drain || "",
       note: log.note || "",
     },
   });
 
-  async function onSubmit(data: LegacyDailyLogEditData) {
+  async function onSubmit(data: DailyLogEditData) {
     setIsPending(true);
     try {
-      const submissionData = {
-        ...data,
-        priorities: data.priorities ? Object.keys(data.priorities).reduce((acc, key) => ({
-          ...acc,
-          [key]: {
-            ...data.priorities![key],
-            done: data.priorities![key].units > 0
-          }
-        }), {}) : undefined
-      };
-
-      await updateDailyLogByIdAction({ ...submissionData, logId: log.id });
+      await updateDailyLogByIdAction({ ...data, logId: log.id });
       toast.success("Daily log updated successfully");
       onOpenChange(false);
       router.refresh();
@@ -110,296 +73,147 @@ export function DailyLogEditModal({ log, activeSprint, open, onOpenChange }: Dai
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-white uppercase tracking-tight">
-            Edit Daily Entry
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl bg-[#0c0c0e] border-white/10 p-0 overflow-hidden rounded-3xl">
+        <div className="p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
+              <span className="h-8 w-1 bg-action-emerald rounded-full" />
+              Edit Entry <span className="text-white/20 font-light">//</span> <span className="text-white/40 text-sm font-mono">{new Date(log.date).toLocaleDateString()}</span>
+            </DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 space-y-6">
-              <GlassPanel className="p-6 space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-xs font-mono uppercase tracking-widest text-white/60">Energy_Level</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10"
-                    {...form.register("energy", { valueAsNumber: true })}
-                    className="h-10 bg-white/5 border-white/10 text-sm font-medium px-3 focus:bg-white/10 transition-colors"
-                  />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Vitals Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Energy */}
+              <GlassPanel className="p-4 space-y-3 bg-white/[0.02] border-white/5">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-3 w-3 text-white/30" />
+                  <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Energy</Label>
                 </div>
-
-                <div className="space-y-4 pt-4 border-t border-white/5">
-                  <div className="space-y-3">
-                    <Label className="text-xs font-mono uppercase tracking-widest text-white/60">Recovery_Stats</Label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">Sleep Hours</span>
-                        <Input
-                          type="number"
-                          {...form.register("sleepHours", { valueAsNumber: true })}
-                          className="h-10 bg-white/5 border-white/10 text-sm font-medium px-3 focus:bg-white/10 transition-colors"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">Morning Gap</span>
-                        <Input
-                          type="number"
-                          {...form.register("morningGapMin", { valueAsNumber: true })}
-                          className="h-10 bg-white/5 border-white/10 text-sm font-medium px-3 focus:bg-white/10 transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs font-mono uppercase tracking-widest text-white/60">Distraction_Leakage (min)</Label>
-                    <Input
-                      type="number"
-                      {...form.register("distractionMin", { valueAsNumber: true })}
-                      className="h-10 bg-white/5 border-white/10 text-sm font-medium px-3 focus:bg-white/10 transition-colors"
-                    />
-                  </div>
+                <div className="flex justify-between gap-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => form.setValue("energy", i)}
+                      className={cn(
+                        "h-8 w-8 rounded-lg border transition-all duration-200 flex items-center justify-center text-xs font-mono",
+                        form.watch("energy") === i
+                          ? "bg-white border-white text-black shadow-lg scale-105"
+                          : "border-white/10 bg-white/5 text-white/40 hover:border-white/20"
+                      )}
+                    >
+                      {i}
+                    </button>
+                  ))}
                 </div>
               </GlassPanel>
 
-              <GlassPanel className="p-6 bg-focus-violet/5 border-focus-violet/20">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={cn(
-                    "h-8 w-8 rounded-xl flex items-center justify-center transition-all duration-500",
-                    form.watch("mainFocusCompleted") ? "bg-action-emerald shadow-[0_0_20px_rgba(16,185,129,0.4)]" : "bg-white/10"
-                  )}>
-                    <Trophy className={cn("h-4 w-4", form.watch("mainFocusCompleted") ? "text-white" : "text-white/20")} />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-tight">Main Focus</h4>
-                    <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">The Non-Negotiable</p>
-                  </div>
+              {/* Sleep */}
+              <GlassPanel className="p-4 space-y-3 bg-white/[0.02] border-white/5">
+                <div className="flex items-center gap-2">
+                  <Moon className="h-3 w-3 text-white/30" />
+                  <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Sleep</Label>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => form.setValue("mainFocusCompleted", !form.watch("mainFocusCompleted"))}
-                  className={cn(
-                    "w-full py-2 rounded-xl font-mono text-[10px] uppercase tracking-widest border transition-all duration-300",
-                    form.watch("mainFocusCompleted")
-                      ? "bg-action-emerald/20 border-action-emerald/40 text-action-emerald"
-                      : "bg-white/5 border-white/10 text-white/20 hover:bg-white/10"
-                  )}
-                >
-                  {form.watch("mainFocusCompleted") ? "IDENTIFIED_AND_SHIPPED" : "COMPLETE_PRIMARY_NODE"}
-                </button>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    step="0.5"
+                    {...form.register("sleepHours", { valueAsNumber: true })}
+                    className="h-9 bg-white/5 border-white/10 text-sm text-white focus:bg-white/10 pr-8"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/20">h</span>
+                </div>
+              </GlassPanel>
+
+              {/* Exercise */}
+              <GlassPanel className="p-4 space-y-3 bg-white/[0.02] border-white/5">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-3 w-3 text-white/30" />
+                  <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Exercise</Label>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    {...form.register("exerciseMinutes", { valueAsNumber: true })}
+                    className="h-9 bg-white/5 border-white/10 text-sm text-white focus:bg-white/10 pr-10"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/20">min</span>
+                </div>
               </GlassPanel>
             </div>
 
-
-
-            <div className="lg:col-span-2 space-y-4">
-
-              {priorities.length > 0 ? (
-
-                <div className="grid grid-cols-1 gap-4">
-
-                  {priorities.map((priority) => {
-
-                    const proof = form.watch("proofOfWork")?.find((p) => p.type === priority.key) || { type: priority.key, value: "", url: "" };
-
-
-
-                    const updateProof = (field: "value" | "url", content: string) => {
-
-                      const currentProofs = form.getValues("proofOfWork") || [];
-
-                      const index = currentProofs.findIndex((p) => p.type === priority.key);
-
-
-
-                      if (index === -1) {
-
-                        form.setValue("proofOfWork", [
-
-                          ...currentProofs,
-
-                          {
-
-                            type: priority.key,
-
-                            value: field === "value" ? content : "",
-
-                            url: field === "url" ? content : ""
-
-                          }
-
-                        ]);
-
-                      } else {
-
-                        const newProofs = [...currentProofs];
-
-                        newProofs[index] = { ...newProofs[index], [field]: content };
-
-                        form.setValue("proofOfWork", newProofs);
-
-                      }
-
-                    };
-
-
-
-                    return (
-
-                      <GlassPanel key={priority.key} className="p-4">
-
-                        <ProgressBar
-
-                          label={priority.label}
-
-                          value={form.watch(`priorities.${priority.key}.units`) || 0}
-
-                          onChange={(val) => {
-
-                            form.setValue(`priorities.${priority.key}.units`, val);
-
-                            form.setValue(`priorities.${priority.key}.done`, val > 0);
-
-                          }}
-
-                        />
-
-
-
-                        <ProofInput
-
-                          isActive={(form.watch(`priorities.${priority.key}.units`) || 0) > 0}
-
-                          value={proof.value}
-
-                          url={proof.url || ""}
-
-                          onChange={(val) => updateProof("value", val)}
-
-                          onUrlChange={(val) => updateProof("url", val)}
-
-                        />
-
-                      </GlassPanel>
-
-                    );
-
-                  })}
-
+            {/* Wins & Drain */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <GlassPanel className="p-4 space-y-3 bg-white/[0.02] border-white/5">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-3 w-3 text-action-emerald/50" />
+                  <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Small Win</Label>
                 </div>
-
-              ) : (
-
-                <GlassPanel className="p-4 text-center">
-
-                  <p className="text-white/40">Priorities can be set when a sprint is active.</p>
-
-                </GlassPanel>
-
-              )}
-
-
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <GlassPanel className="p-4 space-y-2 border-action-emerald/10">
-
-                  <div className="flex items-center gap-2">
-
-                    <Trophy className="h-3 w-3 text-action-emerald" />
-
-                    <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">The_Win</Label>
-
-                  </div>
-
-                  <Input
-
-                    {...form.register("win")}
-
-                    placeholder="One win today..."
-
-                    className="bg-transparent border-none px-2 text-sm text-white focus:ring-0 placeholder:text-white/10"
-
-                  />
-
-                </GlassPanel>
-
-
-
-                <GlassPanel className="p-4 space-y-2 border-bullshit-crimson/10">
-
-                  <div className="flex items-center gap-2">
-
-                    <Flame className="h-3 w-3 text-bullshit-crimson" />
-
-                    <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">The_Drain</Label>
-
-                  </div>
-
-                  <Input
-
-                    {...form.register("drain")}
-
-                    placeholder="What leaked energy?"
-
-                    className="bg-transparent border-none px-2 text-sm text-white focus:ring-0 placeholder:text-white/10"
-
-                  />
-
-                </GlassPanel>
-
-              </div>
-
-              <GlassPanel className="p-4 space-y-2">
-                <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Note</Label>
                 <Textarea
-                  {...form.register("note")}
-                  placeholder="Additional notes..."
-                  className="bg-white/5 border-white/10 text-sm text-white focus:ring-0 placeholder:text-white/10 resize-none min-h-[80px]"
+                  {...form.register("win")}
+                  className="bg-white/5 border-white/10 text-sm text-white min-h-[80px] resize-none focus:bg-white/10 rounded-xl"
+                  placeholder="Today's win..."
                 />
               </GlassPanel>
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="h-10 px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isPending}
-                  className="h-10 px-6 bg-action-emerald hover:bg-action-emerald/90 text-white font-mono uppercase tracking-widest text-xs"
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </div>
+              <GlassPanel className="p-4 space-y-3 bg-white/[0.02] border-white/5">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-3 w-3 text-bullshit-crimson/50" />
+                  <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Drain</Label>
+                </div>
+                <Textarea
+                  {...form.register("drain")}
+                  className="bg-white/5 border-white/10 text-sm text-white min-h-[80px] resize-none focus:bg-white/10 rounded-xl"
+                  placeholder="Today's drain..."
+                />
+              </GlassPanel>
             </div>
-          </div>
-        </form>
+
+            {/* Field Notes */}
+            <GlassPanel className="p-4 space-y-3 bg-white/[0.02] border-white/5">
+              <div className="flex items-center gap-2">
+                <FileText className="h-3 w-3 text-white/30" />
+                <Label className="text-[10px] font-mono uppercase tracking-widest text-white/40">Field Notes</Label>
+              </div>
+              <Textarea
+                {...form.register("note")}
+                className="bg-white/5 border-white/10 text-sm text-white min-h-[100px] resize-none focus:bg-white/10 rounded-xl"
+                placeholder="Additional insights..."
+              />
+            </GlassPanel>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="h-10 px-6 text-white/40 hover:text-white hover:bg-white/5 rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="h-10 px-8 bg-action-emerald hover:bg-action-emerald/90 text-[#09090b] font-bold rounded-xl shadow-lg shadow-action-emerald/10"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-
-
-
-
-
