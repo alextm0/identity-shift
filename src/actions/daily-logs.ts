@@ -16,7 +16,7 @@ import { revalidateTag } from "next/cache";
 import { revalidateDashboard } from "@/lib/revalidate";
 import { getDailyLogById, deleteDailyLog, saveDailyAudit } from "@/data-access/daily-logs";
 import { logPromiseCompletion } from "@/data-access/promises";
-import { getActiveSprint } from "@/data-access/sprints";
+import { getActiveSprint, getSprintContainingDate } from "@/data-access/sprints";
 import { DailyAuditSchema, QuickPromiseLogSchema, UpdateDailyLogSchema } from "@/lib/validators";
 import { NotFoundError, BusinessRuleError } from "@/lib/errors";
 import { success } from "@/lib/actions/result";
@@ -54,19 +54,42 @@ export const deleteDailyLogAction = createActionWithoutValidation(
 export const saveDailyAuditAction = createAction(
     DailyAuditSchema,
     async (userId, validated) => {
-        const activeSprint = await getActiveSprint(userId);
+        // Find the sprint that was active for this specific log date
+        const sprintContainingDate = await getSprintContainingDate(userId, validated.date);
 
         let sprintId: string | null = null;
 
-        if (activeSprint) {
-            sprintId = activeSprint.id;
+        // Build a Set of valid promise IDs from the sprint for this date.
+        // This is used to filter out stale promise IDs that no longer exist
+        // (e.g., from a previous sprint), preventing FK constraint violations.
+        const validPromiseIds = new Set<string>();
 
-            // If a mainGoalId is provided, validate it belongs to the active sprint
-            if (validated.mainGoalId) {
-                const goalExists = activeSprint.goals.some(goal => goal.id === validated.mainGoalId);
-                if (!goalExists) {
-                    throw new BusinessRuleError("Selected goal does not belong to the active sprint.");
+        if (sprintContainingDate) {
+            sprintId = sprintContainingDate.id;
+
+            // Collect all promise IDs from all goals in the sprint
+            for (const goal of sprintContainingDate.goals) {
+                for (const promise of (goal.promises || [])) {
+                    validPromiseIds.add(promise.id);
                 }
+            }
+
+            // If a mainGoalId is provided, validate it belongs to that specific sprint
+            if (validated.mainGoalId) {
+                const goalExists = sprintContainingDate.goals.some(goal => goal.id === validated.mainGoalId);
+                if (!goalExists) {
+                    // Instead of throwing, just clear the invalid goal ID
+                    validated = { ...validated, mainGoalId: undefined };
+                }
+            }
+        }
+
+        // Filter promiseCompletions to only include IDs that actually exist in
+        // the sprint for this date — silently drop any stale/orphaned IDs
+        const safePromiseCompletions: Record<string, boolean> = {};
+        for (const [pid, completed] of Object.entries(validated.promiseCompletions || {})) {
+            if (validPromiseIds.has(pid)) {
+                safePromiseCompletions[pid] = completed;
             }
         }
 
@@ -75,15 +98,17 @@ export const saveDailyAuditAction = createAction(
             sprintId,
             {
                 date: validated.date,
-                mainGoalId: validated.mainGoalId,
-                energy: validated.energy,
+                // Coerce null → undefined so Drizzle doesn't try to set a null
+                // on columns that only accept string | undefined
+                mainGoalId: validated.mainGoalId ?? undefined,
+                energy: validated.energy ?? 3,
                 sleepHours: validated.sleepHours,
                 exerciseMinutes: validated.exerciseMinutes,
                 blockerTag: validated.blockerTag ?? undefined,
-                win: validated.win,
-                drain: validated.drain,
-                note: validated.note,
-                promiseCompletions: validated.promiseCompletions,
+                win: validated.win || undefined,
+                drain: validated.drain || undefined,
+                note: validated.note || undefined,
+                promiseCompletions: safePromiseCompletions,
             }
         );
 

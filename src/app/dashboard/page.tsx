@@ -34,16 +34,51 @@ async function DashboardContent() {
   const hasCompletedPlanning = planning?.status === 'completed';
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-10 space-y-10">
+    <div className="max-w-[1400px] mx-auto px-0 md:px-8 py-4 md:py-10 space-y-6 md:space-y-10">
       <DashboardHeader sprintName={
         activeSprintsWithMetrics.length > 1
           ? `${activeSprintsWithMetrics.length} Active Sprints`
           : activeSprint?.name ?? "No Active Sprint"
       } />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* Mobile-first: daily CTA always on top */}
+      <div className="block lg:hidden space-y-4">
+        <DailyLogCTA todayStatus={todayStatus} />
+        <PrioritiesWorkflow priorities={prioritiesWithProgress} />
+
+        {/* Secondary items on mobile: single column */}
+        <ConsistencyGrid consistencyData={consistencyData} />
+        <QuickActions
+          completedYearlyReview={completedYearlyReview}
+          hasCompletedPlanning={hasCompletedPlanning}
+        />
+
+        {/* Calendar + Identity Protocol at the bottom on mobile */}
+        <MiniCalendar
+          highlightedDates={datesWithLogs}
+          sprintStart={activeSprint?.startDate ? new Date(activeSprint.startDate) : undefined}
+          sprintEnd={activeSprint?.endDate ? new Date(activeSprint.endDate) : undefined}
+        />
+
+        <GlassPanel className="p-4 border-white/5 bg-white/[0.01] hover:border-focus-violet/20 transition-all duration-700 relative overflow-hidden">
+          <div className="relative z-10 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-focus-violet/10 border border-focus-violet/20 flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5 text-focus-violet" />
+              </div>
+              <h4 className="text-[11px] font-black text-white/90 tracking-tighter lowercase">Identity Protocol</h4>
+            </div>
+            <p className="text-sm font-bold text-white/50 tracking-tight leading-snug">
+              A tiny experiment is a small action repeated for a set number of trials, designed to learn about yourself.
+            </p>
+          </div>
+        </GlassPanel>
+      </div>
+
+      {/* Desktop: 3-column layout */}
+      <div className="hidden lg:grid grid-cols-12 gap-8 items-start">
         {/* Column 1: Metrics & Systems (Left) */}
-        <div className="lg:col-span-3 space-y-8 order-2 lg:order-1">
+        <div className="col-span-3 space-y-8">
           <ConsistencyGrid consistencyData={consistencyData} />
           <QuickActions
             completedYearlyReview={completedYearlyReview}
@@ -52,16 +87,14 @@ async function DashboardContent() {
         </div>
 
         {/* Column 2: Active Protocol & Flow (Center) */}
-        <div className="lg:col-span-6 space-y-8 order-1 lg:order-2">
+        <div className="col-span-6 space-y-8">
           <DailyLogCTA todayStatus={todayStatus} />
-
           <PrioritiesWorkflow priorities={prioritiesWithProgress} />
         </div>
 
         {/* Column 3: Context & Blueprint (Right) */}
-        <div className="lg:col-span-3 space-y-8 order-3">
+        <div className="col-span-3 space-y-8">
           <div className="space-y-4">
-
             <MiniCalendar
               highlightedDates={datesWithLogs}
               sprintStart={activeSprint?.startDate ? new Date(activeSprint.startDate) : undefined}
@@ -92,8 +125,8 @@ async function DashboardContent() {
             </GlassPanel>
           </div>
         </div>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }
 

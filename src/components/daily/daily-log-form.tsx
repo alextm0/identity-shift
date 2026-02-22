@@ -79,42 +79,73 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
     return () => { isMountedRef.current = false; };
   }, []);
 
+  // Sync mainGoalId if it becomes invalid for the current sprint goals
+  const currentGoalId = form.watch("mainGoalId");
+
+  useEffect(() => {
+    if (goals.length > 0 && currentGoalId) {
+      const isValid = goals.some(g => g.id === currentGoalId);
+      if (!isValid) {
+        console.log("Syncing invalid goal ID to first available goal");
+        form.setValue("mainGoalId", goals[0].id);
+      }
+    } else if (goals.length > 0 && !currentGoalId) {
+      form.setValue("mainGoalId", goals[0].id);
+    }
+  }, [goals, currentGoalId, form]);
+
   const watchedData = form.watch();
   const currentLogId = savedLogId || initialData?.id;
   const isNewEntry = !currentLogId;
 
-  // Auto-save for existing entries
+  // Auto-save logic for existing entries
   useEffect(() => {
     if (isNewEntry) return;
     if (isPending || isSaving) return;
 
     const currentDataString = JSON.stringify(watchedData);
+
+    // Don't auto-save if nothing changed
     if (currentDataString === previousDataRef.current) return;
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
+    // Check for previous failures to prevent aggressive looping if there's a business rule error
     saveTimeoutRef.current = setTimeout(async () => {
-      if (saveLockRef.current || isPending || isSaving) return;
-      saveLockRef.current = true;
-      if (!isMountedRef.current) { saveLockRef.current = false; return; }
+      // Re-verify conditions inside timeout
+      if (!isMountedRef.current || saveLockRef.current || isPending || isSaving) return;
 
+      const latestValues = form.getValues();
+      const latestString = JSON.stringify(latestValues);
+      if (latestString === previousDataRef.current) return;
+
+      saveLockRef.current = true;
       setIsSaving(true);
+
       try {
-        await saveDailyAuditAction(watchedData as DailyAuditData);
+        const result = await saveDailyAuditAction(latestValues as DailyAuditData);
         if (isMountedRef.current) {
-          setLastSaved(new Date());
-          previousDataRef.current = currentDataString;
+          if (result.success) {
+            setLastSaved(new Date());
+            previousDataRef.current = latestString;
+          } else {
+            // If it failed due to validation/business rules, still update previousDataRef
+            // to stop the retry loop, but don't set lastSaved emerald pulse
+            console.warn("Auto-save failed validation:", result.error);
+            previousDataRef.current = latestString;
+          }
         }
       } catch (e) {
-        console.error("Auto-save failed", e);
+        console.error("Auto-save network/runtime error:", e);
+        // Note: We don't update previousDataRef on network errors so it CAN retry later
       } finally {
         if (isMountedRef.current) setIsSaving(false);
         saveLockRef.current = false;
       }
-    }, 2000);
+    }, 4000); // 4s delay for auto-save to be less aggressive
 
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [watchedData, isPending, isSaving, isNewEntry]);
+  }, [watchedData, isPending, isSaving, isNewEntry, form]);
 
   async function onSubmit(data: DailyAuditData) {
     if (saveLockRef.current) return;
@@ -168,32 +199,26 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
 
   return (
     <>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-28 md:pb-10">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-12">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-6">
-          <div className="space-y-1">
-            <h1 className="heading-2 uppercase">
-              Daily <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">Log</span>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white/90">
+              Daily <span className="text-white/20 font-light">/</span> <span className="text-action-emerald">Log</span>
             </h1>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
+            <div className="flex items-center gap-3 mt-2">
               <div className={cn(
-                "h-1.5 w-1.5 rounded-full transition-all duration-500 shrink-0",
-                lastSaved ? "bg-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse" : "bg-white/10"
+                "h-1 w-1 rounded-full transition-all duration-500",
+                lastSaved ? "bg-action-emerald shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-white/10"
               )} />
-              <p className="label-sm text-white/30 text-xs">
-                {isSaving ? "Saving..." : lastSaved ? `Saved ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Draft"}
+              <p className="text-[10px] text-white/40 font-mono uppercase tracking-[0.1em]">
+                {isSaving ? "Syncing..." : lastSaved ? `Saved ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Draft"}
               </p>
-              <span className="text-white/20 text-xs">·</span>
-              <p className="label-sm text-white/40 text-xs">
-                {today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+              <span className="text-white/10 text-[10px]">—</span>
+              <p className="text-[10px] text-white/40 font-mono uppercase tracking-[0.1em]">
+                {today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </p>
-              {!hasActiveSprint && (
-                <>
-                  <span className="text-white/20 text-xs">·</span>
-                  <p className="label-sm text-white/30 italic text-xs">Free day</p>
-                </>
-              )}
             </div>
           </div>
 
@@ -202,11 +227,11 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
               type="button"
               variant="ghost"
               size="icon"
-              className="text-white/20 hover:text-bullshit-crimson hover:bg-bullshit-crimson/10 transition-colors shrink-0"
+              className="text-white/10 hover:text-bullshit-crimson hover:bg-bullshit-crimson/5 transition-all shrink-0"
               onClick={() => setShowDeleteConfirm(true)}
               disabled={isPending || isSaving || isDeleting}
             >
-              <Trash2 className="h-5 w-5" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -316,30 +341,29 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
           </GlassPanel>
         )}
 
-        {/* ── Vitals Row: Energy / Sleep / Exercise ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* ── Vitals Grid ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Energy */}
-          <GlassPanel className="p-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+          <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300">
             <div className="flex items-center gap-2 mb-4">
-              <Zap className="h-3 w-3 text-white/30 group-hover:text-white/45 transition-colors shrink-0" />
-              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Energy</Label>
-              <span className="ml-auto text-[10px] text-white/20">Required</span>
+              <Zap className="h-3.5 w-3.5 text-action-emerald" />
+              <Label className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold">Energy</Label>
             </div>
             <Controller
               control={form.control}
               name="energy"
               render={({ field }) => (
-                <div className="flex gap-2 justify-between">
+                <div className="flex justify-between gap-1.5">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <button
                       key={i}
                       type="button"
                       onClick={() => field.onChange(i)}
                       className={cn(
-                        "h-9 w-9 rounded-lg border transition-all duration-150 flex items-center justify-center font-mono text-xs hover:scale-105 active:scale-95",
+                        "h-10 flex-1 rounded-lg border transition-all duration-200 font-mono text-sm font-bold",
                         field.value === i
-                          ? "bg-white border-white text-black shadow-[0_0_16px_rgba(255,255,255,0.25)] scale-105"
-                          : "border-white/8 bg-white/[0.03] text-white/25 hover:border-white/15 hover:bg-white/[0.06]"
+                          ? "bg-action-emerald border-action-emerald text-[#09090b] shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                          : "border-white/5 bg-white/[0.02] text-white/30 hover:border-white/10 hover:bg-white/[0.04]"
                       )}
                     >
                       {i}
@@ -351,43 +375,126 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
           </GlassPanel>
 
           {/* Sleep */}
-          <GlassPanel className="p-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
-            <div className="flex items-center gap-2 mb-4">
-              <Moon className="h-3 w-3 text-white/30 group-hover:text-white/45 transition-colors shrink-0" />
-              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Sleep</Label>
-            </div>
-            <div className="relative">
-              <Input
-                type="number"
-                step="0.5"
-                min={0}
-                max={24}
-                {...form.register("sleepHours", { valueAsNumber: true })}
-                placeholder="7.5"
-                className="bg-white/[0.04] border-white/8 h-10 text-sm text-white placeholder:text-white/15 focus:border-white/15 focus:bg-white/[0.06] pr-10 rounded-lg"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 pointer-events-none">h</span>
-            </div>
-          </GlassPanel>
+          <Controller
+            control={form.control}
+            name="sleepHours"
+            render={({ field }) => {
+              const val = isNaN(field.value as number) ? undefined : field.value as number | undefined;
+              const sleepPresets = [5, 6, 7, 8, 9];
+              const step = 0.5;
+              return (
+                <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Moon className="h-3.5 w-3.5 text-focus-violet" />
+                      <Label className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold">Sleep</Label>
+                    </div>
+                    {val !== undefined && (
+                      <span className="text-[10px] text-white/20 font-mono">{val}h</span>
+                    )}
+                  </div>
+                  {/* Stepper row */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => field.onChange(Math.max(0, (val ?? 0) - step))}
+                      className="h-8 w-8 shrink-0 rounded-lg border border-white/5 bg-white/[0.02] text-white/30 hover:bg-white/[0.06] hover:text-white/60 hover:border-white/10 transition-all text-lg leading-none flex items-center justify-center active:scale-95"
+                    >−</button>
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className={cn(
+                        "text-2xl font-bold font-mono tracking-tight transition-colors",
+                        val !== undefined ? "text-focus-violet" : "text-white/10"
+                      )}>
+                        {val !== undefined ? val : "—"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => field.onChange(Math.min(24, (val ?? 0) + step))}
+                      className="h-8 w-8 shrink-0 rounded-lg border border-white/5 bg-white/[0.02] text-white/30 hover:bg-white/[0.06] hover:text-white/60 hover:border-white/10 transition-all text-lg leading-none flex items-center justify-center active:scale-95"
+                    >+</button>
+                  </div>
+                  {/* Quick presets */}
+                  <div className="flex gap-1.5 justify-between">
+                    {sleepPresets.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => field.onChange(preset)}
+                        className={cn(
+                          "flex-1 h-7 rounded-md border text-[10px] font-mono font-bold transition-all duration-200 active:scale-95",
+                          val === preset
+                            ? "bg-focus-violet/20 border-focus-violet/40 text-focus-violet"
+                            : "border-white/5 bg-white/[0.02] text-white/25 hover:border-white/10 hover:bg-white/[0.04] hover:text-white/50"
+                        )}
+                      >{preset}h</button>
+                    ))}
+                  </div>
+                </GlassPanel>
+              );
+            }}
+          />
 
           {/* Exercise */}
-          <GlassPanel className="p-4 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity className="h-3 w-3 text-white/30 group-hover:text-white/45 transition-colors shrink-0" />
-              <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Exercise</Label>
-            </div>
-            <div className="relative">
-              <Input
-                type="number"
-                min={0}
-                max={480}
-                {...form.register("exerciseMinutes", { valueAsNumber: true })}
-                placeholder="30"
-                className="bg-white/[0.04] border-white/8 h-10 text-sm text-white placeholder:text-white/15 focus:border-white/15 focus:bg-white/[0.06] pr-12 rounded-lg"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 pointer-events-none">min</span>
-            </div>
-          </GlassPanel>
+          <Controller
+            control={form.control}
+            name="exerciseMinutes"
+            render={({ field }) => {
+              const val = isNaN(field.value as number) ? undefined : field.value as number | undefined;
+              const exercisePresets = [15, 30, 45, 60];
+              const step = 5;
+              return (
+                <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-3.5 w-3.5 text-bullshit-crimson/70" />
+                      <Label className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold">Exercise</Label>
+                    </div>
+                    {val !== undefined && val > 0 && (
+                      <span className="text-[10px] text-white/20 font-mono">{val}m</span>
+                    )}
+                  </div>
+                  {/* Stepper row */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => field.onChange(Math.max(0, (val ?? 0) - step))}
+                      className="h-8 w-8 shrink-0 rounded-lg border border-white/5 bg-white/[0.02] text-white/30 hover:bg-white/[0.06] hover:text-white/60 hover:border-white/10 transition-all text-lg leading-none flex items-center justify-center active:scale-95"
+                    >−</button>
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className={cn(
+                        "text-2xl font-bold font-mono tracking-tight transition-colors",
+                        val !== undefined && val > 0 ? "text-bullshit-crimson/80" : "text-white/10"
+                      )}>
+                        {val !== undefined && val > 0 ? `${val}` : "—"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => field.onChange(Math.min(480, (val ?? 0) + step))}
+                      className="h-8 w-8 shrink-0 rounded-lg border border-white/5 bg-white/[0.02] text-white/30 hover:bg-white/[0.06] hover:text-white/60 hover:border-white/10 transition-all text-lg leading-none flex items-center justify-center active:scale-95"
+                    >+</button>
+                  </div>
+                  {/* Quick presets */}
+                  <div className="flex gap-1.5 justify-between">
+                    {exercisePresets.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => field.onChange(preset)}
+                        className={cn(
+                          "flex-1 h-7 rounded-md border text-[10px] font-mono font-bold transition-all duration-200 active:scale-95",
+                          val === preset
+                            ? "bg-bullshit-crimson/15 border-bullshit-crimson/30 text-bullshit-crimson/80"
+                            : "border-white/5 bg-white/[0.02] text-white/25 hover:border-white/10 hover:bg-white/[0.04] hover:text-white/50"
+                        )}
+                      >{preset}m</button>
+                    ))}
+                  </div>
+                </GlassPanel>
+              );
+            }}
+          />
         </div>
 
         {/* ── Small Wins + Drain ── */}
@@ -404,10 +511,10 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
               maxLength={300}
               className="bg-white/[0.03] border-white/[0.06] min-h-[64px] focus:min-h-[96px] transition-all duration-300 text-sm text-white resize-none focus:ring-0 focus:border-white/10 focus:bg-white/[0.06] rounded-xl py-3 px-4 placeholder:text-white/15"
             />
-          </GlassPanel>
+          </GlassPanel >
 
           {/* Drain */}
-          <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+          < GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group" >
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="h-3.5 w-3.5 text-bullshit-crimson/40 group-hover:text-bullshit-crimson/60 transition-colors shrink-0" />
               <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Drain</Label>
@@ -418,11 +525,11 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
               maxLength={300}
               className="bg-white/[0.03] border-white/[0.06] min-h-[64px] focus:min-h-[96px] transition-all duration-300 text-sm text-white resize-none focus:ring-0 focus:border-white/10 focus:bg-white/[0.06] rounded-xl py-3 px-4 placeholder:text-white/15"
             />
-          </GlassPanel>
-        </div>
+          </GlassPanel >
+        </div >
 
         {/* ── Field Notes ── */}
-        <GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group">
+        < GlassPanel className="p-5 bg-white/[0.02] border-white/5 hover:border-white/10 transition-all duration-300 group" >
           <div className="flex items-center gap-2 mb-3">
             <FileText className="h-3.5 w-3.5 text-white/25 group-hover:text-white/40 transition-colors shrink-0" />
             <Label className="text-xs uppercase tracking-widest text-white/30 group-hover:text-white/40 transition-colors">Field Notes</Label>
@@ -436,28 +543,26 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
           />
         </GlassPanel>
 
-        {/* ── Submit ── */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-10 md:relative md:p-0 md:flex md:justify-end md:pt-4">
-          <div className="md:hidden absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent pointer-events-none -z-[1]" />
+        {/* ── Submit Area ── */}
+        <div className="flex justify-end pt-8">
           <Button
             type="submit"
             disabled={isPending}
             className={cn(
-              "w-full md:w-auto h-13 px-10 button-text font-bold rounded-2xl transition-all duration-300 active:scale-95 shadow-lg",
-              "bg-action-emerald hover:bg-action-emerald/90 text-[#09090b]",
-              "hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]",
-              "border border-action-emerald/20"
+              "w-full md:w-auto h-12 px-12 text-sm font-bold rounded-xl transition-all duration-300 active:scale-95",
+              "bg-action-emerald text-[#09090b] hover:bg-action-emerald/90",
+              "border border-white/10 shadow-lg shadow-action-emerald/10"
             )}
           >
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Saving...
+                Processing...
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                {isNewEntry ? "Save Log" : "Update Log"}
+                {isNewEntry ? "Save Daily Log" : "Update Daily Log"}
               </>
             )}
           </Button>

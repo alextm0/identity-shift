@@ -115,7 +115,7 @@ export type PromiseLogData = z.infer<typeof PromiseLogSchema>;
 // Daily Audit schema
 export const DailyAuditSchema = z.object({
     date: z.date(),
-    mainGoalId: z.string().uuid().optional(),             // Optional: today's sprint focus goal
+    mainGoalId: z.string().uuid().nullish(),             // Optional: today's sprint focus goal
     promiseCompletions: z.record(z.string(), z.boolean()).optional().default({}), // {promiseId: completed}
     energy: z.number().min(1).max(5).optional(),
     sleepHours: z.number().min(0).max(24).optional(),

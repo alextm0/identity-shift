@@ -25,35 +25,33 @@ export default async function SprintControlPage() {
   const { activeSprints, allSprints } = await getSprintsData();
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 py-12 px-4 md:px-0">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white uppercase">
-            Sprint <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">Control</span>
-          </h1>
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/40 mt-4">
-            Time-boxed focus units. Max 3 priorities. No distractions.
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-8 py-6 md:py-12 px-0 md:px-0">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-3xl md:text-6xl font-bold tracking-tighter text-white uppercase">
+          Sprint <span className="text-white/20 font-light">{" // "}</span> <span className="text-action-emerald">Control</span>
+        </h1>
+        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/40">
+          Time-boxed focus units. Max 3 priorities. No distractions.
+        </p>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 pt-1">
           <Link href="/dashboard/sprint/metrics">
-            <Button variant="outline" className="text-white/40 hover:text-white border-white/10">
-              <BarChart3 className="h-4 w-4 mr-2 text-action-emerald" />
-              View Metrics
+            <Button variant="outline" className="text-white/40 hover:text-white border-white/10 h-9 text-xs">
+              <BarChart3 className="h-3.5 w-3.5 mr-1.5 text-action-emerald" />
+              Metrics
             </Button>
           </Link>
 
           <Link href="/dashboard">
-            <Button variant="ghost" className="text-white/40 hover:text-white">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Identity Shift
+            <Button variant="ghost" className="text-white/30 hover:text-white h-9 text-xs">
+              <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
+              Home
             </Button>
           </Link>
         </div>
       </div>
 
-      <div className="flex justify-end mb-8">
+      <div className="flex justify-end mb-6">
         <SprintForm />
       </div>
 
@@ -97,10 +95,10 @@ export default async function SprintControlPage() {
                       Commitment Goals & Promises
                     </h3>
                     {sprint.goals && sprint.goals.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {sprint.goals.map((goal) => (
-                          <div key={goal.id} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-                            <div className="flex items-start gap-2 mb-4">
+                          <div key={goal.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                            <div className="flex items-start gap-2 mb-3">
                               <div className="h-2 w-2 rounded-full bg-focus-violet mt-1.5 shrink-0" />
                               <p className="text-sm font-bold text-white uppercase tracking-tight leading-tight">{goal.goalText}</p>
                             </div>

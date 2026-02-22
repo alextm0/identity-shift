@@ -1,10 +1,10 @@
 
 import { db } from "@/lib/db";
 import { sprint, sprintPriority, sprintGoal, promise } from "@/lib/db/schema";
-import { eq, and, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, lte, gte } from "drizzle-orm";
 import { NewSprint, SprintWithPriorities, SprintWithDetails } from "@/lib/types";
 import { SprintPriority, SprintPriorityType, CreateSprintGoalData } from "@/lib/validators";
-import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
+import { createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling, normalizeDate } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
 import { unstable_cache } from 'next/cache';
 import { syncSprintGoalsWithPromises, createSprintGoalWithPromises } from "./sprint-goals";
@@ -104,6 +104,43 @@ export async function getActiveSprints(userId: string): Promise<SprintWithDetail
 export const getActiveSprintCached = unstable_cache(
     async (userId: string) => getActiveSprint(userId),
     ['active-sprint'],
+    {
+        tags: ['active-sprint'],
+        revalidate: 60,
+    }
+);
+
+export async function getSprintContainingDate(userId: string, date: Date): Promise<SprintWithDetails | undefined> {
+    return await withDatabaseErrorHandling(
+        async () => {
+            const normalizedDate = normalizeDate(date);
+            const result = await db.query.sprint.findFirst({
+                where: and(
+                    createOwnershipCondition(sprint.userId, userId),
+                    lte(sprint.startDate, normalizedDate),
+                    gte(sprint.endDate, normalizedDate)
+                ),
+                with: {
+                    priorities: true,
+                    goals: {
+                        orderBy: asc(sprintGoal.sortOrder),
+                        with: {
+                            promises: {
+                                orderBy: asc(promise.sortOrder)
+                            }
+                        }
+                    }
+                }
+            });
+            return result ? mapToSprintWithDetails(result) : undefined;
+        },
+        "Failed to fetch sprint containing date"
+    );
+}
+
+export const getSprintContainingDateCached = unstable_cache(
+    async (userId: string, date: Date) => getSprintContainingDate(userId, date),
+    ['sprint-containing-date'],
     {
         tags: ['active-sprint'],
         revalidate: 60,

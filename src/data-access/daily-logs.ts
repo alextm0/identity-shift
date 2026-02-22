@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { dailyLog, promiseLog } from "@/lib/db/schema";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { dailyLog, promiseLog, promise } from "@/lib/db/schema";
+import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
 import { DailyLog, DailyLogWithRelations } from "@/lib/types";
 import { normalizeDate, getDayRange, createOwnershipCondition, createOwnershipAndIdCondition, withDatabaseErrorHandling } from "@/lib/data-access/base";
 import { randomUUID } from "crypto";
@@ -200,14 +200,14 @@ export async function saveDailyAudit(
                 if (existing) {
                     dailyLogId = existing.id;
                     await tx.update(dailyLog).set({
-                        mainGoalId: data.mainGoalId,
-                        energy: data.energy !== undefined ? data.energy : 3,
-                        sleepHours: data.sleepHours,
-                        exerciseMinutes: data.exerciseMinutes,
-                        blockerTag: data.blockerTag,
-                        win: data.win,
-                        drain: data.drain,
-                        note: data.note,
+                        mainGoalId: data.mainGoalId ?? null,
+                        energy: data.energy ?? 3,
+                        sleepHours: data.sleepHours ?? null,
+                        exerciseMinutes: data.exerciseMinutes ?? null,
+                        blockerTag: data.blockerTag ?? null,
+                        win: data.win ?? null,
+                        drain: data.drain ?? null,
+                        note: data.note ?? null,
                         updatedAt: new Date(),
                     }).where(eq(dailyLog.id, dailyLogId));
                 } else {
@@ -216,14 +216,14 @@ export async function saveDailyAudit(
                         userId,
                         sprintId,
                         date: normalizedDate,
-                        mainGoalId: data.mainGoalId,
-                        energy: data.energy !== undefined ? data.energy : 3,
-                        sleepHours: data.sleepHours,
-                        exerciseMinutes: data.exerciseMinutes,
-                        blockerTag: data.blockerTag,
-                        win: data.win,
-                        drain: data.drain,
-                        note: data.note,
+                        mainGoalId: data.mainGoalId ?? null,
+                        energy: data.energy ?? 3,
+                        sleepHours: data.sleepHours ?? null,
+                        exerciseMinutes: data.exerciseMinutes ?? null,
+                        blockerTag: data.blockerTag ?? null,
+                        win: data.win ?? null,
+                        drain: data.drain ?? null,
+                        note: data.note ?? null,
                     }).returning();
 
                     if (!newLog) throw new Error("Failed to create daily log");
@@ -234,12 +234,22 @@ export async function saveDailyAudit(
                 const promiseIds = Object.keys(data.promiseCompletions || {});
 
                 if (promiseIds.length > 0) {
-                    // We can use a batch insert or sequential. 
-                    // For neon-http transactions, both are combined into one HTTP request.
-                    // Let's use batching for better performance if possible, 
-                    // but onConflictDoUpdate needs to handle it.
+                    // Verify which promise IDs actually exist in DB to avoid FK violations.
+                    // This acts as a last-ditch safety net for orphaned/stale IDs.
+                    const existingPromises = await tx
+                        .select({ id: promise.id })
+                        .from(promise)
+                        .where(inArray(promise.id, promiseIds));
+
+                    const existingPromiseIds = new Set(existingPromises.map(p => p.id));
 
                     for (const pid of promiseIds) {
+                        // Skip any IDs that no longer exist in the DB (deleted promises)
+                        if (!existingPromiseIds.has(pid)) {
+                            console.warn(`[saveDailyAudit] Skipping orphaned promiseId: ${pid}`);
+                            continue;
+                        }
+
                         await tx.insert(promiseLog).values({
                             id: randomUUID(),
                             userId,

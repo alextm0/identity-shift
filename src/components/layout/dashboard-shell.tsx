@@ -18,7 +18,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       {/* Main Content Area */}
       <div className="pb-24 md:pb-0 md:pl-20 min-h-screen flex flex-col">
-        <main className="flex-1 p-8 overflow-x-hidden">
+        <main className="flex-1 px-4 py-6 md:p-8 overflow-x-hidden">
           {children}
         </main>
       </div>

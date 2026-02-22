@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Target,
@@ -59,49 +60,42 @@ function MobileMoreMenu({ pathname, navItems }: { pathname: string; navItems: Na
       <button
         onClick={() => setOpen(true)}
         className={cn(
-          "relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 group py-2",
+          "relative flex flex-col items-center justify-center flex-1 h-full py-1 transition-all",
           "active:scale-95"
         )}
         aria-label="More navigation options"
       >
-        {/* Active background glow */}
-        {hasActiveItem && (
-          <div className="absolute inset-2 rounded-2xl bg-focus-violet/10 blur-md animate-pulse" />
-        )}
-
-        {/* Icon */}
         <div className={cn(
-          "relative transition-all duration-500 mb-0.5",
+          "transition-all duration-300",
           hasActiveItem
-            ? "text-focus-violet -translate-y-1 scale-110 drop-shadow-[0_0_10px_rgba(139,92,246,0.4)]"
-            : "text-white/40 group-hover:text-white/70 group-active:scale-90"
+            ? "text-focus-violet scale-110"
+            : "text-white/40 group-hover:text-white/70"
         )}>
-          <MoreVertical className="h-5.5 w-5.5" />
+          <MoreVertical className="h-6 w-6" />
         </div>
 
-        {/* Label */}
         <span className={cn(
-          "caption transition-all duration-300 font-medium",
-          hasActiveItem
-            ? "text-focus-violet opacity-100"
-            : "text-white/30 opacity-0 group-hover:opacity-100"
+          "text-[10px] uppercase tracking-widest mt-1 font-medium transition-colors",
+          hasActiveItem ? "text-white" : "text-white/30"
         )}>
           More
         </span>
 
-        {/* Active indicator bar - Organic Pill */}
         {hasActiveItem && (
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-12 bg-gradient-to-r from-transparent via-focus-violet to-transparent rounded-full shadow-[0_0_12px_rgba(139,92,246,0.8)]" />
+          <motion.div
+            layoutId="mobile-nav-indicator"
+            className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 bg-focus-violet shadow-[0_0_10px_rgba(139,92,246,0.5)]"
+          />
         )}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[380px] p-0 overflow-hidden bg-[#0C0C12]/95 backdrop-blur-3xl border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.8)] rounded-[32px]">
-          <DialogHeader className="p-8 pb-5 border-b border-white/[0.05] bg-gradient-to-br from-white/[0.03] to-transparent">
+        <DialogContent className="sm:max-w-[380px] p-0 overflow-hidden bg-[#0C0C12]/95 backdrop-blur-3xl border border-white/5 shadow-[0_32px_80px_rgba(0,0,0,0.8)] rounded-3xl">
+          <DialogHeader className="p-6 pb-4 border-b border-white/5">
             <DialogTitle className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <span className="label text-white/90">Navigation Matrix</span>
-                <span className="caption text-white/40">Select destination</span>
+              <div className="flex flex-col">
+                <span className="text-xs uppercase tracking-[0.2em] text-white/40 font-bold">Identity Shift</span>
+                <span className="text-lg font-black tracking-tight text-white/90 lowercase mt-0.5">Advanced Modules</span>
               </div>
               <button
                 onClick={() => setOpen(false)}
@@ -134,37 +128,23 @@ function MobileMoreMenu({ pathname, navItems }: { pathname: string; navItems: Na
                   )}
 
                   {/* Icon with refined background */}
-                  <div className={cn(
-                    "p-3 rounded-xl transition-all duration-500 relative flex items-center justify-center",
-                    isActive
-                      ? "bg-focus-violet/30 text-focus-violet shadow-[inset_0_0_15px_rgba(139,92,246,0.3)]"
-                      : "bg-white/[0.05] text-white/50 group-hover/item:bg-white/[0.1] group-hover/item:text-white/70 border border-white/[0.08] group-hover/item:border-white/20"
-                  )}>
+                  <div className="p-2.5 rounded-xl transition-all duration-500 relative flex items-center justify-center bg-white/5 border border-white/5 group-hover/item:border-white/10 group-hover/item:bg-white/10">
                     <item.icon className={cn(
                       "h-5 w-5 transition-all duration-500",
-                      isActive ? "scale-110 drop-shadow-[0_0_10px_rgba(139,92,246,0.6)]" : "group-hover/item:scale-110"
+                      isActive ? "text-focus-violet scale-110" : "text-white/40"
                     )} />
                   </div>
 
-                  <div className="flex flex-col flex-1 gap-0.5">
-                    <span className={cn(
-                      "label text-sm tracking-normal transition-all duration-300",
-                      isActive ? "text-white font-semibold" : "text-white/80 group-hover/item:text-white"
-                    )}>
-                      {item.label}
-                    </span>
-                    <span className="caption text-[10px] uppercase tracking-widest opacity-40">
-                      {isActive ? "Currently Active" : "Access Module"}
-                    </span>
-                  </div>
+                  <span className={cn(
+                    "text-sm tracking-tight transition-all duration-300 font-medium",
+                    isActive ? "text-white" : "text-white/60 group-hover/item:text-white"
+                  )}>
+                    {item.label}
+                  </span>
 
-                  {/* Enhanced chevron indicator */}
-                  <ChevronRight className={cn(
-                    "h-4 w-4 transition-all duration-500",
-                    isActive
-                      ? "text-focus-violet opacity-100 translate-x-0"
-                      : "text-white/20 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0"
-                  )} />
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-focus-violet shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
+                  )}
                 </Link>
               );
             })}
@@ -415,66 +395,52 @@ export function LiquidSidebar() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation Bar - Organic Float */}
+      {/* Mobile Bottom Navigation Bar — Minimalist & Aesthetic */}
       <nav
-        className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2.5rem)] max-w-lg h-18 z-50 flex items-center justify-around px-2 bg-[#0C0C12]/80 backdrop-blur-3xl border border-white/[0.12] rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.05)_inset]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#09090b]/80 backdrop-blur-xl border-t border-white/5"
         role="navigation"
         aria-label="Mobile navigation"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        {/* Superior reflection highlight */}
-        <div className="absolute top-0 inset-x-10 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className="flex items-center justify-around h-16 px-4">
+          {coreNavItems.map((item) => {
+            const isActive = isItemActive(item.href, pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative flex flex-col items-center justify-center flex-1 h-full py-1 transition-colors"
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <div className={cn(
+                  "transition-all duration-300",
+                  isActive ? "text-focus-violet scale-110" : "text-white/40"
+                )}>
+                  <item.icon className="h-6 w-6" />
+                </div>
 
-        {/* Core navigation items (all 3 core) */}
-        {coreNavItems.map((item) => {
-          const isActive = isItemActive(item.href, pathname);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="relative flex flex-col items-center justify-center flex-1 h-full group py-1.5"
-              aria-label={item.label}
-              aria-current={isActive ? "page" : undefined}
-            >
-              {/* Magnetic active glow */}
-              {isActive && (
-                <div className="absolute inset-2 rounded-2xl bg-focus-violet/20 blur-xl scale-110 -z-10 animate-pulse" />
-              )}
-
-              {/* Icon Matrix */}
-              <div className={cn(
-                "relative transition-all duration-500 mb-1 z-10 flex items-center justify-center",
-                isActive
-                  ? "text-focus-violet -translate-y-1.5 scale-125 drop-shadow-[0_0_12px_rgba(139,92,246,0.6)]"
-                  : "text-white/40 group-active:scale-95"
-              )}>
-                <item.icon className="h-5.5 w-5.5" />
+                <span className={cn(
+                  "text-[10px] uppercase tracking-widest mt-1 font-medium transition-colors",
+                  isActive ? "text-white" : "text-white/30"
+                )}>
+                  {item.shortLabel || item.label}
+                </span>
 
                 {isActive && (
-                  <div className="absolute inset-0 bg-white/10 blur-[4px] rounded-full scale-150 -z-10" />
+                  <motion.div
+                    layoutId="mobile-nav-indicator"
+                    className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 bg-focus-violet shadow-[0_0_10px_rgba(139,92,246,0.5)]"
+                  />
                 )}
-              </div>
+              </Link>
+            );
+          })}
 
-              {/* Dynamic Label */}
-              <span className={cn(
-                "caption transition-all duration-500 font-bold uppercase tracking-widest text-[9px]",
-                isActive
-                  ? "text-white opacity-100"
-                  : "text-white/30 opacity-60 group-hover:opacity-80"
-              )}>
-                {item.shortLabel || item.label}
-              </span>
-
-              {/* Organic Indicator Bar */}
-              {isActive && (
-                <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-8 bg-focus-violet rounded-full shadow-[0_0_15px_rgba(139,92,246,1)] z-20" />
-              )}
-            </Link>
-          );
-        })}
-
-        {/* More Menu Module with advanced items only */}
-        <MobileMoreMenu pathname={pathname} navItems={advancedNavItems} />
+          <MobileMoreMenu pathname={pathname} navItems={advancedNavItems} />
+        </div>
       </nav>
     </>
   );
 }
+
