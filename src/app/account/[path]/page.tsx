@@ -1,12 +1,8 @@
 import { AccountView } from '@neondatabase/neon-js/auth/react/ui';
-import { accountViewPaths } from '@neondatabase/neon-js/auth/react/ui/server';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-    return Object.values(accountViewPaths).map((path) => ({ path }));
-}
+// Account pages must be dynamically rendered to receive the per-request CSP nonce.
+export const dynamic = 'force-dynamic';
 
 export default async function AccountPage({
     params

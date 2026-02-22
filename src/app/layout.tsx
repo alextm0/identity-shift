@@ -2,6 +2,7 @@ import { authClient } from '@/lib/auth/client';
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui';
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Instrument_Serif } from "next/font/google";
+import { headers } from "next/headers";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -60,13 +61,23 @@ export const metadata: Metadata = {
   },
 };
 
+// Force dynamic rendering: this layout reads request headers (nonce) which
+// are per-request and therefore incompatible with static pre-rendering.
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the nonce that our CSP Middleware injected into this request's headers.
+  // Next.js uses the `nonce` prop on <html> to stamp its own inline scripts,
+  // making them compliant with the `script-src 'nonce-...'` CSP directive.
+  const headersList = await headers();
+  const nonce = headersList.get('x-nonce') ?? undefined;
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning nonce={nonce}>
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} antialiased`}>
         <NeonAuthUIProvider
           authClient={authClient}

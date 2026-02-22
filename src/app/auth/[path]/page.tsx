@@ -1,14 +1,10 @@
 import { AuthForm } from '@/components/auth/auth-forms';
 import { Fingerprint, Shield } from 'lucide-react';
 
-export const dynamicParams = false;
-
-export async function generateStaticParams() {
-    return [
-        { path: 'sign-in' },
-        { path: 'sign-up' }
-    ];
-}
+// Auth pages must be dynamically rendered so they receive the per-request CSP nonce
+// from middleware. Static pre-rendering is also wrong for auth pages because
+// session state changes on every visit.
+export const dynamic = 'force-dynamic';
 
 export default async function AuthPage({
     params
@@ -44,19 +40,19 @@ export default async function AuthPage({
                 <div className="glass-pane p-10 md:p-12 relative overflow-hidden group shadow-2xl">
                     {/* Subtle Scanline Effect */}
                     <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-                    
+
                     <div className="relative z-10">
                         <div className="text-center mb-10 space-y-3">
                             <h1 className="text-4xl font-bold tracking-tighter text-white">
                                 {isSignIn ? 'Verify Identity' : 'Establish Identity'}
                             </h1>
                             <p className="text-telemetry-slate text-sm tracking-wide">
-                                {isSignIn 
+                                {isSignIn
                                     ? 'Resuming 2026 Progress Audit'
                                     : 'Commencing 2026 Progress Baseline'}
                             </p>
                         </div>
-                        
+
                         {isSignIn || isSignUp ? (
                             <AuthForm type={isSignIn ? 'sign-in' : 'sign-up'} />
                         ) : (
@@ -66,7 +62,7 @@ export default async function AuthPage({
                         )}
                     </div>
                 </div>
-                
+
                 {/* Forensic Footer: System Telemetry */}
                 <div className="mt-12 text-center space-y-4">
                     <p className="forensic-telemetry">
