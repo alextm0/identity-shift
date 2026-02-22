@@ -8,7 +8,6 @@ import { GlassPanel } from "@/components/dashboard/glass-panel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SprintWithDetails, SprintGoal, SprintPromise, DailyLogWithRelations } from "@/lib/types";
@@ -252,7 +251,7 @@ export function DailyLogForm({ activeSprint, initialData, targetDate }: DailyLog
                 control={form.control}
                 name="mainGoalId"
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                     <SelectTrigger className="w-full bg-white/5 border-white/8 h-11 text-sm text-white focus:ring-0 focus:ring-offset-0 hover:bg-white/[0.07] transition-colors rounded-xl">
                       <SelectValue placeholder="Select today's focus..." />
                     </SelectTrigger>

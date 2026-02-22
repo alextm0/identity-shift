@@ -1,6 +1,5 @@
 import { getDailyData } from "@/queries/daily";
 import { DailyLogForm } from "@/components/daily/daily-log-form";
-import { getDashboardData } from "@/queries/dashboard";
 import { getSprintContainingDateCached } from "@/data-access/sprints";
 import { getRequiredSession } from "@/lib/auth/server";
 
